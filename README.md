@@ -8,14 +8,14 @@ Shell scripts for quickly and easily installing on a single Ubuntu virtual machi
 What this script does:
 ----------------
   Downloads and installs the latest versions of the following:
-    ElasticSearch (listening on 9200)
-    Kibana (listening on 5601)
-    Elastiflow Unified Flow Collector (listening on 9995)
+    ElasticSearch (listening on 9200),
+    Kibana (listening on 5601),
+    Elastiflow Unified Flow Collector (listening on 9995),
     Elastiflow flow dashboards for Kibana
   
   Configures the following:
-    Connects Kibana to ElasticSearch
-    Connects ElastiFlow to ElasticSearch
+    Connects Kibana to ElasticSearch,
+    Connects ElastiFlow to ElasticSearch,
     Configures services to start on boot
 
 Requirements:
