@@ -1,7 +1,7 @@
 ## Author
 - [O.J. Wolanyk]
 
-# ElastiFlow_for_ElasticSearch_Autoinstaller
+# ElastiFlow_PoC_Installer for ElasticSearch
 Script to easily install ElastiFlow for ElasticSearch with all dependencies
 
 What this is:
