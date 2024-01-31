@@ -97,12 +97,12 @@ printf "\n\n\n*********Configuring Kibana - set 0.0.0.0 as server.host\n\n"
 kibana_config_path="/etc/kibana/kibana.yml"
 replace_text "$kibana_config_path" "#server.host: \"localhost\"" "server.host: \"0.0.0.0\"" "${LINENO}"
 
+printf "\n\n\n*********Enrolling Kibana with Elastic...\n\n"
+/usr/share/kibana/bin/kibana-setup --enrollment-token $kibana_token
+
 printf "\n\n\n*********Configuring Kibana - set elasticsearch.hosts to 0.0.0.0 instead of DHCP IP\n\n"
 kibana_config_path="/etc/kibana/kibana.yml"
 replace_text "$kibana_config_path" "elasticsearch.hosts: \['https:\/\/[^']*'\]" "elasticsearch.hosts: \['https:\/\/0.0.0.0:9200'\]" "${LINENO}"
-
-printf "\n\n\n*********Enrolling Kibana with Elastic...\n\n"
-/usr/share/kibana/bin/kibana-setup --enrollment-token $kibana_token
 
 printf "\n\n\n*********Enabling and starting Kibana service...\n\n"
 systemctl daemon-reload && systemctl enable kibana.service && systemctl start kibana.service
