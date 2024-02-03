@@ -1,16 +1,16 @@
 #!/bin/bash
 
-# Function to check the status of a service
+# Function to check the status of a service and display in color
 check_service_status() {
     service_name=$1
     status=$(systemctl is-active $service_name 2>/dev/null)
 
     if [ "$status" = "active" ]; then
-        echo "$service_name is running"
+        echo -e "\e[32m$service_name is running\e[0m"  # Green color
     elif [ "$status" = "inactive" ]; then
-        echo "$service_name is inactive"
+        echo -e "\e[31m$service_name is inactive\e[0m"  # Red color
     else
-        echo "Cannot determine the status of $service_name"
+        echo -e "\e[31mCannot determine the status of $service_name\e[0m"  # Red color
     fi
 }
 
