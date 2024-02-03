@@ -53,7 +53,7 @@ printf "Configuring Suricata Filebeat to look at eve.log file\n\n"
   /^\s*enabled: false$/ {
     s/false/true/
     a \
-      var.paths: ["/var/log/suricata/eve.json"]
+    var.paths: ["/var/log/suricata/eve.json"]
   }
 }' /etc/filebeat/modules.d/suricata.yml
 
@@ -65,7 +65,7 @@ service filebeat start
 
 sleep 10
 
-prinf "Checking if Filebeat service is active...\n\n"
+printf "Checking if Filebeat service is active...\n\n"
 service_name="filebeat"
 if systemctl is-active --quiet "$service_name"; then
     echo "The $service_name service is active (running)."
