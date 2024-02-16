@@ -150,7 +150,7 @@ sleep 20s
 
 printf "\n\n\n*********Downloading and installing ElastiFlow flow dashboards\n\n"
 git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
-response=$(curl -X POST -u elastic:$elastic_password "localhost:5601/api/saved_objects/_import?createNewCopies=true" -H "kbn-xsrf: true" --form file=@/etc/elastiflow_for_elasticsearch/kibana/flow/kibana-8.2.x-flow-ecs.ndjson -H 'kbn-xsrf: true')
+response=$(curl --connect-timeout 10 -X POST -u elastic:$elastic_password "localhost:5601/api/saved_objects/_import?createNewCopies=true" -H "kbn-xsrf: true" --form file=@/etc/elastiflow_for_elasticsearch/kibana/flow/kibana-8.2.x-flow-ecs.ndjson -H 'kbn-xsrf: true')
 
 dashboards_success=$(echo "$response" | jq -r '.success')
 
