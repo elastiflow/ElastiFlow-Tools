@@ -155,9 +155,9 @@ printf "\n\n\n*********Downloading and installing ElastiFlow flow dashboards\n\n
 git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
 response=$(curl -X POST -u elastic:$elastic_password "localhost:5601/api/saved_objects/_import?createNewCopies=true" -H "kbn-xsrf: true" --form file=@/etc/elastiflow_for_elasticsearch/kibana/flow/kibana-8.2.x-flow-ecs.ndjson -H 'kbn-xsrf: true')
 
-success=$(echo "$response" | jq -r '.success')
+dashboards_success=$(echo "$response" | jq -r '.success')
 
-if [ "$success" == "true" ]; then
+if [ "$dashboards_success" == "true" ]; then
     echo "Flow dashboards installed successfully\n\n"
 else
     echo "Not successful"
@@ -179,3 +179,24 @@ history -c && history -w
 printf "\n\n\n*********Clean up - Deleting setup files...\n\n"
 rm -rf ~/elastiflow_update/
 rm -rf ~/ef_va/
+
+SERVICES=("elasticsearch.service" "kibana.service" "flowcoll.service") # Replace these with actual service names
+
+# Loop through each service in the array
+for SERVICE_NAME in "${SERVICES[@]}"; do
+    # Check if the service is active
+    if systemctl is-active --quiet "$SERVICE_NAME"; then
+        # If the service is up, print the message in green
+        echo -e "\e[32m$SERVICE_NAME is up\e[0m"
+    else
+        # If the service is not up, print the message in red
+        echo -e "\e[31m$SERVICE_NAME is not up\e[0m"
+    fi
+done
+
+if [ "$dashboards_success" == "true" ]; then
+     echo -e "\e[32mDashboards are installed\e[0m"
+else
+     echo -e "\e[31mDashboards are not installed\e[0m"
+fi
+
