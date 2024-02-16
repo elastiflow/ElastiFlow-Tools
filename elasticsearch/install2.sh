@@ -142,6 +142,9 @@ systemctl daemon-reload && systemctl enable flowcoll.service && systemctl start 
 #apt install ./snmp-collector_6.4.2_linux_amd64.deb
 #systemctl daemon-reload && systemctl enable snmpcoll.service && systemctl start snmp.service
 
+printf "\n\n\n*********Sleeping 30 seconds to give service time to stabilize...\n\n"
+sleep 30s
+
 printf "\n\n\n*********Downloading and installing ElastiFlow flow dashboards\n\n"
 git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
 response=$(curl -X POST -u elastic:$elastic_password "localhost:5601/api/saved_objects/_import?createNewCopies=true" -H "kbn-xsrf: true" --form file=@/etc/elastiflow_for_elasticsearch/kibana/flow/kibana-8.2.x-flow-ecs.ndjson -H 'kbn-xsrf: true')
