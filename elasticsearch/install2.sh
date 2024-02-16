@@ -155,7 +155,7 @@ response=$(curl --connect-timeout 10 -X POST -u elastic:$elastic_password "local
 dashboards_success=$(echo "$response" | jq -r '.success')
 
 if [ "$dashboards_success" == "true" ]; then
-    echo "Flow dashboards installed successfully\n\n"
+    echo "Flow dashboards installed successfully."
 else
     echo "Not successful"
 fi
@@ -202,4 +202,4 @@ else
     fi
 fi
 
-printf "\n\nGo to http://$IP_ADDRESS:5601 (elastic / elastic)\n\n"
+printf "\e[5;37m\n\nGo to http://$IP_ADDRESS:5601 (elastic / elastic)\n\n\e[0m"
