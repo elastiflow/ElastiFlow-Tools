@@ -187,4 +187,19 @@ else
      echo -e "\e[31mDashboards are not installed X\e[0m"
 fi
 
-printf "\n\nGo to http://host_ip:5601 (elastic / elastic)\n\n"
+
+# Get the first network interface starting with enp
+INTERFACE=$(ip -o link show | grep -o 'enp[^:]*' | head -n 1)
+
+if [ -z "$INTERFACE" ]; then
+    echo "No interface starting with 'enp' found."
+else
+    # Get the IP address of the interface
+    IP_ADDRESS=$(ip -o -4 addr show $INTERFACE | awk '{print $4}' | cut -d/ -f1)
+
+    if [ -z "$IP_ADDRESS" ]; then
+        echo "No IP address found for interface $INTERFACE."
+    fi
+fi
+
+printf "\n\nGo to http://$IP_ADDRESS:5601 (elastic / elastic)\n\n"
