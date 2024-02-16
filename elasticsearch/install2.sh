@@ -66,6 +66,9 @@ printf "\n\n\n*********Elastic password is $elastic_password\n\n"
 printf "\n\n\n*********Enabling and starting ElasticSearch service...\n\n"
 systemctl daemon-reload && systemctl enable elasticsearch.service && systemctl start elasticsearch.service
 
+printf "\n\n\n*********Sleeping 20 seconds to give service time to stabilize...\n\n"
+sleep 20s
+
 if systemctl is-active --quiet elasticsearch.service; then
   printf "\n\n\n*********\e[32mElasticsearch service is up\e[0m\n\n"
 else
@@ -107,7 +110,7 @@ replace_text "$kibana_config_path" "elasticsearch.hosts: \['https:\/\/[^']*'\]" 
 printf "\n\n\n*********Enabling and starting Kibana service...\n\n"
 systemctl daemon-reload && systemctl enable kibana.service && systemctl start kibana.service
 
-printf "\n\n\n*********Sleeping 20 seconds to give dpkg time to clean up...\n\n"
+printf "\n\n\n*********Sleeping 20 seconds to give service time to stabilize...\n\n"
 sleep 20s
 
 printf "\n\n\n*********Downloading and installing ElastiFlow Flow Collector...\n\n" 
@@ -137,13 +140,16 @@ printf "\n\n\n*********Enabling and starting ElastiFlow service...\n\n"
 #Start Elastiflow flow collector
 systemctl daemon-reload && systemctl enable flowcoll.service && systemctl start flowcoll.service
 
+printf "\n\n\n*********Sleeping 20 seconds to give service time to stabilize...\n\n"
+sleep 20s
+
 #Install Elastiflow SNMP collector
 #wget https://elastiflow-releases.s3.us-east-2.amazonaws.com/snmp-collector/snmp-collector_6.4.2_linux_amd64.deb
 #apt install ./snmp-collector_6.4.2_linux_amd64.deb
 #systemctl daemon-reload && systemctl enable snmpcoll.service && systemctl start snmp.service
 
-printf "\n\n\n*********Sleeping 30 seconds to give service time to stabilize...\n\n"
-sleep 30s
+printf "\n\n\n*********Sleeping 20 seconds to give service time to stabilize...\n\n"
+sleep 20s
 
 printf "\n\n\n*********Downloading and installing ElastiFlow flow dashboards\n\n"
 git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
