@@ -23,7 +23,7 @@ What this script does:
 
 Requirements:
 ----------------
-One Ubuntu Server Ubuntu 22.04.3 LTS or Ubuntu 23.10
+One Ubuntu Server version 22 or 23
 
 Instructions:
 ----------------
