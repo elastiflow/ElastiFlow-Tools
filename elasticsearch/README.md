@@ -6,15 +6,15 @@ Script to easily install ElastiFlow for ElasticSearch with all dependencies
 
 What this is:
 ----------------
-Shell scripts for quickly and easily installing on a single Ubuntu virtual machine, the latest versions of everything needed to evaluate Elastiflow for ElasticSearch. This script can be used by Elastiflow staff to create personal test environments or even virtual appliances to speed up customer PoCs.
+Shell scripts for quickly and easily installing on a single Ubuntu virtual machine, the latest versions of everything needed to evaluate ElastiFlow for ElasticSearch. This script can be used by ElastiFlow staff to create personal test environments or even virtual appliances to speed up customer PoCs.
 
 What this script does:
 ----------------
   Downloads and installs the latest versions of the following:
     ElasticSearch (listening on 9200),
     Kibana (listening on 5601),
-    Elastiflow Unified Flow Collector (listening on 9995),
-    Elastiflow flow dashboards for Kibana
+    ElastiFlow Unified Flow Collector (listening on 9995),
+    ElastiFlow flow dashboards for Kibana
   
   Configures the following:
     Connects Kibana to ElasticSearch,
