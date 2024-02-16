@@ -140,9 +140,6 @@ printf "\n\n\n*********Enabling and starting ElastiFlow service...\n\n"
 #Start Elastiflow flow collector
 systemctl daemon-reload && systemctl enable flowcoll.service && systemctl start flowcoll.service
 
-printf "\n\n\n*********Sleeping 20 seconds to give service time to stabilize...\n\n"
-sleep 20s
-
 #Install Elastiflow SNMP collector
 #wget https://elastiflow-releases.s3.us-east-2.amazonaws.com/snmp-collector/snmp-collector_6.4.2_linux_amd64.deb
 #apt install ./snmp-collector_6.4.2_linux_amd64.deb
