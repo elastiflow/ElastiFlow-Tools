@@ -203,3 +203,5 @@ else
 fi
 
 printf "\e[5;37m\n\nGo to http://$IP_ADDRESS:5601 (elastic / elastic)\n\n\e[0m"
+
+printf "\n\nDone\n"
