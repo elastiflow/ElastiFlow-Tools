@@ -166,16 +166,6 @@ fi
 #printf "\n\n\n*********Elastic trial license started\n\n"
 #curl -X POST -k 'https://localhost:9200/_license/start_trial?acknowledge=true' -u elastic:$elastic_password
 
-printf "\n\nGo to http://host_ip:5601 (elastic / elastic)\n\n"
-
-printf "\n\n\n*********\nAll done.\n\n"
-
-printf "\n\n\n*********Clean up - Command history purged\n\n"
-history -c && history -w
-
-printf "\n\n\n*********Clean up - Deleting setup files...\n\n"
-rm -rf ~/elastiflow_update/
-rm -rf ~/ef_va/
 
 SERVICES=("elasticsearch.service" "kibana.service" "flowcoll.service") # Replace these with actual service names
 
@@ -184,16 +174,17 @@ for SERVICE_NAME in "${SERVICES[@]}"; do
     # Check if the service is active
     if systemctl is-active --quiet "$SERVICE_NAME"; then
         # If the service is up, print the message in green
-        echo -e "\e[32m$SERVICE_NAME is up\e[0m"
+        echo -e "\e[32m$SERVICE_NAME is up ✓\e[0m"
     else
         # If the service is not up, print the message in red
-        echo -e "\e[31m$SERVICE_NAME is not up\e[0m"
+        echo -e "\e[31m$SERVICE_NAME is not up X\e[0m"
     fi
 done
 
 if [ "$dashboards_success" == "true" ]; then
-     echo -e "\e[32mDashboards are installed\e[0m"
+     echo -e "\e[32mDashboards are installed ✓\e[0m"
 else
-     echo -e "\e[31mDashboards are not installed\e[0m"
+     echo -e "\e[31mDashboards are not installed X\e[0m"
 fi
 
+printf "\n\nGo to http://host_ip:5601 (elastic / elastic)\n\n"
