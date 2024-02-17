@@ -97,6 +97,7 @@ printf "\n\n\n*********Downloading and installing Kibana...\n\n"
 apt-get -qq update && apt-get -qq install kibana
 
 printf "\n\n\n*********Configuring Kibana - set 0.0.0.0 as server.host\n\n"
+## The default is 'localhost', which usually means remote machines will not be able to connect.
 kibana_config_path="/etc/kibana/kibana.yml"
 replace_text "$kibana_config_path" "#server.host: \"localhost\"" "server.host: \"0.0.0.0\"" "${LINENO}"
 
