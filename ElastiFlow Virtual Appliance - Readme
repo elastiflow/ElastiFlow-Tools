@@ -29,7 +29,7 @@ daemonize: false
 pcap_interface: network_interface_to_monitor
 aggregate: src_mac, dst_mac, src_host, dst_host, src_port, dst_port, proto, tos
 plugins: nfprobe, print
-nfprobe_receiver: 192.168.12.103:9995
+nfprobe_receiver: nfprobe_receiver: your_elastiflow_server_ip:9995
 ! nfprobe_receiver: [FD00::2]:2100
 nfprobe_version: 9
 ! nfprobe_engine: 1:1
