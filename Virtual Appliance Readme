@@ -8,7 +8,7 @@ Instructions:
 ------------------
 1) Boot virtual appliance on VMWare ESX, VMWare Workstation, or Oracle VirtualBox
 2) Configure virtual machine IP address and send Netflow 1,5, 6,7, 9, IPFIX and / or sFlow with UDP to IP_of_virtual_machine:9995
-3) Browse dashboards:  https://IP_of_virtual_machine:5601
+3) Open ElastiFlow dashboard: “ElastiFlow (flow): Overview” from here: https://IP_of_virtual_machine:5601/app/dashboards
   	(elastic / elastic)
 
 ------------------
