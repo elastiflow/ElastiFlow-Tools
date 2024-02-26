@@ -1,0 +1,47 @@
+=====================================================
+ElastiFlow Virtual Appliance - Readme
+=====================================================
+
+
+------------------
+Instructions:
+------------------
+1) Boot virtual appliance on VMWare ESX, VMWare Workstation, or Oracle VirtualBox
+2) Configure virtual machine IP address and send Netflow 1,5, 6,7, 9, IPFIX and / or sFlow with UDP to IP_of_virtual_machine:9995
+3) Browse dashboards:  https://IP_of_virtual_machine:5601
+  	(elastic / elastic)
+
+------------------
+Credentials and Versions:
+------------------
+Ubuntu 23.10 VM: user / user
+ElastiFlow Collector 6.4.2
+Kibana 8.12.1: elastic / elastic
+Elasticsearch - 8.12.1 - elastic / elastic
+
+------------------
+Generating flow - Option 1: Generate flow with pmacct
+------------------
+sudo apt-get install pmacct
+sudo nano /etc/pmacct/pmacctd.conf
+------------------
+daemonize: false
+pcap_interface: network_interface_to_monitor
+aggregate: src_mac, dst_mac, src_host, dst_host, src_port, dst_port, proto, tos
+plugins: nfprobe, print
+nfprobe_receiver: 192.168.12.103:9995
+! nfprobe_receiver: [FD00::2]:2100
+nfprobe_version: 9
+! nfprobe_engine: 1:1
+nfprobe_timeouts: tcp=15:maxlife=1800
+!
+! networks_file: /path/to/networks.lst
+!...
+-----------------------------------------
+sudo pmacctd -f /etc/pmacct/pmacctd.conf
+
+
+------------------
+Generating flow - Option 2: Netflow traffic generator
+------------------
+docker run -it --rm networkstatic/nflow-generator -t ELASTIFLOW_IP -p 9995
