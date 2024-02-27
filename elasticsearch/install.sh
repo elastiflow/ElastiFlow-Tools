@@ -45,7 +45,7 @@ kernel_tuning=("net.core.netdev_max_backlog=4096"
                "net.core.rmem_max=67108864" 
                "net.ipv4.udp_rmem_min=131072" 
                "net.ipv4.udp_mem=2097152 4194304 8388608"
-               "sysctl vm.max_map_count=262144")
+               "vm.max_map_count=262144")
 
 # Loop through the array and append each element to /etc/sysctl.conf
 for param in "${kernel_tuning[@]}"; do
