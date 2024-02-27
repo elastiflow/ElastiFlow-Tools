@@ -2,72 +2,6 @@
 
 elastiflow_version="6.4.2"
 
-print_colored_pattern() {
-    local color_code='\033[48;2;0;0;0m\033[38;2;0;145;234m' # ANSI escape codes for transparent background and color #0091EA
-    local reset_color='\033[0m'                                # ANSI escape code to reset color
-    local delay=0.2                                            # Delay in seconds
-
-    echo -e "${color_code}"
-    sleep $delay
-    echo "                                                    "
-    sleep $delay
-    echo "          =================================         "
-    sleep $delay
-    echo "          =================================         "
-    sleep $delay
-    echo "          ================================          "
-    sleep $delay
-    echo "          ===============================           "
-    sleep $delay
-    echo "          ==============================            "
-    sleep $delay
-    echo "          =============================             "
-    sleep $delay
-    echo "          ==========                                "
-    sleep $delay
-    echo "          ==========                                "
-    sleep $delay
-    echo "          ==========                                "
-    sleep $delay
-    echo "          ==========                                "
-    sleep $delay
-    echo "          ========================                  "
-    sleep $delay
-    echo "          ========================                  "
-    sleep $delay
-    echo "          ======================                    "
-    sleep $delay
-    echo "          ======================                    "
-    sleep $delay
-    echo "          =====================                     "
-    sleep $delay
-    echo "          ====================                      "
-    sleep $delay
-    echo "          ==========                                "
-    sleep $delay
-    echo "          ==========                                "
-    sleep $delay
-    echo "          ==========                                "
-    sleep $delay
-    echo "          ==========                                "
-    sleep $delay
-    echo "          ============== ====== +++++ *****         "
-    sleep $delay
-    echo "          ==================== ++++++******         "
-    sleep $delay
-    echo "          =================== +++++ ******          "
-    sleep $delay
-    echo "          ================== +++++ ******           "
-    sleep $delay
-    echo "          ================= ++++++******            "
-    sleep $delay
-    echo "          ========== +====  ++++  *****             "
-    sleep $delay
-    echo "                                                    "
-    echo -e "${reset_color}"
-}
-
-
 # Function to handle errors
 handle_error() {
     local error_msg="$1"
@@ -84,9 +18,6 @@ replace_text() {
     local line_num="$4"
     sed -i.bak "s|$old_text|$new_text|g" "$file_path" || handle_error "Failed to replace text in $file_path." "$line_num"
 }
-
-
-#print_colored_pattern()
 
 
 printf "*********\n"
