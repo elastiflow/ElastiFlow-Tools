@@ -56,9 +56,9 @@ echo "Kernel parameters added to /etc/sysctl.conf"
 
 #Increase System Limits (all ES nodes)
 #Increased system limits should be specified in a systemd attributes file for the elasticsearch service.
-sudo mkdir /etc/systemd/system/elasticsearch.service.d && \
+mkdir /etc/systemd/system/elasticsearch.service.d && \
 echo -e "[Service]\nLimitNOFILE=131072\nLimitNPROC=8192\nLimitMEMLOCK=infinity\nLimitFSIZE=infinity\nLimitAS=infinity" | \
-sudo tee /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf > /dev/null
+tee /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf > /dev/null
 echo "System limits set"
 printf "\n\n\n*********System tuning done...\n\n"
 
@@ -96,8 +96,8 @@ fi
 # Prepare the JVM options string with the calculated memory size
 jvm_options="-Xms${jvm_mem_gb}g\n-Xmx${jvm_mem_gb}g"
 
-# Echo the options and use tee to write to the file, running as sudo
-echo -e $jvm_options | sudo tee /etc/elasticsearch/jvm.options.d/heap.options > /dev/null
+# Echo the options and use tee to write to the file
+echo -e $jvm_options | tee /etc/elasticsearch/jvm.options.d/heap.options > /dev/null
 
 echo "Elasticsearch JVM options set to use $jvm_mem_gb GB for both -Xms and -Xmx."
 
