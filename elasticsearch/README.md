@@ -27,7 +27,7 @@ One Ubuntu Server version 22 or 23
 
 Instructions:
 ----------------
-1) Copy install.sh and install2.sh to your home directory
-2) sudo chmod +x on both files
-3) Run sudo ./install.sh
+1) Copy install.sh to your home directory
+2) sudo chmod +x install.sh
+3) sudo ./install.sh
 4) When completed, access Kibana at http://your_server_ip:5601, (elastic / elastic)
