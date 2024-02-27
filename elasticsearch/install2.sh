@@ -41,6 +41,20 @@ printf "\n\n\n*********Setting vm.max_map_count...\n\n"
 sysctl_file="/etc/sysctl.conf"
 max_map_count_setting="vm.max_map_count = 262144"
 
+# Define the array with the kernel tuning parameters
+kernel_tuning=("net.core.netdev_max_backlog=4096" 
+               "net.core.rmem_default=262144" 
+               "net.core.rmem_max=67108864" 
+               "net.ipv4.udp_rmem_min=131072" 
+               "net.ipv4.udp_mem=2097152 4194304 8388608")
+
+# Loop through the array and append each element to /etc/sysctl.conf
+for param in "${kernel_tuning[@]}"; do
+    echo "$param" >> /etc/sysctl.conf
+done
+sysctl -p
+echo "Kernel parameters added to /etc/sysctl.conf"
+
 ##################
 #https://docs.elastiflow.com/docs/install_cluster_ubuntu/#1-add-parameters-required-by-elasticsearch-all-es-nodes
 #net.core.netdev_max_backlog=4096
