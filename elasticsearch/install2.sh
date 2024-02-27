@@ -155,6 +155,14 @@ replace_text "$path" '#EF_OUTPUT_ELASTICSEARCH_PASSWORD: changeme' "EF_OUTPUT_EL
 replace_text "$path" '#EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: "false"' 'EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: "true"' "${LINENO}"
 replace_text "$path" '#EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: "false"' '#EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: "true"' "${LINENO}"
 
+#Disable / unset all settings in /etc/systemd/system/flowcoll.service.d/flowcoll.conf since settings in flowcoll.conf override settings in flowcoll.yml
+#Directory where you want to search and replace "Environment=" if not preceded by "#"
+path="/etc/systemd/system/flowcoll.service.d/flowcoll.conf"
+# Use find to locate files, then use sed to replace "Environment=" with "#Environment=" 
+# only if "Environment=" is not already preceded by "#"
+find "$path" -type f -exec sed -i '/^[^#]*Environment=/s/Environment=/#Environment=/' {} +
+echo "Replacement complete."
+
 #path="/etc/systemd/system/flowcoll.service.d/flowcoll.conf"
 #replace_text "$path" 'Environment="EF_LICENSE_ACCEPTED=false"' 'Environment="EF_LICENSE_ACCEPTED=true"' "${LINENO}"
 #replace_text "$path" 'Environment="EF_OUTPUT_ELASTICSEARCH_ENABLE=false"' 'Environment="EF_OUTPUT_ELASTICSEARCH_ENABLE=true"' "${LINENO}"
