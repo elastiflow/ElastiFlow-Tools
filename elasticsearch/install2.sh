@@ -219,11 +219,11 @@ fi
 
 #get installed versions
 
-$version=$(/usr/share/elasticsearch/bin/elasticsearch --version)
+version=$(/usr/share/elasticsearch/bin/elasticsearch --version)
 printf "Installed Elasticsearch version: $version\n" 
-$version=$(sudo /usr/share/kibana/bin/kibana --version --allow-root)
+version=$(sudo /usr/share/kibana/bin/kibana --version --allow-root)
 printf "Installed Kibana version: $version\n" 
-$version=$(sudo /usr/share/elastiflow/bin/flowcoll -version)
+version=$(sudo /usr/share/elastiflow/bin/flowcoll -version)
 printf "Installed ElastiFlow version: $version\n" 
 
 printf "\e[5;37m\n\nGo to http://$IP_ADDRESS:5601 (elastic / elastic)\n\n\e[0m"
