@@ -132,9 +132,9 @@ elastic_password="elastic"
 printf "\n\n\n*********Configuring ElastiFlow Flow Collector...\n\n" 
 path="/etc/elastiflow/flowcoll.yml"
 replace_text "$path" '#EF_LICENSE_ACCEPTED: "false"' 'EF_LICENSE_ACCEPTED: "true"' "${LINENO}"
-replace_text "$path" '#EF_OUTPUT_ELASTICSEARCH_ENABLE: "false"' 'EF_OUTPUT_ELASTICSEARCH_ENABLE: "false"' "${LINENO}"
+replace_text "$path" '#EF_OUTPUT_ELASTICSEARCH_ENABLE: "false"' 'EF_OUTPUT_ELASTICSEARCH_ENABLE: "true"' "${LINENO}"
 replace_text "$path" '#EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE: "false"' 'EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE: "true"' "${LINENO}"
-replace_text "$path" '#EF_OUTPUT_ELASTICSEARCH_PASSWORD: "changeme"' "EF_OUTPUT_ELASTICSEARCH_PASSWORD: \"$elastic_password\"" "${LINENO}"
+replace_text "$path" '#EF_OUTPUT_ELASTICSEARCH_PASSWORD: changeme' "EF_OUTPUT_ELASTICSEARCH_PASSWORD: \"$elastic_password\"" "${LINENO}"
 replace_text "$path" '#EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: "false"' 'EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: "true"' "${LINENO}"
 replace_text "$path" '#EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: "false"' '#EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: "true"' "${LINENO}"
 
@@ -217,8 +217,7 @@ else
     fi
 fi
 
-#get installed versions
-
+#Get installed versions
 version=$(/usr/share/elasticsearch/bin/elasticsearch --version)
 printf "Installed Elasticsearch version: $version\n" 
 version=$(sudo /usr/share/kibana/bin/kibana --version --allow-root)
@@ -227,4 +226,5 @@ version=$(sudo /usr/share/elastiflow/bin/flowcoll -version)
 printf "Installed ElastiFlow version: $version\n" 
 
 printf "\e[5;37m\n\nGo to http://$IP_ADDRESS:5601 (elastic / elastic)\n\n\e[0m"
+#Open ElastiFlow dashboard: “ElastiFlow (flow): Overview” from here: https://IP_of_virtual_machine:5601/app/dashboards
 printf "\n\nDone\n"
