@@ -140,7 +140,7 @@ replace_text "$path" 'Environment="EF_OUTPUT_ELASTICSEARCH_PASSWORD=changeme"' "
 replace_text "$path" 'Environment="EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE=false"' 'Environment="EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE=true"' "${LINENO}"
 replace_text "$path" 'Environment="EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION=false"' 'Environment="EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION=true"' "${LINENO}"
 
-#configure flowcoll service to stop after 60 seconds when asked to terminate so this does not hold up the system forever on shutdown.
+#Configure flowcoll service to stop after 60 seconds when asked to terminate so this does not hold up the system forever on shutdown.
 replace_text "/etc/systemd/system/flowcoll.service" "TimeoutStopSec=infinity" "TimeoutStopSec=60" "N/A"
 
 printf "\n\n\n*********Enabling and starting ElastiFlow service...\n\n"
