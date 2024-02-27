@@ -31,7 +31,7 @@ printf "\n\n\n*********Removing Ubuntu update service...\n\n"
 apt remove -y unattended-upgrades
 
 printf "\n\n\n*********Installing jq and git...\n\n"
-apt-get -qq update && apt-get -qq install jq net-tools git
+apt-get -qq update && apt-get -qq install jq net-tools git bc
 
 printf "\n\n\n*********Stopping Ubuntu pop-up "Daemons using outdated libraries" when using apt to install or update packages...\n\n"
 needrestart_conf_path="/etc/needrestart/needrestart.conf"
