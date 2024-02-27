@@ -41,14 +41,20 @@ printf "\n\n\n*********Setting vm.max_map_count...\n\n"
 sysctl_file="/etc/sysctl.conf"
 max_map_count_setting="vm.max_map_count = 262144"
 
-
+##################
+#https://docs.elastiflow.com/docs/install_cluster_ubuntu/#1-add-parameters-required-by-elasticsearch-all-es-nodes
 #net.core.netdev_max_backlog=4096
 #net.core.rmem_default=262144
 #net.core.rmem_max=67108864
 #net.ipv4.udp_rmem_min=131072
 #net.ipv4.udp_mem=2097152 4194304 8388608
 #echo -e "net.core.netdev_max_backlog=4096\nnet.core.rmem_default=262144\nnet.core.rmem_max=67108864\nnet.ipv4.udp_rmem_min=131072\nnet.ipv4.udp_mem=2097152 4194304 8388608" | sudo tee /etc/sysctl.d/60-net.conf > /dev/null
+#echo -e "-Xms12g\n-Xmx12g" | sudo tee /etc/elasticsearch/jvm.options.d/heap.options > /dev/null
 
+#sudo mkdir /etc/systemd/system/elasticsearch.service.d && \
+  #echo -e "[Service]\nLimitNOFILE=131072\nLimitNPROC=8192\nLimitMEMLOCK=infinity\nLimitFSIZE=infinity\nLimitAS=infinity" | \
+  #sudo tee /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf > /dev/null
+##################
 
 
 
