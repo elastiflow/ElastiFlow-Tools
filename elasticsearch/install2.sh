@@ -86,7 +86,7 @@ replace_text() {
 }
 
 
-print_colored_pattern()
+#print_colored_pattern()
 
 
 printf "*********\n"
