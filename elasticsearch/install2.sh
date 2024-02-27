@@ -75,9 +75,34 @@ elastic_password=$(echo "$elastic_install_log" | awk -F' : ' '/The generated pas
 elastic_password=$(echo -n "$elastic_password" | tr -cd '[:print:]')
 printf "\n\n\n*********Elastic password is $elastic_password\n\n"
 
-printf "\n\n\n*********Setting JVM heap options...\n\n"
-echo -e "-Xms12g\n-Xmx12g" | sudo tee /etc/elasticsearch/jvm.options.d/heap.options > /dev/null
-echo "JVM heap options added"
+
+printf "\n\n\n*********Configuring JVM memory usage...\n\n"
+# Get the total installed memory from /proc/meminfo in kB
+total_mem_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+
+# Convert the memory from kB to GB and divide by 3 to get 1/3, using bc for floating point support
+one_third_mem_gb=$(echo "$total_mem_kb / 1024 / 1024 / 3" | bc -l)
+
+# Use printf to round the floating point number to an integer
+rounded_mem_gb=$(printf "%.0f" $one_third_mem_gb)
+
+# Ensure the value does not exceed 31GB
+if [ $rounded_mem_gb -gt 31 ]; then
+    jvm_mem_gb=31
+else
+    jvm_mem_gb=$rounded_mem_gb
+fi
+
+# Prepare the JVM options string with the calculated memory size
+jvm_options="-Xms${jvm_mem_gb}g\n-Xmx${jvm_mem_gb}g"
+
+# Echo the options and use tee to write to the file, running as sudo
+echo -e $jvm_options | sudo tee /etc/elasticsearch/jvm.options.d/heap.options > /dev/null
+
+echo "Elasticsearch JVM options set to use $jvm_mem_gb GB for both -Xms and -Xmx."
+
+
+
 
 printf "\n\n\n*********Enabling and starting ElasticSearch service...\n\n"
 systemctl daemon-reload && systemctl enable elasticsearch.service && systemctl start elasticsearch.service
