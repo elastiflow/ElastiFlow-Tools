@@ -243,13 +243,14 @@ else
 fi
 
 #Get installed versions
-version=$(/usr/share/elasticsearch/bin/elasticsearch --version)
+version=$(/usr/share/elasticsearch/bin/elasticsearch --version | grep -oP 'Version: \K[\d.]+')
 printf "Installed Elasticsearch version: $version\n" 
-version=$(sudo /usr/share/kibana/bin/kibana --version --allow-root)
+version=$(/usr/share/kibana/bin/kibana --version --allow-root | jq '.config.serviceVersion.value' 2>/dev/null)
 printf "Installed Kibana version: $version\n" 
-version=$(sudo /usr/share/elastiflow/bin/flowcoll -version)
+version=$(/usr/share/elastiflow/bin/flowcoll -version)
 printf "Installed ElastiFlow version: $version\n" 
 
-printf "\e[5;37m\n\nGo to http://$IP_ADDRESS:5601 (elastic / elastic)\n\n\e[0m"
-#Open ElastiFlow dashboard: “ElastiFlow (flow): Overview” from here: https://IP_of_virtual_machine:5601/app/dashboards
+printf "\e[5;37m\n\nGo to http://$IP_ADDRESS:5601/app/dashboards (elastic / elastic)\n\n\e[0m"
+printf "Open ElastiFlow dashboard: \“ElastiFlow (flow): Overview\"
+
 printf "\n\nDone\n"
