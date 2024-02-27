@@ -54,9 +54,6 @@ done
 sysctl -p
 echo "Kernel parameters added to /etc/sysctl.conf"
 
-echo -e "-Xms12g\n-Xmx12g" | sudo tee /etc/elasticsearch/jvm.options.d/heap.options > /dev/null
-echo "JVM heap options added"
-
 #Increase System Limits (all ES nodes)
 #Increased system limits should be specified in a systemd attributes file for the elasticsearch service.
 sudo mkdir /etc/systemd/system/elasticsearch.service.d && \
@@ -77,6 +74,10 @@ elastic_install_log=$(apt-get -qq update && apt-get -qq install elasticsearch | 
 elastic_password=$(echo "$elastic_install_log" | awk -F' : ' '/The generated password for the elastic built-in superuser/{print $2}') 
 elastic_password=$(echo -n "$elastic_password" | tr -cd '[:print:]')
 printf "\n\n\n*********Elastic password is $elastic_password\n\n"
+
+printf "\n\n\n*********Setting JVM heap options...\n\n"
+echo -e "-Xms12g\n-Xmx12g" | sudo tee /etc/elasticsearch/jvm.options.d/heap.options > /dev/null
+echo "JVM heap options added"
 
 printf "\n\n\n*********Enabling and starting ElasticSearch service...\n\n"
 systemctl daemon-reload && systemctl enable elasticsearch.service && systemctl start elasticsearch.service
