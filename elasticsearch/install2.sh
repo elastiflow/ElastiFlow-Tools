@@ -47,6 +47,9 @@ max_map_count_setting="vm.max_map_count = 262144"
 #net.core.rmem_max=67108864
 #net.ipv4.udp_rmem_min=131072
 #net.ipv4.udp_mem=2097152 4194304 8388608
+#echo -e "net.core.netdev_max_backlog=4096\nnet.core.rmem_default=262144\nnet.core.rmem_max=67108864\nnet.ipv4.udp_rmem_min=131072\nnet.ipv4.udp_mem=2097152 4194304 8388608" | sudo tee /etc/sysctl.d/60-net.conf > /dev/null
+
+
 
 
 # Check if the setting exists in sysctl.conf
