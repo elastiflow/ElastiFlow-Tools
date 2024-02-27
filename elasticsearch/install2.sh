@@ -209,9 +209,9 @@ fi
 #curl -X POST -k 'https://localhost:9200/_license/start_trial?acknowledge=true' -u elastic:$elastic_password
 
 
-SERVICES=("elasticsearch.service" "kibana.service" "flowcoll.service") # Replace these with actual service names
-
 # Loop through each service in the array
+
+SERVICES=("elasticsearch.service" "kibana.service" "flowcoll.service") # Replace these with actual service names
 for SERVICE_NAME in "${SERVICES[@]}"; do
     # Check if the service is active
     if systemctl is-active --quiet "$SERVICE_NAME"; then
@@ -244,6 +244,14 @@ else
     fi
 fi
 
-printf "\e[5;37m\n\nGo to http://$IP_ADDRESS:5601 (elastic / elastic)\n\n\e[0m"
+#get installed versions
 
+$version=$(/usr/share/elasticsearch/bin/elasticsearch --version)
+printf "Installed Elasticsearch version: $version\n" 
+$version=$(sudo /usr/share/kibana/bin/kibana --version --allow-root)
+printf "Installed Kibana version: $version\n" 
+$version=$(sudo /usr/share/elastiflow/bin/flowcoll -version)
+printf "Installed ElastiFlow version: $version\n" 
+
+printf "\e[5;37m\n\nGo to http://$IP_ADDRESS:5601 (elastic / elastic)\n\n\e[0m"
 printf "\n\nDone\n"
