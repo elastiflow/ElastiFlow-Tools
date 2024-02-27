@@ -41,6 +41,14 @@ printf "\n\n\n*********Setting vm.max_map_count...\n\n"
 sysctl_file="/etc/sysctl.conf"
 max_map_count_setting="vm.max_map_count = 262144"
 
+
+#net.core.netdev_max_backlog=4096
+#net.core.rmem_default=262144
+#net.core.rmem_max=67108864
+#net.ipv4.udp_rmem_min=131072
+#net.ipv4.udp_mem=2097152 4194304 8388608
+
+
 # Check if the setting exists in sysctl.conf
 if grep -q "^$max_map_count_setting" $sysctl_file; then
     printf "\n\n\n*********Setting $max_map_count_setting already exists in $sysctl_file."
@@ -134,7 +142,7 @@ path="/etc/elastiflow/flowcoll.yml"
 replace_text "$path" '#EF_LICENSE_ACCEPTED: "false"' 'EF_LICENSE_ACCEPTED: "true"' "${LINENO}"
 replace_text "$path" '#EF_OUTPUT_ELASTICSEARCH_ENABLE: "false"' 'EF_OUTPUT_ELASTICSEARCH_ENABLE: "true"' "${LINENO}"
 replace_text "$path" '#EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE: "false"' 'EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE: "true"' "${LINENO}"
-replace_text "$path" '#EF_OUTPUT_ELASTICSEARCH_PASSWORD: changeme' "EF_OUTPUT_ELASTICSEARCH_PASSWORD: \"$elastic_password\"" "${LINENO}"
+replace_text "$path" '#EF_OUTPUT_ELASTICSEARCH_PASSWORD: changeme' "EF_OUTPUT_ELASTICSEARCH_PASSWORD: $elastic_password" "${LINENO}"
 replace_text "$path" '#EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: "false"' 'EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: "true"' "${LINENO}"
 replace_text "$path" '#EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: "false"' '#EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: "true"' "${LINENO}"
 
