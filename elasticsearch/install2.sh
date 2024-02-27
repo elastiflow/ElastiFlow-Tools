@@ -37,16 +37,15 @@ printf "\n\n\n*********Stopping Ubuntu pop-up "Daemons using outdated libraries"
 needrestart_conf_path="/etc/needrestart/needrestart.conf"
 replace_text "$needrestart_conf_path" "#\$nrconf{restart} = 'i';" "\$nrconf{restart} = 'a';" "${LINENO}"
 
-printf "\n\n\n*********Setting vm.max_map_count...\n\n"
-sysctl_file="/etc/sysctl.conf"
-max_map_count_setting="vm.max_map_count = 262144"
-
+printf "\n\n\n*********System tuning starting...\n\n"
 # Define the array with the kernel tuning parameters
+#https://docs.elastiflow.com/docs/install_cluster_ubuntu/#1-add-parameters-required-by-elasticsearch-all-es-nodes
 kernel_tuning=("net.core.netdev_max_backlog=4096" 
                "net.core.rmem_default=262144" 
                "net.core.rmem_max=67108864" 
                "net.ipv4.udp_rmem_min=131072" 
-               "net.ipv4.udp_mem=2097152 4194304 8388608")
+               "net.ipv4.udp_mem=2097152 4194304 8388608"
+               "sysctl vm.max_map_count = 262144")
 
 # Loop through the array and append each element to /etc/sysctl.conf
 for param in "${kernel_tuning[@]}"; do
@@ -55,34 +54,18 @@ done
 sysctl -p
 echo "Kernel parameters added to /etc/sysctl.conf"
 
-##################
-#https://docs.elastiflow.com/docs/install_cluster_ubuntu/#1-add-parameters-required-by-elasticsearch-all-es-nodes
-#net.core.netdev_max_backlog=4096
-#net.core.rmem_default=262144
-#net.core.rmem_max=67108864
-#net.ipv4.udp_rmem_min=131072
-#net.ipv4.udp_mem=2097152 4194304 8388608
-#echo -e "net.core.netdev_max_backlog=4096\nnet.core.rmem_default=262144\nnet.core.rmem_max=67108864\nnet.ipv4.udp_rmem_min=131072\nnet.ipv4.udp_mem=2097152 4194304 8388608" | sudo tee /etc/sysctl.d/60-net.conf > /dev/null
-#echo -e "-Xms12g\n-Xmx12g" | sudo tee /etc/elasticsearch/jvm.options.d/heap.options > /dev/null
+echo -e "-Xms12g\n-Xmx12g" | sudo tee /etc/elasticsearch/jvm.options.d/heap.options > /dev/null
+echo "JVM heap options added"
 
-#sudo mkdir /etc/systemd/system/elasticsearch.service.d && \
-  #echo -e "[Service]\nLimitNOFILE=131072\nLimitNPROC=8192\nLimitMEMLOCK=infinity\nLimitFSIZE=infinity\nLimitAS=infinity" | \
-  #sudo tee /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf > /dev/null
-##################
+#Increase System Limits (all ES nodes)
+#Increased system limits should be specified in a systemd attributes file for the elasticsearch service.
+sudo mkdir /etc/systemd/system/elasticsearch.service.d && \
+echo -e "[Service]\nLimitNOFILE=131072\nLimitNPROC=8192\nLimitMEMLOCK=infinity\nLimitFSIZE=infinity\nLimitAS=infinity" | \
+sudo tee /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf > /dev/null
+echo "System limits set"
+printf "\n\n\n*********System tuning done...\n\n"
 
 
-
-# Check if the setting exists in sysctl.conf
-if grep -q "^$max_map_count_setting" $sysctl_file; then
-    printf "\n\n\n*********Setting $max_map_count_setting already exists in $sysctl_file."
-else
-    # Add the setting to sysctl.conf
-    bash -c "echo -e \"$max_map_count_setting\" >> $sysctl_file"
-    echo "Setting $max_map_count_setting added to $sysctl_file."
-    # Apply the changes
-    sysctl -p
-    printf "\n\n\n*********Changes applied using sysctl vm.max_map_count = 262144\n\n"
-fi
 
 printf "\n\n\n*********Sleeping 20 seconds to give dpkg time to clean up...\n\n"
 sleep 20s
