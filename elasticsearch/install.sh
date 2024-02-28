@@ -272,18 +272,16 @@ fi
 
 #Get installed versions
 version=$(/usr/share/elasticsearch/bin/elasticsearch --version | grep -oP 'Version: \K[\d.]+')
-printf "Installed Elasticsearch version: $version\n" 
-version=$(/usr/share/kibana/bin/kibana --version --allow-root | jq -r '.config.serviceVersion.value' 2>/dev/null)
+printf "\n\nInstalled Elasticsearch version: $version\n" 
 
-printf "\nInstalled Kibana version: $version\n" 
+version=$(/usr/share/kibana/bin/kibana --version --allow-root | jq -r '.config.serviceVersion.value' 2>/dev/null)
+printf "Installed Kibana version: $version\n" 
+
 version=$(/usr/share/elastiflow/bin/flowcoll -version)
 printf "Installed ElastiFlow version: $version\n"
 
-# Get Ubuntu version
-ubuntu_version=$(lsb_release -d)
-
-# Print the Ubuntu version
-printf "Ubuntu Version: $ubuntu_version\n"
+version=$(lsb_release -d | awk -F'\t' '{print $2}')
+printf "Ubuntu Version: $ubuntu_version\n\n"
 
 
 printf "\e[5;37m\n\nGo to http://$IP_ADDRESS:5601/app/dashboards (elastic / elastic)\n\n\e[0m"
