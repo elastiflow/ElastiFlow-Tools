@@ -8,12 +8,13 @@ System Requirements:
 4 CPU cores
 32 Gigs of RAM
 500 Gigs disk space
+VMWare ESX, VMWare Workstation, or Oracle VirtualBox
 
 
 ------------------
 Instructions:
 ------------------
-1) Boot virtual appliance on VMWare ESX, VMWare Workstation, or Oracle VirtualBox
+1) Import and boot virtual appliance
 2) Configure virtual machine IP address and send Netflow 1,5, 6,7, 9, IPFIX and / or sFlow with UDP to IP_of_virtual_machine:9995
 3) Open ElastiFlow dashboard: “ElastiFlow (flow): Overview” from here: https://IP_of_virtual_machine:5601/app/dashboards
   	(elastic / elastic)
