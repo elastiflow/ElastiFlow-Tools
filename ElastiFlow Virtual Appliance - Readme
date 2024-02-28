@@ -1,6 +1,13 @@
 =====================================================
-ElastiFlow Virtual Appliance - Readme
+ElastiFlow Virtual Appliance v1.1 - Readme
 =====================================================
+
+------------------
+System Requirements:
+------------------
+4 CPU cores
+32 Gigs of RAM
+500 Gigs disk space
 
 
 ------------------
@@ -10,6 +17,7 @@ Instructions:
 2) Configure virtual machine IP address and send Netflow 1,5, 6,7, 9, IPFIX and / or sFlow with UDP to IP_of_virtual_machine:9995
 3) Open ElastiFlow dashboard: “ElastiFlow (flow): Overview” from here: https://IP_of_virtual_machine:5601/app/dashboards
   	(elastic / elastic)
+
 
 ------------------
 Credentials and Versions:
