@@ -18,7 +18,14 @@ Instructions:
 3) Open ElastiFlow dashboard: “ElastiFlow (flow): Overview” from here: https://IP_of_virtual_machine:5601/app/dashboards
   	(elastic / elastic)
 
-*Note: OpenSSH server is installed and listening on port 22 for ease of administration.
+*Notes: 
+--OpenSSH server is installed and listening on port 22 for ease of administration.
+--This appliance is configured with 32 gigs of RAM. If you change the amount of RAM, be sure to go to 
+/etc/elasticsearch/jvm.options.d/heap.options and specify 
+-Xms$%g
+-Xmx$%g
+Where the % sign is 1/3 of RAM installed, using a whole number (no decimal).
+
 
 ------------------
 Credentials and Versions:
