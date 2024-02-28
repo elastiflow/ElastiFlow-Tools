@@ -37,7 +37,7 @@ Kibana 8.12.1: elastic / elastic
 Elasticsearch - 8.12.1 - elastic / elastic
 
 ------------------
-Generating flow - Option 1: Generate flow with pmacct
+Generating flow from your local machine's traffic
 ------------------
 sudo apt-get install pmacct
 sudo nano /etc/pmacct/pmacctd.conf
@@ -59,6 +59,6 @@ sudo pmacctd -f /etc/pmacct/pmacctd.conf
 
 
 ------------------
-Generating flow - Option 2: Netflow traffic generator
+Generating fake flow
 ------------------
 docker run -it --rm networkstatic/nflow-generator -t ELASTIFLOW_IP -p 9995
