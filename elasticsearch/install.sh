@@ -223,9 +223,9 @@ response=$(curl --connect-timeout 10 -X POST -u elastic:$elastic_password "local
 dashboards_success=$(echo "$response" | jq -r '.success')
 
 if [ "$dashboards_success" == "true" ]; then
-    echo "Flow dashboards installed successfully."
+    printf "Flow dashboards installed successfully.\n\n"
 else
-    echo "Not successful"
+    printf "Flow dashboards not installed successfully\n\n"
 fi
 
 #printf "\n\n\n*********Clean up - Shutting down machine\n\n"
