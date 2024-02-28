@@ -18,6 +18,7 @@ Instructions:
 3) Open ElastiFlow dashboard: “ElastiFlow (flow): Overview” from here: https://IP_of_virtual_machine:5601/app/dashboards
   	(elastic / elastic)
 
+*Note: OpenSSH server is installed and listening on port 22 for ease of administration.
 
 ------------------
 Credentials and Versions:
