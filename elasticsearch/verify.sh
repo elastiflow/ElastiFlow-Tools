@@ -1,3 +1,7 @@
+#!/bin/bash
+
+interface="ens32"
+
 function verifyElastiFlow() {
     read -p "Do you want to verify if ElastiFlow is receiving and sending flow to Elastic? (y/n) " answer
     if [[ ${answer:0:1} =~ [yY] ]]; then
