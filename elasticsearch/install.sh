@@ -292,8 +292,6 @@ printf "Ubuntu Version: $ubuntu_version\n\n"
 printf "\e[5;37m\n\nGo to http://$IP_ADDRESS:5601/app/dashboards (elastic / elastic)\n\n\e[0m"
 printf "Open ElastiFlow dashboard: “ElastiFlow (flow): Overview\"\n\n"
 
-verifyElastiFlow
-
 printf "\n\nDone\n"
 
 
