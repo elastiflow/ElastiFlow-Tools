@@ -23,7 +23,7 @@ function verifyElastiFlow() {
     read -p "Do you want to verify if ElastiFlow is receiving and sending flow to Elastic? (y/n) " answer
     if [[ ${answer:0:1} =~ [yY] ]]; then
         echo "Installing pmacct..."
-        sudo apt-get update && sudo apt-get install pmacct -y
+         apt-get update &&  apt-get install pmacct -y
         
         # Verify pmacct installation
         if ! command -v pmacctd &> /dev/null; then
@@ -34,8 +34,8 @@ function verifyElastiFlow() {
         echo "pmacct installed successfully."
 
         # Configure pmacct
-        sudo mkdir -p /etc/pmacct/
-        sudo bash -c "cat > /etc/pmacct/pmacctd.conf" <<EOF
+         mkdir -p /etc/pmacct/
+         bash -c "cat > /etc/pmacct/pmacctd.conf" <<EOF
 daemonize: true
 pcap_interface: $interface
 aggregate: src_mac, dst_mac, src_host, dst_host, src_port, dst_port, proto, tos
@@ -47,7 +47,7 @@ EOF
 
         # Start pmacctd
         echo "Starting pmacctd..."
-        sudo pmacctd -f /etc/pmacct/pmacctd.conf &
+         pmacctd -f /etc/pmacct/pmacctd.conf &
 
         echo "Generating network traffic (wget google.com)."
         for i in {1..5}; do
@@ -62,7 +62,7 @@ EOF
         done
 
         echo -e "\rTerminating pmacct...              "
-        sudo killall pmacctd
+         killall pmacctd
 
         # Query Elasticsearch for ElastiFlow indices
         echo "Querying Elasticsearch for ElastiFlow indices..."
