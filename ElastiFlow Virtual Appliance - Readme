@@ -1,15 +1,15 @@
 =====================================================
-ElastiFlow Virtual Appliance v1.1 - Readme
+ElastiFlow Virtual Appliance v2.11 - Readme
 =====================================================
 
 ------------------
-System Requirements:
+Requirements:
 ------------------
+Ubuntu 22 or 23 virtual machine (fresh install)
 4 CPU cores
 32 GB of RAM
 500 GB disk space
 VMWare ESX, VMWare Workstation, or Oracle VirtualBox
-
 
 ------------------
 Instructions:
@@ -21,7 +21,7 @@ Instructions:
 
 *Notes: 
 --OpenSSH server is installed and listening on port 22 for ease of administration.
---This appliance is configured with 32 gigs of RAM. If you change the amount of RAM, be sure to go to 
+--This appliance is configured with 32 gigs of RAM. If you change the amount of RAM after deployment, be sure to go to 
 /etc/elasticsearch/jvm.options.d/heap.options and specify 
 -Xms%g
 -Xmx%g
