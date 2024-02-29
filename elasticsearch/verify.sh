@@ -13,7 +13,7 @@ function verifyElastiFlow() {
         echo "pmacct installed successfully."
 
         # Configure pmacct
-        interface="YOUR_NETWORK_INTERFACE_HERE" # Replace with your actual network interface
+        interface=$interface
         sudo mkdir -p /etc/pmacct/
         echo
         
