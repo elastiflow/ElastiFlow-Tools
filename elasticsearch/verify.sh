@@ -42,7 +42,7 @@ EOF
 
         # Terminate pmacct after 35 seconds
         echo -n "Terminating pmacct in 35 seconds... "
-        for i in {35..1..-1}; do
+        for i in {3..1..-1}; do
             echo -ne "\rTerminating pmacct in $i seconds... "
             sleep 1
         done
@@ -54,7 +54,7 @@ EOF
         echo "Querying Elasticsearch for ElastiFlow indices..."
         response=$(curl -k -s -u elastic:elastic "http://localhost:9200/_cat/indices?format=json")
         if echo $response | jq -e '.[] | select(.index | contains("elastiflow"))' >/dev/null; then
-            echo "ElastiFlow has been successfully verified."
+            echo -e "\e[32mElastiFlow has been successfully verified.\e[0m"
         else
             echo "Something's wrong. No ElastiFlow indices found."
         fi
