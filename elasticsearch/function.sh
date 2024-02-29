@@ -7,7 +7,7 @@ interface="ens32"
 function verifyElastiFlow() {
 
 # Step 1: List all indices and filter by those containing "elastiflow"
-indices=$(curl -s -X GET "http://localhost:9200/_cat/indices/*elastiflow*?h=index" | tr '\n' ' ')
+indices=$(curl -s -X GET "https://localhost:9200/_cat/indices/*elastiflow*?h=index" | tr '\n' ' ')
 
         # Check if the list is empty
         if [ -z "$indices" ]; then
