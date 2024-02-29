@@ -286,7 +286,8 @@ version=$(/usr/share/elastiflow/bin/flowcoll -version)
 printf "Installed ElastiFlow version: $version\n"
 
 version=$(lsb_release -d | awk -F'\t' '{print $2}')
-printf "Ubuntu Version: $ubuntu_version\n\n"
+printf "Operating System: $ubuntu_version\n\n"
+
 
 
 printf "\e[5;37m\n\nGo to http://$IP_ADDRESS:5601/app/dashboards (elastic / elastic)\n\n\e[0m"
