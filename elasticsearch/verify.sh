@@ -33,7 +33,6 @@ EOF
         # Start pmacctd
         echo "Starting pmacctd..."
         sudo pmacctd -f /etc/pmacct/pmacctd.conf &
-        PMACCT_PID=$!
 
         echo "Generating network traffic (wget google.com)."
         for i in {1..5}; do
@@ -48,7 +47,7 @@ EOF
         done
 
         echo -e "\rTerminating pmacct...              "
-        sudo kill $PMACCT_PID
+        sudo killall pmacctd
 
         # Query Elasticsearch for ElastiFlow indices
         echo "Querying Elasticsearch for ElastiFlow indices..."
