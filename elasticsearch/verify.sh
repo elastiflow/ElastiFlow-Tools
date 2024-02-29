@@ -19,15 +19,13 @@ function verifyElastiFlow() {
         # Configure pmacct
         interface=$interface
         sudo mkdir -p /etc/pmacct/
-        echo
-        
-        "daemonize: true
+        echo "daemonize: true
         pcap_interface: $interface
         aggregate: src_mac, dst_mac, src_host, dst_host, src_port, dst_port, proto, tos
         plugins: nfprobe, print
         nfprobe_receiver: localhost:9995
         nfprobe_version: 9
-        nfprobe_timeouts: tcp=15:maxlife=1800" | sudo tee /etc/pmacct/pmacctd.conf
+        nfprobe_timeouts: tcp=15:maxlife=1800" | tee /etc/pmacct/pmacctd.conf
         
         # Start pmacctd
         echo "Starting pmacctd..."
