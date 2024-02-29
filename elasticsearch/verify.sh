@@ -30,7 +30,7 @@ function verifyElastiFlow() {
         sudo pmacctd -f /etc/pmacct/pmacctd.conf &
         PMACCT_PID=$!
 
-        echo "Generating network traffic (wget google.com)."
+        echo "Generating network traffic \(wget google.com\)."
         for i in {1..5}; do
             wget -qO- http://google.com > /dev/null
         done
