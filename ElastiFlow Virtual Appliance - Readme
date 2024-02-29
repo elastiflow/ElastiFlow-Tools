@@ -1,11 +1,10 @@
 =====================================================
-ElastiFlow Virtual Appliance v2.11 - Readme
+ElastiFlow Virtual Appliance v1.1 - Readme
 =====================================================
 
 ------------------
 Requirements:
 ------------------
-Ubuntu 22 or 23 virtual machine (fresh install)
 4 CPU cores
 32 GB of RAM
 500 GB disk space
