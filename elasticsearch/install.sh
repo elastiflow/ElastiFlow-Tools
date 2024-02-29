@@ -286,7 +286,7 @@ version=$(/usr/share/elastiflow/bin/flowcoll -version)
 printf "Installed ElastiFlow version: $version\n"
 
 version=$(lsb_release -d | awk -F'\t' '{print $2}')
-printf "Operating System: $ubuntu_version\n\n"
+printf "Operating System: $version\n\n"
 
 
 
