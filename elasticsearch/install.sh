@@ -78,6 +78,11 @@ EOF
 }
 
 
+if [ "$(id -u)" -ne 0 ]; then
+    echo "This script must be run as root" 1>&2
+    exit 1
+fi
+
 printf "*********\n"
 printf "*********\n"
 printf "*********Setting up ElastiFlow VM...*********\n"
