@@ -34,22 +34,20 @@ function verifyElastiFlow() {
         echo "pmacct installed successfully."
 
         # Configure pmacct
-        interface="YOUR_NETWORK_INTERFACE_HERE" # Replace with your actual network interface
         sudo mkdir -p /etc/pmacct/
-        echo
-        
-        "daemonize: true
-        pcap_interface: $interface
-        aggregate: src_mac, dst_mac, src_host, dst_host, src_port, dst_port, proto, tos
-        plugins: nfprobe, print
-        nfprobe_receiver: localhost:9995
-        nfprobe_version: 9
-        nfprobe_timeouts: tcp=15:maxlife=1800" | sudo tee /etc/pmacct/pmacctd.conf
-        
+        sudo bash -c "cat > /etc/pmacct/pmacctd.conf" <<EOF
+daemonize: true
+pcap_interface: $interface
+aggregate: src_mac, dst_mac, src_host, dst_host, src_port, dst_port, proto, tos
+plugins: nfprobe, print
+nfprobe_receiver: localhost:9995
+nfprobe_version: 9
+nfprobe_timeouts: tcp=15:maxlife=1800
+EOF
+
         # Start pmacctd
         echo "Starting pmacctd..."
         sudo pmacctd -f /etc/pmacct/pmacctd.conf &
-        PMACCT_PID=$!
 
         echo "Generating network traffic (wget google.com)."
         for i in {1..5}; do
@@ -57,21 +55,20 @@ function verifyElastiFlow() {
         done
 
         # Terminate pmacct after 35 seconds
-        echo -n "Terminating pmacct in 35 seconds..."
+        echo -n "Terminating pmacct in 35 seconds... "
         for i in {35..1..-1}; do
-            echo -ne "\r$i seconds remaining..."
+            echo -ne "\rTerminating pmacct in $i seconds... "
             sleep 1
         done
 
-        echo -e "\rTerminating pmacct...         "
-        sudo kill $PMACCT_PID
+        echo -e "\rTerminating pmacct...              "
+        sudo killall pmacctd
 
-        # Query Kibana for ElastiFlow indices
-        echo "Querying Kibana for ElastiFlow indices..."
-        ELASTIFLOW_INDICES=$(curl -s "http://localhost:5601/api/console/proxy?path=_cat/indices%2Felastiflow-*&method=GET" | jq -r '.[] | select(.index | contains("elastiflow")) | .index')
-
-        if [[ ! -z "$ELASTIFLOW_INDICES" ]]; then
-            echo "ElastiFlow has been successfully verified."
+        # Query Elasticsearch for ElastiFlow indices
+        echo "Querying Elasticsearch for ElastiFlow indices..."
+        response=$(curl -k -s -u elastic:elastic "https://localhost:9200/_cat/indices?format=json")
+        if echo $response | jq -e '.[] | select(.index | contains("elastiflow"))' >/dev/null; then
+            echo -e "\e[32mElastiFlow has been successfully verified.\e[0m"
         else
             echo "Something's wrong. No ElastiFlow indices found."
         fi
@@ -79,7 +76,6 @@ function verifyElastiFlow() {
         echo "Verification cancelled."
     fi
 }
-
 
 
 printf "*********\n"
@@ -348,6 +344,8 @@ printf "Ubuntu Version: $ubuntu_version\n\n"
 
 printf "\e[5;37m\n\nGo to http://$IP_ADDRESS:5601/app/dashboards (elastic / elastic)\n\n\e[0m"
 printf "Open ElastiFlow dashboard: “ElastiFlow (flow): Overview\""
+
+verifyElastiFlow
 
 printf "\n\nDone\n"
 
