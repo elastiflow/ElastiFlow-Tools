@@ -43,21 +43,38 @@ needrestart_conf_path="/etc/needrestart/needrestart.conf"
 replace_text "$needrestart_conf_path" "#\$nrconf{restart} = 'i';" "\$nrconf{restart} = 'a';" "${LINENO}"
 
 printf "\n\n\n*********System tuning starting...\n\n"
-# Define the array with the kernel tuning parameters
-#https://docs.elastiflow.com/docs/install_cluster_ubuntu/#1-add-parameters-required-by-elasticsearch-all-es-nodes
-kernel_tuning=("net.core.netdev_max_backlog=4096" 
-               "net.core.rmem_default=262144" 
-               "net.core.rmem_max=67108864" 
-               "net.ipv4.udp_rmem_min=131072" 
-               "net.ipv4.udp_mem=2097152 4194304 8388608"
-               "vm.max_map_count=262144")
+#!/bin/bash
 
-# Loop through the array and append each element to /etc/sysctl.conf
-for param in "${kernel_tuning[@]}"; do
-    echo "$param" >> /etc/sysctl.conf
-done
+# Define kernel parameters as a block of text
+kernel_tuning=$(cat <<EOF
+#####ElastiFlow tuning parameters######
+net.core.netdev_max_backlog=4096
+net.core.rmem_default=262144
+net.core.rmem_max=67108864
+net.ipv4.udp_rmem_min=131072
+net.ipv4.udp_mem=2097152 4194304 8388608
+vm.max_map_count=262144
+#######################################
+EOF
+)
+
+# Comment out existing lines containing these parameters in /etc/sysctl.conf
+sed -i '/net.core.netdev_max_backlog=/s/^/#/' /etc/sysctl.conf
+sed -i '/net.core.rmem_default=/s/^/#/' /etc/sysctl.conf
+sed -i '/net.core.rmem_max=/s/^/#/' /etc/sysctl.conf
+sed -i '/net.ipv4.udp_rmem_min=/s/^/#/' /etc/sysctl.conf
+sed -i '/net.ipv4.udp_mem=/s/^/#/' /etc/sysctl.conf
+sed -i '/vm.max_map_count=/s/^/#/' /etc/sysctl.conf
+
+# Append the new kernel parameters block to /etc/sysctl.conf
+echo "$kernel_tuning" >> /etc/sysctl.conf
+
+# Reload the sysctl settings
 sysctl -p
-echo "Kernel parameters added to /etc/sysctl.conf"
+
+echo "Kernel parameters updated in /etc/sysctl.conf with previous configurations commented out."
+
+
 
 #Increase System Limits (all ES nodes)
 #Increased system limits should be specified in a systemd attributes file for the elasticsearch service.
