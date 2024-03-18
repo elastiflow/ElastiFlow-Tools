@@ -9,12 +9,12 @@ handle_error() {
     local user_decision
 
     echo "Error at line $line_num: $error_msg"
-    echo "Do you wish to continue or exit? (continue/exit):"
+    echo "Do you wish to continue? (y/n):"
     read user_decision
 
-    if [[ $user_decision == "continue" ]]; then
+    if [[ $user_decision == "y" ]]; then
         echo "Continuing execution..."
-    elif [[ $user_decision == "exit" ]]; then
+    elif [[ $user_decision == "n" ]]; then
         echo "Exiting..."
         exit 1
     else
