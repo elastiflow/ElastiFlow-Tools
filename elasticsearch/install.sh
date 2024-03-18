@@ -6,10 +6,22 @@ elastiflow_version="6.4.2"
 handle_error() {
     local error_msg="$1"
     local line_num="$2"
-    echo "Error at line $line_num: $error_msg"
-    exit 1
-}
+    local user_decision
 
+    echo "Error at line $line_num: $error_msg"
+    echo "Do you wish to continue or exit? (continue/exit):"
+    read user_decision
+
+    if [[ $user_decision == "continue" ]]; then
+        echo "Continuing execution..."
+    elif [[ $user_decision == "exit" ]]; then
+        echo "Exiting..."
+        exit 1
+    else
+        echo "Invalid input. Exiting..."
+        exit 1
+    fi
+}
 # Replace text in a file with error handling
 replace_text() {
     local file_path="$1"
