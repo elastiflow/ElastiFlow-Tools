@@ -70,7 +70,7 @@ vm.max_map_count=262144
 EOF
 )
 
-# Comment out existing lines containing these parameters in /etc/sysctl.conf
+# This comments out existing lines containing these parameters in /etc/sysctl.conf
 sed -i '/net.core.netdev_max_backlog=/s/^/#/' /etc/sysctl.conf
 sed -i '/net.core.rmem_default=/s/^/#/' /etc/sysctl.conf
 sed -i '/net.core.rmem_max=/s/^/#/' /etc/sysctl.conf
