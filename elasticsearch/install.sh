@@ -1,6 +1,7 @@
 #!/bin/bash
 
 elastiflow_version="6.4.2"
+flowcoll_config_path="/etc/systemd/system/flowcoll.service.d/flowcoll.conf"
 
 # Function to handle errors
 handle_error() {
@@ -29,6 +30,51 @@ replace_text() {
     local new_text="$3"
     local line_num="$4"
     sed -i.bak "s|$old_text|$new_text|g" "$file_path" || handle_error "Failed to replace text in $file_path." "$line_num"
+}
+
+
+
+
+prompt_credentials() {
+    printf 'Please have your Account ID and Flow License Key handy.'
+    printf 'If you do not have one, you can sign up here: https://elastiflow.com/get-started'
+    # Prompt for Account ID with validation for non-empty input
+    while true; do
+        read -p "Please paste your Account ID: " account_id
+        if [[ -z "$account_id" ]]; then
+            echo "The Account ID cannot be blank. Please enter a valid Account ID."
+        else
+            break
+        fi
+    done
+
+    # Prompt for Flow License Key with validation for non-empty input
+    while true; do
+        read -p "Please paste your Flow License Key: " flow_license_key
+        if [[ -z "$flow_license_key" ]]; then
+            echo "The Flow License Key cannot be blank. Please enter a valid Flow License Key."
+        else
+            break
+        fi
+    done
+
+    # Call the check_credentials function with the entered credentials
+    enter_credentials "$account_id" "$flow_license_key"
+}
+
+
+
+enter_credentials() {
+    account_id="$1"
+    flow_license_key="$2"
+    
+    if [[ "$account_id" == "1" && "$flow_license_key" == "1" ]]; then
+        replace_text "$flowcoll_config_path" 'Environment="EF_LICENSE_ACCEPTED=false"' 'Environment="EF_LICENSE_ACCEPTED=true"' "${LINENO}"
+    else
+        replace_text "$flowcoll_config_path" 'Environment="EF_LICENSE_ACCEPTED=false"' 'Environment="EF_LICENSE_ACCEPTED=true"' "${LINENO}"
+        replace_text "$flowcoll_config_path" '#Environment="EF_ACCOUNT_ID="' "Environment=\"EF_ACCOUNT_ID=$account_id\"" "${LINENO}"
+        replace_text "$flowcoll_config_path" '#Environment="EF_FLOW_LICENSE_KEY="' "Environment=\"EF_FLOW_LICENSE_KEY=$flow_license_key\"" "${LINENO}"
+    fi
 }
 
 
@@ -204,31 +250,34 @@ curl -k -X POST -u elastic:$elastic_password "https://localhost:9200/_security/u
 elastic_password="elastic"
 
 printf "\n\n\n*********Configuring ElastiFlow Flow Collector...\n\n" 
-path="/etc/systemd/system/flowcoll.service.d/flowcoll.conf"
-replace_text "$path" 'Environment="EF_LICENSE_ACCEPTED=false"' 'Environment="EF_LICENSE_ACCEPTED=true"' "${LINENO}"
-replace_text "$path" 'Environment="EF_OUTPUT_ELASTICSEARCH_ENABLE=false"' 'Environment="EF_OUTPUT_ELASTICSEARCH_ENABLE=true"' "${LINENO}"
-replace_text "$path" 'Environment="EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE=false"' 'Environment="EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE=true"' "${LINENO}"
-replace_text "$path" 'Environment="EF_OUTPUT_ELASTICSEARCH_PASSWORD=changeme"' "Environment=\"EF_OUTPUT_ELASTICSEARCH_PASSWORD=$elastic_password\"" "${LINENO}"
-replace_text "$path" 'Environment="EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE=false"' 'Environment="EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE=true"' "${LINENO}"
-replace_text "$path" 'Environment="EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION=false"' 'Environment="EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION=true"' "${LINENO}"
+
+
+prompt_credentials
+
+#replace_text "$flowcoll_config_path" 'Environment="EF_LICENSE_ACCEPTED=false"' 'Environment="EF_LICENSE_ACCEPTED=true"' "${LINENO}"
+replace_text "$flowcoll_config_path" 'Environment="EF_OUTPUT_ELASTICSEARCH_ENABLE=false"' 'Environment="EF_OUTPUT_ELASTICSEARCH_ENABLE=true"' "${LINENO}"
+replace_text "$flowcoll_config_path" 'Environment="EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE=false"' 'Environment="EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE=true"' "${LINENO}"
+replace_text "$flowcoll_config_path" 'Environment="EF_OUTPUT_ELASTICSEARCH_PASSWORD=changeme"' "Environment=\"EF_OUTPUT_ELASTICSEARCH_PASSWORD=$elastic_password\"" "${LINENO}"
+replace_text "$flowcoll_config_path" 'Environment="EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE=false"' 'Environment="EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE=true"' "${LINENO}"
+replace_text "$flowcoll_config_path" 'Environment="EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION=false"' 'Environment="EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION=true"' "${LINENO}"
 
 
 
 #############ONLY USE THIS IF YOU WANT TO CONFIGURE EVERYTHING WITH FLOWCOLL.YML. Also, it's buggy for some reason
-#path="/etc/elastiflow/flowcoll.yml"
-#replace_text "$path" '#EF_LICENSE_ACCEPTED: "false"' 'EF_LICENSE_ACCEPTED: "true"' "${LINENO}"
-#replace_text "$path" '#EF_OUTPUT_ELASTICSEARCH_ENABLE: "false"' 'EF_OUTPUT_ELASTICSEARCH_ENABLE: "true"' "${LINENO}"
-#replace_text "$path" '#EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE: "false"' 'EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE: "true"' "${LINENO}"
-#replace_text "$path" '#EF_OUTPUT_ELASTICSEARCH_PASSWORD: changeme' "EF_OUTPUT_ELASTICSEARCH_PASSWORD: $elastic_password" "${LINENO}"
-#replace_text "$path" '#EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: "false"' 'EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: "true"' "${LINENO}"
-#replace_text "$path" '#EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: "false"' '#EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: "true"' "${LINENO}"
+#flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
+#replace_text "$flowcoll_config_path" '#EF_LICENSE_ACCEPTED: "false"' 'EF_LICENSE_ACCEPTED: "true"' "${LINENO}"
+#replace_text "$flowcoll_config_path" '#EF_OUTPUT_ELASTICSEARCH_ENABLE: "false"' 'EF_OUTPUT_ELASTICSEARCH_ENABLE: "true"' "${LINENO}"
+#replace_text "$flowcoll_config_path" '#EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE: "false"' 'EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE: "true"' "${LINENO}"
+#replace_text "$flowcoll_config_path" '#EF_OUTPUT_ELASTICSEARCH_PASSWORD: changeme' "EF_OUTPUT_ELASTICSEARCH_PASSWORD: $elastic_password" "${LINENO}"
+#replace_text "$flowcoll_config_path" '#EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: "false"' 'EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: "true"' "${LINENO}"
+#replace_text "$flowcoll_config_path" '#EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: "false"' '#EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: "true"' "${LINENO}"
 
 #Disable / unset all settings in /etc/systemd/system/flowcoll.service.d/flowcoll.conf since settings in flowcoll.conf override settings in flowcoll.yml
 #Directory where you want to search and replace "Environment=" if not preceded by "#"
-#path="/etc/systemd/system/flowcoll.service.d/flowcoll.conf"
+#flowcoll_config_path="/etc/systemd/system/flowcoll.service.d/flowcoll.conf"
 ## Use find to locate files, then use sed to replace "Environment=" with "#Environment=" 
 ## only if "Environment=" is not already preceded by "#"
-#find "$path" -type f -exec sed -i '/^[^#]*Environment=/s/Environment=/#Environment=/' {} +
+#find "$flowcoll_config_path" -type f -exec sed -i '/^[^#]*Environment=/s/Environment=/#Environment=/' {} +
 #echo "Replacement complete."
 #############ONLY USE THIS IF YOU WANT TO CONFIGURE EVERYTHING WITH FLOWCOLL.YML. Also, it's buggy for some reason
 
