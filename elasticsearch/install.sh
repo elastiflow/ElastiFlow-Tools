@@ -1,9 +1,12 @@
 #!/bin/bash
 
-elastiflow_version="6.4.2"
-flowcoll_config_path="/etc/systemd/system/flowcoll.service.d/flowcoll.conf"
 account_id=""
 flow_license_key=""
+
+
+elastiflow_version="6.4.2"
+flowcoll_config_path="/etc/systemd/system/flowcoll.service.d/flowcoll.conf"
+
 
 # Function to handle errors
 handle_error() {
@@ -35,44 +38,6 @@ replace_text() {
 }
 
 
-
-
-prompt_credentials() {
-    printf 'Please have your Account ID and Flow License Key handy.'
-    printf 'If you do not have one, you can sign up here: https://elastiflow.com/get-started'
-    # Prompt for Account ID with validation for non-empty input
-    while true; do
-        read -p "Please paste your Account ID: " account_id
-        if [[ -z "$account_id" ]]; then
-            echo "The Account ID cannot be blank. Please enter a valid Account ID."
-        else
-            break
-        fi
-    done
-
-    # Prompt for Flow License Key with validation for non-empty input
-    while true; do
-        read -p "Please paste your Flow License Key: " flow_license_key
-        if [[ -z "$flow_license_key" ]]; then
-            echo "The Flow License Key cannot be blank. Please enter a valid Flow License Key."
-        else
-            break
-        fi
-    done
-}
-
-
-
-enter_credentials() {
-  
-    if [[ "$account_id" == "1" && "$flow_license_key" == "1" ]]; then
-        replace_text "$flowcoll_config_path" 'Environment="EF_LICENSE_ACCEPTED=false"' 'Environment="EF_LICENSE_ACCEPTED=true"' "${LINENO}"
-    else
-        replace_text "$flowcoll_config_path" 'Environment="EF_LICENSE_ACCEPTED=false"' 'Environment="EF_LICENSE_ACCEPTED=true"' "${LINENO}"
-        replace_text "$flowcoll_config_path" '#Environment="EF_ACCOUNT_ID="' "Environment=\"EF_ACCOUNT_ID=$account_id\"" "${LINENO}"
-        replace_text "$flowcoll_config_path" '#Environment="EF_FLOW_LICENSE_KEY="' "Environment=\"EF_FLOW_LICENSE_KEY=$flow_license_key\"" "${LINENO}"
-    fi
-}
 
 
 if [ "$(id -u)" -ne 0 ]; then
@@ -249,11 +214,9 @@ elastic_password="elastic"
 printf "\n\n\n*********Configuring ElastiFlow Flow Collector...\n\n" 
 
 
-prompt_credentials
-enter_credentials
-
-
-#replace_text "$flowcoll_config_path" 'Environment="EF_LICENSE_ACCEPTED=false"' 'Environment="EF_LICENSE_ACCEPTED=true"' "${LINENO}"
+replace_text "$flowcoll_config_path" 'Environment="EF_LICENSE_ACCEPTED=false"' 'Environment="EF_LICENSE_ACCEPTED=true"' "${LINENO}"
+replace_text "$flowcoll_config_path" '#Environment="EF_ACCOUNT_ID="' "Environment=\"EF_ACCOUNT_ID=$account_id\"" "${LINENO}"
+replace_text "$flowcoll_config_path" '#Environment="EF_FLOW_LICENSE_KEY="' "Environment=\"EF_FLOW_LICENSE_KEY=$flow_license_key\"" "${LINENO}"
 replace_text "$flowcoll_config_path" 'Environment="EF_OUTPUT_ELASTICSEARCH_ENABLE=false"' 'Environment="EF_OUTPUT_ELASTICSEARCH_ENABLE=true"' "${LINENO}"
 replace_text "$flowcoll_config_path" 'Environment="EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE=false"' 'Environment="EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE=true"' "${LINENO}"
 replace_text "$flowcoll_config_path" 'Environment="EF_OUTPUT_ELASTICSEARCH_PASSWORD=changeme"' "Environment=\"EF_OUTPUT_ELASTICSEARCH_PASSWORD=$elastic_password\"" "${LINENO}"
