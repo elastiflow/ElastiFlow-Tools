@@ -1,6 +1,7 @@
 #!/bin/bash
 
-##############
+########################################################
+
 # If you do not have an account id and flow license key, 
 # go here please: https://elastiflow.com/get-started
 # Paste these values on the corresponding line, between the quotes
@@ -8,7 +9,9 @@
 account_id=""
 flow_license_key=""
 
-##############
+########################################################
+
+
 
 elastiflow_version="6.4.2"
 flowcoll_config_path="/etc/systemd/system/flowcoll.service.d/flowcoll.conf"
