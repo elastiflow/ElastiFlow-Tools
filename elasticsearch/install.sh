@@ -2,6 +2,8 @@
 
 elastiflow_version="6.4.2"
 flowcoll_config_path="/etc/systemd/system/flowcoll.service.d/flowcoll.conf"
+account_id=""
+flow_license_key=""
 
 # Function to handle errors
 handle_error() {
@@ -57,17 +59,12 @@ prompt_credentials() {
             break
         fi
     done
-
-    # Call the check_credentials function with the entered credentials
-    enter_credentials "$account_id" "$flow_license_key"
 }
 
 
 
 enter_credentials() {
-    account_id="$1"
-    flow_license_key="$2"
-    
+  
     if [[ "$account_id" == "1" && "$flow_license_key" == "1" ]]; then
         replace_text "$flowcoll_config_path" 'Environment="EF_LICENSE_ACCEPTED=false"' 'Environment="EF_LICENSE_ACCEPTED=true"' "${LINENO}"
     else
@@ -253,6 +250,8 @@ printf "\n\n\n*********Configuring ElastiFlow Flow Collector...\n\n"
 
 
 prompt_credentials
+enter_credentials
+
 
 #replace_text "$flowcoll_config_path" 'Environment="EF_LICENSE_ACCEPTED=false"' 'Environment="EF_LICENSE_ACCEPTED=true"' "${LINENO}"
 replace_text "$flowcoll_config_path" 'Environment="EF_OUTPUT_ELASTICSEARCH_ENABLE=false"' 'Environment="EF_OUTPUT_ELASTICSEARCH_ENABLE=true"' "${LINENO}"
