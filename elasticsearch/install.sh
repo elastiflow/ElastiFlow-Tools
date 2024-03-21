@@ -2,12 +2,12 @@
 
 ########################################################
 
-# If you do not have an account id and flow license key, 
-# go here please: https://elastiflow.com/get-started
+# If you do not have an ElastiFlow Account ID and ElastiFlow Flow License Key, 
+# please go here: https://elastiflow.com/get-started
 # Paste these values on the corresponding line, between the quotes
 
-account_id=""
-flow_license_key=""
+elastiflow_account_id=""
+elastiflow_flow_license_key=""
 
 ########################################################
 
@@ -224,8 +224,8 @@ printf "\n\n\n*********Configuring ElastiFlow Flow Collector...\n\n"
 
 
 replace_text "$flowcoll_config_path" 'Environment="EF_LICENSE_ACCEPTED=false"' 'Environment="EF_LICENSE_ACCEPTED=true"' "${LINENO}"
-replace_text "$flowcoll_config_path" '#Environment="EF_ACCOUNT_ID="' "Environment=\"EF_ACCOUNT_ID=$account_id\"" "${LINENO}"
-replace_text "$flowcoll_config_path" '#Environment="EF_FLOW_LICENSE_KEY="' "Environment=\"EF_FLOW_LICENSE_KEY=$flow_license_key\"" "${LINENO}"
+replace_text "$flowcoll_config_path" '#Environment="EF_ACCOUNT_ID="' "Environment=\"EF_ACCOUNT_ID=$elastiflow_account_id\"" "${LINENO}"
+replace_text "$flowcoll_config_path" '#Environment="EF_FLOW_LICENSE_KEY="' "Environment=\"EF_FLOW_LICENSE_KEY=$elastiflow_flow_license_key\"" "${LINENO}"
 replace_text "$flowcoll_config_path" 'Environment="EF_OUTPUT_ELASTICSEARCH_ENABLE=false"' 'Environment="EF_OUTPUT_ELASTICSEARCH_ENABLE=true"' "${LINENO}"
 replace_text "$flowcoll_config_path" 'Environment="EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE=false"' 'Environment="EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE=true"' "${LINENO}"
 replace_text "$flowcoll_config_path" 'Environment="EF_OUTPUT_ELASTICSEARCH_PASSWORD=changeme"' "Environment=\"EF_OUTPUT_ELASTICSEARCH_PASSWORD=$elastic_password\"" "${LINENO}"
