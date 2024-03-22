@@ -66,7 +66,7 @@ done
   /usr/share/elasticsearch/bin/elasticsearch -version
  
   echo "Kibana Version:"
-  /usr/share/kibana/bin/kibana -version -allow-root
+  /usr/share/kibana/bin/kibana -version
   
   echo "Running Processes:"
   ps -aux
