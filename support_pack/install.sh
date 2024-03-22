@@ -1,59 +1,68 @@
-
 #!/bin/bash
 
-# Setup the date format for the filename
+# Define the current date and time format
 current_date=$(date +"%Y-%m-%d_%H%M%S")
 
-# Define the destination filename
-destination_file="Elastiflow_Support_Pack_$current_date.tar.gz"
-
-# Define the log file name
-log_file="script_execution_log.txt"
+# Define the archive name and the log file name
+archive_name="Elastiflow_Support_Pack_$current_date.tar.gz"
+log_file="script_execution_$current_date.log"
 
 # Start logging
-echo "Starting the execution of the script at $(date)" > "$log_file"
-echo "Attempting to copy and archive the following files:" >> "$log_file"
+exec > >(tee "$log_file") 2>&1
 
-# Files to be copied and archived
-files=(
+# List of directories and files to archive
+items_to_archive=(
+  "/etc/elastiflow"
+  "/etc/kibana/kibana.yml"
+  "/var/log/kibana/kibana.log"
+  "/etc/elastic/elastic.yml"
+  "/var/log/elastic/elastic.log"
   "/etc/systemd/system/flowcoll.service.d/flowcoll.conf"
-  "/etc/elastiflow/flowcoll.yml"
   "/etc/systemd/system/flowcoll.service"
-  "/var/log/elastiflow/flowcoll/flowcoll.log"
+  "/var/log/flowcoll/flowcoll.log"
   "/etc/systemd/system/snmpcoll.service.d/snmpcoll.conf"
-  "/etc/elastiflow/snmpcoll.yml"
   "/etc/systemd/system/snmpcoll.service"
-  "/var/log/elastiflow/snmpcoll/snmpcoll.log"
+  "/var/log/snmpcoll/snmpcoll.log"
 )
 
-# Create a temporary directory for the files
+# Temporary directory for files that exist
 temp_dir=$(mktemp -d)
 
-# Copy files to the temporary directory if they exist
-for file in "${files[@]}"; do
-  if [ -f "$file" ]; then
-    echo "Copying: $file" >> "$log_file"
-    cp --parents "$file" "$temp_dir"
+# Check each item and copy it to the temp directory if it exists
+for item in "${items_to_archive[@]}"; do
+  if [ -e "$item" ]; then
+    # Use --parents to preserve directory structure
+    cp -a --parents "$item" "$temp_dir"
   else
-    echo "File does not exist, skipping: $file" >> "$log_file"
+    echo "Warning: $item does not exist and will be skipped."
   fi
 done
 
-# Move the log file to the temporary directory
-mv "$log_file" "$temp_dir"
-
-# Change to the temporary directory
+# Move to the temp directory
 cd "$temp_dir"
 
-# Create the tar.gz archive, including the log file
-tar -czf "$destination_file" *
+# Archive and compress the items
+tar -czf "$archive_name" *
 
-# Move the archive back to the original directory
-mv "$destination_file" "$OLDPWD"
+# Move the archive to the original working directory
+mv "$archive_name" "$OLDPWD"
 
-# Clean up by removing the temporary directory
+# Move back to the original directory
 cd "$OLDPWD"
+
+# Cleanup the temporary directory
 rm -rf "$temp_dir"
 
-echo "Elastiflow support pack created: $destination_file"
-echo "Log of the execution is included in the archive."
+# Count the number of files archived
+num_files=$(tar -tzf "$archive_name" | wc -l)
+
+# Display the details
+echo "Number of files archived: $num_files"
+echo "Full path of the archive: $(pwd)/$archive_name"
+
+# Append the log details to the log file
+echo "Number of files archived: $num_files" >> "$log_file"
+echo "Full path of the archive: $(pwd)/$archive_name" >> "$log_file"
+
+# Final message
+echo "Elastiflow support pack created: $archive_name"
