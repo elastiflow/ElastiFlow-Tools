@@ -66,7 +66,7 @@ echo "Archive created: $archive_name"
 files_count=$(tar -tzf $archive_name | wc -l)
 echo "Number of files archived: $files_count"
 full_path=$(realpath $archive_name)
-echo -e "\033[31mSend this to ElastiFlow: $full_path\033[0m"
+echo -e "\033[32mSend this to ElastiFlow: $full_path\033[0
 
 # Clean up
 echo "Cleaning up..."
