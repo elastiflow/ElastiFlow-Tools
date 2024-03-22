@@ -2,7 +2,10 @@
 
 # Setup
 current_time=$(date "+%Y%m%d%H%M%S")
-archive_name="Elastiflow_Support_Pack_$current_time.tar.gz"
+
+hostname=$(hostname)
+archive_name="elastiflow_support_pack_${hostname}_$current_time.tar.gz"
+
 log_file="script_execution.log"
 system_info_file="system.txt"
 temp_dir="temp_elastiflow_$current_time"
