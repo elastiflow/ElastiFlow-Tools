@@ -20,7 +20,12 @@ echo "Starting script execution at $(date)"
 
 # Array of paths to copy
 declare -a paths=(
+#dir
 "/etc/elastiflow"
+#dir
+"/etc/sysctl.d"
+#files
+"/etc/sysctl.conf"
 "/etc/kibana/kibana.yml"
 "/var/log/kibana/kibana.log"
 "/etc/elasticsearch/elasticsearch.yml"
