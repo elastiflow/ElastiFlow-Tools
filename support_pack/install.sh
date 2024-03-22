@@ -66,4 +66,4 @@ echo "Number of files archived: $num_files" >> "$log_file"
 echo "Full path of the archive: $(pwd)/$archive_name" >> "$log_file"
 
 # Final message
-echo "Elastiflow support pack created"
+echo "ElastiFlow support pack created"
