@@ -29,7 +29,6 @@ declare -a paths=(
 
 "/etc/kibana/kibana.yml"
 "/var/log/kibana/kibana.log"
-"/etc/systemd/system/kibana.service.d/kibana.conf"
 
 "/etc/elasticsearch/elasticsearch.yml"
 "/etc/systemd/system/elasticsearch.service.d/elasticsearch.conf"
