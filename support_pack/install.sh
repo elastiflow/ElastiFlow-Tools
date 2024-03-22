@@ -53,24 +53,34 @@ done
 # Capture system information
 {
   echo "Date and Time: $(date)"
+  
   echo "Operating System Version:"
   uname -a
+  
   echo "ElastiFlow Version:"
   /usr/share/elastiflow/bin/flowcoll -version 2>/dev/null || echo "ElastiFlow version information not available"
+  
   echo "SNMP Collector Version:"
   /usr/share/elastiflow/bin/snmpcoll -version 2>/dev/null || echo "SNMP Collector version information not available"
+ 
   echo "Elasticsearch Version:"
   /usr/share/elasticsearch/bin/elasticsearch -version
+ 
   echo "Kibana Version:"
   /usr/share/kibana/bin/kibana -version
+  
   echo "Running Processes:"
   ps -aux
+  
   echo "Services:"
   systemctl list-unit-files --type=service | grep enabled
+  
   echo "Network Configuration:"
   ip addr
+  
   echo "Disk Space Usage:"
   df -h
+  
   echo "Memory Usage:"
   free -m
 } > "$temp_dir/$system_info_file"
