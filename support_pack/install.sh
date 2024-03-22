@@ -11,7 +11,9 @@ temp_dir="temp_elastiflow_$current_time"
 mkdir -p $temp_dir
 
 # Initialize log file
-exec &> >(tee -a "$temp_dir/$log_file") # Capture all output to log file
+exec 3>&1 4>&2
+trap 'exec 2>&4 1>&3' 0 1 2 3
+exec 1>"$temp_dir/$log_file" 2>&1 # Capture all output to log file
 
 echo "Starting script execution at $(date)"
 
@@ -63,6 +65,10 @@ echo "Creating archive..."
 tar -czf $archive_name -C $temp_dir . 2>/dev/null
 echo "Archive created: $archive_name"
 
+# Calculate the size of the archive
+archive_size=$(du -sh $archive_name | cut -f1)
+echo "Archive size: $archive_size"
+
 # Output final details
 files_count=$(tar -tzf $archive_name | wc -l)
 echo "Number of files archived: $files_count"
@@ -72,5 +78,7 @@ echo "Full path of the archive: $full_path"
 # Clean up
 echo "Cleaning up..."
 rm -rf $temp_dir
+# Ensure script execution log file is also deleted after being archived
+rm -f "$temp_dir/$log_file"
 
-echo "Done."
+echo "Script execution completed."
