@@ -1,15 +1,21 @@
 #!/bin/bash
 
-# Prepare environment
+# Setup
 current_time=$(date "+%Y%m%d%H%M%S")
 archive_name="Elastiflow_Support_Pack_$current_time.tar.gz"
 log_file="script_execution.log"
 system_info_file="system.txt"
+temp_dir="temp_elastiflow_$current_time"
+
+# Create temporary directory
+mkdir -p $temp_dir
 
 # Initialize log file
-echo "Starting script execution at $(date)" > $log_file
+exec &> >(tee -a "$temp_dir/$log_file") # Capture all output to log file
 
-# Array of directories and files to copy
+echo "Starting script execution at $(date)"
+
+# Array of paths to copy
 declare -a paths=(
 "/etc/elastiflow"
 "/etc/kibana/kibana.yml"
@@ -24,16 +30,22 @@ declare -a paths=(
 "/var/log/elastiflow/snmpcoll/snmpcoll.log"
 )
 
-# Copy directories and files using a for loop
-echo "Copying directories and files..." | tee -a $log_file
+# Copy files to temporary directory
+echo "Copying directories and files..."
 for path in "${paths[@]}"; do
-    cp -r $path . 2>>$log_file || echo "$path not found, skipping..." >> $log_file
+    cp -r $path $temp_dir 2>/dev/null || echo "$path not found, skipping..."
 done
 
 # Capture system information
-echo "Capturing system information..." | tee -a $log_file
+echo "Capturing system information..."
 {
   echo "Date and Time: $(date)"
+  echo "Operating System Version:"
+  uname -a
+  echo "ElastiFlow Version:"
+  /usr/share/elastiflow/bin/flowcoll -version 2>/dev/null || echo "ElastiFlow version information not available"
+  echo "SNMP Collector Version:"
+  /usr/share/elastiflow/bin/snmpcoll -version 2>/dev/null || echo "SNMP Collector version information not available"
   echo "Running Processes:"
   ps -aux
   echo "Services:"
@@ -44,19 +56,21 @@ echo "Capturing system information..." | tee -a $log_file
   df -h
   echo "Memory Usage:"
   free -m
-} > $system_info_file
+} > "$temp_dir/$system_info_file"
 
 # Create the archive
-echo "Creating archive..." | tee -a $log_file
-tar -czf $archive_name . --exclude=$archive_name --exclude=$log_file 2>>$log_file
-echo "Archive created: $archive_name" | tee -a $log_file
-
-# Append the archive creation to log and include the log into the archive
-echo "Finalizing archive with log file..." >> $log_file
-tar -rzf $archive_name $log_file --remove-files 2>>$log_file
+echo "Creating archive..."
+tar -czf $archive_name -C $temp_dir . 2>/dev/null
+echo "Archive created: $archive_name"
 
 # Output final details
 files_count=$(tar -tzf $archive_name | wc -l)
-echo "Number of files archived: $files_count" | tee -a $log_file
+echo "Number of files archived: $files_count"
 full_path=$(realpath $archive_name)
-echo "Full path of the archive: $full_path" | tee -a $log_file
+echo "Full path of the archive: $full_path"
+
+# Clean up
+echo "Cleaning up..."
+rm -rf $temp_dir
+
+echo "Script execution completed."
