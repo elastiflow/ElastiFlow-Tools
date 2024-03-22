@@ -4,7 +4,7 @@
 current_date=$(date +"%Y-%m-%d_%H%M%S")
 
 # Define the archive name and the log file name
-archive_name="Elastiflow_Support_Pack_$current_date.tar.gz"
+archive_name="elastiflow_support_pack_$current_date.tar.gz"
 log_file="script_execution_$current_date.log"
 
 # Start logging
@@ -14,15 +14,16 @@ exec > >(tee "$log_file") 2>&1
 items_to_archive=(
   "/etc/elastiflow"
   "/etc/kibana/kibana.yml"
-  "/var/log/kibana/kibana.log"
-  "/etc/elastic/elastic.yml"
-  "/var/log/elastic/elastic.log"
+  "/etc/elasticsearch/elasticsearch.yml"
   "/etc/systemd/system/flowcoll.service.d/flowcoll.conf"
   "/etc/systemd/system/flowcoll.service"
-  "/var/log/flowcoll/flowcoll.log"
   "/etc/systemd/system/snmpcoll.service.d/snmpcoll.conf"
   "/etc/systemd/system/snmpcoll.service"
-  "/var/log/snmpcoll/snmpcoll.log"
+  "/var/log/elastiflow/flowcoll/flowcoll.log"
+  "/var/log/elastiflow/snmpcoll/snmpcoll.log"
+  "/var/log/elasticsearch/elasticsearch.log"
+  "/var/log/kibana/kibana.log"
+
 )
 
 # Temporary directory for files that exist
@@ -65,4 +66,4 @@ echo "Number of files archived: $num_files" >> "$log_file"
 echo "Full path of the archive: $(pwd)/$archive_name" >> "$log_file"
 
 # Final message
-echo "Elastiflow support pack created: $archive_name"
+echo "Elastiflow support pack created"
