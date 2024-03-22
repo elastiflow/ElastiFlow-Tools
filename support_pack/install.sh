@@ -73,4 +73,4 @@ echo "Full path of the archive: $full_path"
 echo "Cleaning up..."
 rm -rf $temp_dir
 
-echo "Script execution completed."
+echo "Done."
