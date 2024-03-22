@@ -1,4 +1,4 @@
-write me a shell script that copies the following files and directories to the current directory and compress them into a file called Elastiflow_Support_Pack_Date.tar.gz where date is the current date and time. If any of the files do not exist, continue executing. leave a log file of the execution of the shell script in the archive. write out how many files were archived and the full path of the archive.
+Write me a shell script that copies the following files and directories to the current directory and compress them into a file called Elastiflow_Support_Pack_Date.tar.gz where date is the current date and time. If any of the files do not exist, continue executing. Also capture the running processes, services, and resource utilization, network configuration, free disk space, and free memory to a file called system.txt. leave a log file of the execution of the shell script in the archive. Write out how many files were archived and the full path of the archive.
 
 this entire directory:
 /etc/elastiflow
