@@ -26,13 +26,19 @@ declare -a paths=(
 "/etc/sysctl.d"
 #files
 "/etc/sysctl.conf"
+
 "/etc/kibana/kibana.yml"
 "/var/log/kibana/kibana.log"
+"/etc/systemd/system/kibana.service.d/kibana.conf"
+
 "/etc/elasticsearch/elasticsearch.yml"
+"/etc/systemd/system/elasticsearch.service.d/elasticsearch.conf"
 "/var/log/elasticsearch/elasticsearch.log"
+
 "/etc/systemd/system/flowcoll.service.d/flowcoll.conf"
 "/etc/systemd/system/flowcoll.service"
 "/var/log/elastiflow/flowcoll/flowcoll.log"
+
 "/etc/systemd/system/snmpcoll.service.d/snmpcoll.conf"
 "/etc/systemd/system/snmpcoll.service"
 "/var/log/elastiflow/snmpcoll/snmpcoll.log"
@@ -53,6 +59,10 @@ done
   /usr/share/elastiflow/bin/flowcoll -version 2>/dev/null || echo "ElastiFlow version information not available"
   echo "SNMP Collector Version:"
   /usr/share/elastiflow/bin/snmpcoll -version 2>/dev/null || echo "SNMP Collector version information not available"
+  echo "Elasticsearch Version:"
+  /usr/share/elasticsearch/bin/elasticsearch -version
+  echo "Kibana Version:"
+  /usr/share/kibana/bin/kibana -version
   echo "Running Processes:"
   ps -aux
   echo "Services:"
