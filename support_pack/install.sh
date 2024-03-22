@@ -9,19 +9,26 @@ system_info_file="system.txt"
 # Initialize log file
 echo "Starting script execution at $(date)" > $log_file
 
-# Copy directories and files
+# Array of directories and files to copy
+declare -a paths=(
+"/etc/elastiflow"
+"/etc/kibana/kibana.yml"
+"/var/log/kibana/kibana.log"
+"/etc/elasticsearch/elasticsearch.yml"
+"/var/log/elasticsearch/elasticsearch.log"
+"/etc/systemd/system/flowcoll.service.d/flowcoll.conf"
+"/etc/systemd/system/flowcoll.service"
+"/var/log/elastiflow/flowcoll/flowcoll.log"
+"/etc/systemd/system/snmpcoll.service.d/snmpcoll.conf"
+"/etc/systemd/system/snmpcoll.service"
+"/var/log/elastiflow/snmpcoll/snmpcoll.log"
+)
+
+# Copy directories and files using a for loop
 echo "Copying directories and files..." | tee -a $log_file
-cp -r /etc/elastiflow . 2>>$log_file || echo "/etc/elastiflow not found, skipping..." >> $log_file
-cp /etc/kibana/kibana.yml . 2>>$log_file || echo "/etc/kibana/kibana.yml not found, skipping..." >> $log_file
-cp /var/log/kibana/kibana.log . 2>>$log_file || echo "/var/log/kibana/kibana.log not found, skipping..." >> $log_file
-cp /etc/elasticsearch/elasticsearch.yml . 2>>$log_file || echo "/etc/elasticsearch/elasticsearch.yml not found, skipping..." >> $log_file
-cp /var/log/elasticsearch/elasticsearch.log . 2>>$log_file || echo "/var/log/elasticsearch/elasticsearch.log not found, skipping..." >> $log_file
-cp /etc/systemd/system/flowcoll.service.d/flowcoll.conf . 2>>$log_file || echo "/etc/systemd/system/flowcoll.service.d/flowcoll.conf not found, skipping..." >> $log_file
-cp /etc/systemd/system/flowcoll.service . 2>>$log_file || echo "/etc/systemd/system/flowcoll.service not found, skipping..." >> $log_file
-cp /var/log/elastiflow/flowcoll/flowcoll.log . 2>>$log_file || echo "/var/log/elastiflow/flowcoll/flowcoll.log not found, skipping..." >> $log_file
-cp /etc/systemd/system/snmpcoll.service.d/snmpcoll.conf . 2>>$log_file || echo "/etc/systemd/system/snmpcoll.service.d/snmpcoll.conf not found, skipping..." >> $log_file
-cp /etc/systemd/system/snmpcoll.service . 2>>$log_file || echo "/etc/systemd/system/snmpcoll.service not found, skipping..." >> $log_file
-cp /var/log/elastiflow/snmpcoll/snmpcoll.log . 2>>$log_file || echo "/var/log/elastiflow/snmpcoll/snmpcoll.log not found, skipping..." >> $log_file
+for path in "${paths[@]}"; do
+    cp -r $path . 2>>$log_file || echo "$path not found, skipping..." >> $log_file
+done
 
 # Capture system information
 echo "Capturing system information..." | tee -a $log_file
