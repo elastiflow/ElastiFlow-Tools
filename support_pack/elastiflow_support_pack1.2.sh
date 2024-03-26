@@ -16,7 +16,7 @@ mkdir -p $temp_dir
 # Initialize log file
 exec &> >(tee -a "$temp_dir/$log_file") # Capture all output to log file
 
-echo "Starting script execution at $(date)"
+echo "Starting ElastiFlow Support Pack at $(date)"
 
 # Array of paths to copy
 declare -a paths=(
