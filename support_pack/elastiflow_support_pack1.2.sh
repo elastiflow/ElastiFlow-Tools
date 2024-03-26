@@ -107,6 +107,9 @@ files_count=$(tar -tzf $archive_name | wc -l)
 echo "Number of files archived: $files_count"
 full_path=$(realpath $archive_name)
 echo -e "\033[32mSend this to ElastiFlow: $full_path\033[0m"
+# Output the archive size using ls
+archive_size=$(ls -l "$archive_name" | awk '{print $5}')
+echo "Archive size: $archive_size bytes"
 
 # Clean up
 echo "Cleaning up..."
