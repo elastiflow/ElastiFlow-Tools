@@ -69,10 +69,10 @@ done
   echo "Operating System Version:"
   uname -a
   
-  echo "ElastiFlow Version:"
+  echo "ElastiFlow Flow Collector Version:"
   /usr/share/elastiflow/bin/flowcoll -version 2>/dev/null || echo "ElastiFlow version information not available"
   
-  echo "SNMP Collector Version:"
+  echo "ElastiFlow SNMP Collector Version:"
   /usr/share/elastiflow/bin/snmpcoll -version 2>/dev/null || echo "SNMP Collector version information not available"
  
   echo "Elasticsearch Version:"
