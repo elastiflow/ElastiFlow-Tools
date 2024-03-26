@@ -27,17 +27,21 @@ declare -a paths=(
 #files
 "/etc/sysctl.conf"
 
+# Kibana config
 "/etc/kibana/kibana.yml"
 "/var/log/kibana/kibana.log"
 
+# Elasticsearch config
 "/etc/elasticsearch/elasticsearch.yml"
 "/etc/systemd/system/elasticsearch.service.d/elasticsearch.conf"
 "/var/log/elasticsearch/elasticsearch.log"
 
+# flowcoll
 "/etc/systemd/system/flowcoll.service.d/flowcoll.conf"
 "/etc/systemd/system/flowcoll.service"
 "/var/log/elastiflow/flowcoll/flowcoll.log"
 
+# snmpcoll
 "/etc/systemd/system/snmpcoll.service.d/snmpcoll.conf"
 "/etc/systemd/system/snmpcoll.service"
 "/var/log/elastiflow/snmpcoll/snmpcoll.log"
@@ -47,16 +51,23 @@ declare -a paths=(
 echo "Copying directories and files..."
 for path in "${paths[@]}"; do
     if [[ -d $path ]]; then
-        # It's a directory, copy everything
-        cp -r $path $temp_dir 2>/dev/null || echo "$path not found, skipping..."
+        # It's a directory, check its size first
+        dir_size=$(du -sm "$path" | cut -f1) # Get size in MB
+        if [[ $dir_size -gt 50 ]]; then
+            echo "$path is larger than 50MB, skipping..."
+            continue # Skip this directory
+        fi
+
+        # If the directory is not larger than 50MB, copy everything
+        cp -r "$path" "$temp_dir" 2>/dev/null || echo "$path not found, skipping..."
     else
         # It's a file, check if it's a log file by its path
         if [[ $path == *.log ]]; then
             # It's a log file, copy only the first 1 MB
-            dd if="$path" of="$temp_dir/$(basename $path)" bs=1M count=1 2>/dev/null || echo "$path not found, skipping..."
+            dd if="$path" of="$temp_dir/$(basename "$path")" bs=1M count=1 2>/dev/null || echo "$path not found, skipping..."
         else
             # Not a log file, copy normally
-            cp $path $temp_dir 2>/dev/null || echo "$path not found, skipping..."
+            cp "$path" "$temp_dir" 2>/dev/null || echo "$path not found, skipping..."
         fi
     fi
 done
