@@ -123,6 +123,15 @@ prompt_credentials_and_fetch() {
         fi
 
         read -t 10 -p "Attempt failed. Do you want to retry? (y/n): " retry
+       if [[ $? -gt 128 ]]; then
+            echo -e "\nTimeout reached. Continuing with the rest of the script."
+            return 1
+        elif [[ $retry =~ ^[Nn]$ ]]; then
+            echo "User chose not to retry. Continuing with the rest of the script."
+            return 1
+        fi
+    done  
+}
 
 
 
