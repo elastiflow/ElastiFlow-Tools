@@ -124,8 +124,17 @@ for path in "${paths[@]}"; do
     else
         # It's a file, check if it's a log file by its path
         if [[ $path == *.log ]]; then
-            # It's a log file, copy only the first 1 MB
-            dd if="$path" of="$temp_dir/$(basename "$path")" bs=1M count=1 2>/dev/null || echo "$path not found, skipping..."
+            # It's a log file, copy only the last 1 MB
+            file_size_bytes=$(stat -c%s "$path") # Get the file size in bytes
+            let skip_blocks=($file_size_bytes - 1048576) / 1048576 # Calculate blocks to skip; 1 MB = 1048576 bytes
+            
+            if [ $skip_blocks -gt 0 ]; then
+                dd if="$path" of="$temp_dir/$(basename "$path")" bs=1M skip=$skip_blocks 2>/dev/null || echo "$path not found, skipping..."
+            else
+                # If the file is less than 1 MB, copy the entire file
+                dd if="$path" of="$temp_dir/$(basename "$path")" bs=1M 2>/dev/null || echo "$path not found, skipping..."
+            fi    
+        
         else
             # Not a log file, copy normally
             cp "$path" "$temp_dir" 2>/dev/null || echo "$path not found, skipping..."
