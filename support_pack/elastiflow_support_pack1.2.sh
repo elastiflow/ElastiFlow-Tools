@@ -16,7 +16,68 @@ mkdir -p $temp_dir
 # Initialize log file
 exec &> >(tee -a "$temp_dir/$log_file") # Capture all output to log file
 
+check_port_9200_usage() {
+    if nc -z localhost 9200; then
+        echo "Port 9200 is in use."
+        return 1
+    else
+        echo "Port 9200 is not in use. Elasticsearch might not be running."
+        return 0
+    fi
+}
+
+attempt_fetch() {
+    local ip=$1
+    local username=$2
+    local password=$3
+
+    # Attempt to fetch node stats
+    response=$(curl -sk -u "$username:$password" "https://$ip:9200/_nodes/stats/indices?pretty")
+
+    echo "$response" | grep "cluster_name" &> /dev/null
+    if [ $? -eq 0 ]; then
+        echo "Successfully fetched node stats."
+        echo "$response" > $tempdir/node_stats.txt # Save the successful response to "node_stats.txt"
+        return 0
+    else
+        echo "Failed to fetch node stats."
+        return 1
+    fi
+}
+
+prompt_credentials_and_fetch() {
+    read -p "Would you like to obtain node stats? (y/n): " confirm
+    if [[ $confirm =~ ^[Nn]$ ]]; then
+        echo "User chose not to obtain node stats. Continuing with the rest of the script."
+        return 0
+    fi
+
+    while true; do
+        read -p "Enter Elasticsearch IP address or host (localhost by default): " ip
+        ip=${ip:-localhost}
+
+        read -p "Enter your Elasticsearch username: " username
+        read -s -p "Enter your Elasticsearch password: " password
+        echo
+
+        if attempt_fetch "$ip" "$username" "$password"; then
+            return 0
+        fi
+
+        read -t 10 -p "Attempt failed. Do you want to retry? (y/n): " retry
+       if [[ $? -gt 128 ]]; then
+            echo -e "\nTimeout reached. Continuing with the rest of the script."
+            return 1
+        elif [[ $retry =~ ^[Nn]$ ]]; then
+            echo "User chose not to retry. Continuing with the rest of the script."
+            return 1
+        fi
+    done  
+}
+
+
 echo "Starting ElastiFlow Support Pack at $(date)"
+
 
 # Array of paths to copy
 declare -a paths=(
@@ -73,65 +134,19 @@ for path in "${paths[@]}"; do
 done
 
 
-#obtain node stats...
 
-# Check if port 9200 is in use
-if ! nc -z localhost 9200; then
-    echo "Port 9200 is not in use. Elasticsearch might not be running. Exiting."
+####obtain node stats...
+check_port_9200_usage
+port_usage=$?
+
+if [ $port_usage -eq 1 ]; then
+    echo "Proceeding since port 9200 is in use."
+    prompt_credentials_and_fetch
+else
+    echo "Exiting since Elasticsearch might not be running."
     exit 1
 fi
 
-echo "Elasticsearch Detected"
-
-
-attempt_fetch() {
-    local ip=$1
-    local username=$2
-    local password=$3
-
-    # Attempt to fetch node stats
-    response=$(curl -sk -u "$username:$password" "https://$ip:9200/_nodes/stats/indices?pretty")
-
-    echo "$response" | grep "cluster_name" &> /dev/null
-    if [ $? -eq 0 ]; then
-        echo "Successfully fetched node stats."
-        echo "$response" > $tempdir/node_stats.txt # Save the successful response to "node_stats.txt"
-        return 0
-    else
-        echo "Failed to fetch node stats."
-        return 1
-    fi
-}
-
-prompt_credentials_and_fetch() {
-    read -p "Would you like to obtain node stats? (y/n): " confirm
-    if [[ $confirm =~ ^[Nn]$ ]]; then
-        echo "User chose not to obtain node stats. Continuing with the rest of the script."
-        return 0
-    fi
-
-    while true; do
-        read -p "Enter Elasticsearch IP address or host (localhost by default): " ip
-        ip=${ip:-localhost}
-
-        read -p "Enter your Elasticsearch username: " username
-        read -s -p "Enter your Elasticsearch password: " password
-        echo
-
-        if attempt_fetch "$ip" "$username" "$password"; then
-            return 0
-        fi
-
-        read -t 10 -p "Attempt failed. Do you want to retry? (y/n): " retry
-       if [[ $? -gt 128 ]]; then
-            echo -e "\nTimeout reached. Continuing with the rest of the script."
-            return 1
-        elif [[ $retry =~ ^[Nn]$ ]]; then
-            echo "User chose not to retry. Continuing with the rest of the script."
-            return 1
-        fi
-    done  
-}
 
 
 
