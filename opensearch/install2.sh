@@ -66,7 +66,7 @@ curl -o- https://artifacts.opensearch.org/publickeys/opensearch.pgp |  gpg --dea
 echo "deb [signed-by=/usr/share/keyrings/opensearch-keyring] https://artifacts.opensearch.org/releases/bundle/opensearch/2.x/apt stable main" |  tee /etc/apt/sources.list.d/opensearch-2.x.list
 
 #Verify that the repository was created successfully. #Unless otherwise indicated, the latest available version of OpenSearch is installed.
- apt-get update &&  apt-get -y install opensearch
+apt-get update &&  apt-get -y install opensearch
 
 #With the repository information added, list all available versions of OpenSearch:
 # apt list -a opensearch
