@@ -123,8 +123,10 @@ for path in "${paths[@]}"; do
     else
         # It's a file, check if it's a log file by its path
         if [[ $path == *.log ]]; then
-            # It's a log file, copy only the first 1 MB
-            dd if="$path" of="$temp_dir/$(basename "$path")" bs=1M count=1 2>/dev/null || echo "$path not found, skipping..."
+            # It's a log file, copy only the last 1 MB
+        #   dd if="$path" of="$temp_dir/$(basename "$path")" bs=1M count=1 2>/dev/null || echo "$path not found, skipping..."
+            tail -c $(( 1024*1024 )) $path > "$temp_dir/$(basename "$path")"
+            
         else
             # Not a log file, copy normally
             cp "$path" "$temp_dir" 2>/dev/null || echo "$path not found, skipping..."
