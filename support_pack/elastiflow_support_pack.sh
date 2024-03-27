@@ -1,3 +1,6 @@
+# version 1.3
+# author: O.J. Wolanyk
+
 #!/bin/bash
 
 # Setup
