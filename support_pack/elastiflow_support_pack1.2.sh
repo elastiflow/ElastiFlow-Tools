@@ -75,37 +75,60 @@ done
 
 # Capture system information
 {
+  echo "----------------------------------------------"
   echo "Date and Time: $(date)"
+  echo "----------------------------------------------"
   
+  echo "----------------------------------------------" 
   echo "Operating System Version:"
   uname -a
-  
+  echo "----------------------------------------------" 
+
+  echo "----------------------------------------------"
   echo "ElastiFlow Flow Collector Version:"
+  echo "----------------------------------------------"
   /usr/share/elastiflow/bin/flowcoll -version 2>/dev/null || echo "ElastiFlow version information not available"
   
+  echo "----------------------------------------------"
   echo "ElastiFlow SNMP Collector Version:"
+  echo "----------------------------------------------"
   /usr/share/elastiflow/bin/snmpcoll -version 2>/dev/null || echo "SNMP Collector version information not available"
  
+  echo "----------------------------------------------"
   echo "Elasticsearch Version:"
+  echo "----------------------------------------------"
   /usr/share/elasticsearch/bin/elasticsearch -version
  
+  echo "----------------------------------------------"
   echo "Kibana Version:"
+  echo "----------------------------------------------"
   /usr/share/kibana/bin/kibana -version
   
+  echo "----------------------------------------------"
   echo "Running Processes:"
+  echo "----------------------------------------------"
   ps -aux
   
+  echo "----------------------------------------------"
   echo "Services:"
+  echo "----------------------------------------------"
   systemctl list-unit-files --type=service | grep enabled
   
+  echo "----------------------------------------------"
   echo "Network Configuration:"
+  echo "----------------------------------------------"
   ip addr
   
+  echo "----------------------------------------------"
   echo "Disk Space Usage:"
+  echo "----------------------------------------------"
   df -h
   
+  echo "----------------------------------------------"
   echo "Memory Usage:"
+  echo "----------------------------------------------"
   free -m
+  
 } > "$temp_dir/$system_info_file"
 
 # Create the archive
