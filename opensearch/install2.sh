@@ -1,6 +1,7 @@
 #!/bin/bash
 
 elastiflow_version="6.4.2"
+export OPENSEARCH_INITIAL_ADMIN_PASSWORD="yourStrongPassword123!"
 
 # Function to handle errors
 handle_error() {
@@ -78,8 +79,8 @@ echo "deb [signed-by=/usr/share/keyrings/opensearch-keyring] https://artifacts.o
  systemctl enable opensearch && systemctl start opensearch
 
 #test
-#curl -X GET https://localhost:9200 -u 'admin:admin' --insecure
-#curl -X GET https://localhost:9200/_cat/plugins?v -u 'admin:admin' --insecure
+#curl -X GET https://localhost:9200 -u 'admin:"$OPENSEARCH_INITIAL_ADMIN_PASSWORD"' --insecure
+#curl -X GET https://localhost:9200/_cat/plugins?v -u 'admin:"$OPENSEARCH_INITIAL_ADMIN_PASSWORD"' --insecure
 
 printf "\n\n\n*********Configuring OpenSearch - set 0.0.0.0 as network.host\n\n"
 config_path="/etc/opensearch/opensearch.yml"
@@ -148,11 +149,11 @@ git clone https://github.com/elastiflow/elastiflow_for_opensearch.git /etc/elast
 ### for some reason, in order to push dashboards to opensearch, you have to push them as a tenant, which the steps below do.
 
 #create tenants using opensearch documented REST API
-curl -k -XPUT -H'content-type: application/json' https://admin:admin@localhost:9200/_plugins/_security/api/tenants/tenant_one -d '{"description": "tenant one"}'
-#curl -k -XPUT -H'content-type: application/json' https://admin:admin@localhost:9200/_plugins/_security/api/tenants/tenant_two -d '{"description": "tenant two"}'
+curl -k -XPUT -H'content-type: application/json' https://admin:"$OPENSEARCH_INITIAL_ADMIN_PASSWORD"@localhost:9200/_plugins/_security/api/tenants/tenant_one -d '{"description": "tenant one"}'
+#curl -k -XPUT -H'content-type: application/json' https://admin:"$OPENSEARCH_INITIAL_ADMIN_PASSWORD"@localhost:9200/_plugins/_security/api/tenants/tenant_two -d '{"description": "tenant two"}'
 
 #login to opensearch-dashboards and save the cookie.
-curl -k -XGET -u 'admin:admin' -c dashboards_cookie http://localhost:5601/api/login/
+curl -k -XGET -u 'admin:"$OPENSEARCH_INITIAL_ADMIN_PASSWORD"' -c dashboards_cookie http://localhost:5601/api/login/
 curl -k -XGET -b dashboards_cookie http://localhost:5601/api/v1/configuration/account | jq
 
 #switch tenant. note the tenant is kept inside the cookie so we need to save it after this request
@@ -170,7 +171,7 @@ else
     printf "Not successful\n\n"
 fi
 
-printf "\n\nGo to http://host_ip:5601 (admin / admin)\n\n"
+printf "\n\nGo to http://host_ip:5601 (admin / "$OPENSEARCH_INITIAL_ADMIN_PASSWORD")\n\n"
 printf "Use \"Tenant 1\""
 
 printf "\n\n\n*********\nAll done.\n\n"
