@@ -37,21 +37,31 @@ printf "\n\n\n*********Stopping Ubuntu pop-up "Daemons using outdated libraries"
 needrestart_conf_path="/etc/needrestart/needrestart.conf"
 replace_text "$needrestart_conf_path" "#\$nrconf{restart} = 'i';" "\$nrconf{restart} = 'a';" "${LINENO}"
 
-printf "\n\n\n*********Setting vm.max_map_count...\n\n"
-sysctl_file="/etc/sysctl.conf"
-max_map_count_setting="vm.max_map_count = 262144"
+printf "\n\n\n*********Configuring JVM memory usage...\n\n"
+# Get the total installed memory from /proc/meminfo in kB
+total_mem_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
 
-# Check if the setting exists in sysctl.conf
-if grep -q "^$max_map_count_setting" $sysctl_file; then
-    printf "\n\n\n*********Setting $max_map_count_setting already exists in $sysctl_file."
+# Convert the memory from kB to GB and divide by 3 to get 1/3, using bc for floating point support
+one_third_mem_gb=$(echo "$total_mem_kb / 1024 / 1024 / 3" | bc -l)
+
+# Use printf to round the floating point number to an integer
+rounded_mem_gb=$(printf "%.0f" $one_third_mem_gb)
+
+# Ensure the value does not exceed 31GB
+if [ $rounded_mem_gb -gt 31 ]; then
+    jvm_mem_gb=31
 else
-    # Add the setting to sysctl.conf
-    bash -c "echo -e \"$max_map_count_setting\" >> $sysctl_file"
-    echo "Setting $max_map_count_setting added to $sysctl_file."
-    # Apply the changes
-    sysctl -p
-    printf "\n\n\n*********Changes applied using sysctl vm.max_map_count = 262144\n\n"
+    jvm_mem_gb=$rounded_mem_gb
 fi
+
+# Prepare the JVM options string with the calculated memory size
+jvm_options="-Xms${jvm_mem_gb}g\n-Xmx${jvm_mem_gb}g"
+
+# Echo the options and use tee to write to the file
+echo -e $jvm_options | tee /etc/elasticsearch/jvm.options.d/heap.options > /dev/null
+
+echo "OpenSearch JVM options set to use $jvm_mem_gb GB for both -Xms and -Xmx."
+
 
 printf "\n\n\n*********Sleeping 20 seconds to give dpkg time to clean up...\n\n"
 sleep 20s
@@ -133,6 +143,9 @@ wget -O flow-collector_"$elastiflow_version"_linux_amd64.deb https://elastiflow-
 apt-get -qq install libpcap-dev
 apt-get -qq install ./flow-collector_"$elastiflow_version"_linux_amd64.deb
 
+#Configure flowcoll service to stop after 60 seconds when asked to terminate so this does not hold up the system forever on shutdown.
+replace_text "/etc/systemd/system/flowcoll.service" "TimeoutStopSec=infinity" "TimeoutStopSec=60" "N/A"
+
 printf "\n\n\n*********Configuring ElastiFlow Flow Collector...\n\n" 
 path="/etc/systemd/system/flowcoll.service.d/flowcoll.conf"
 replace_text "$path" 'Environment="EF_LICENSE_ACCEPTED=false"' 'Environment="EF_LICENSE_ACCEPTED=true"' "${LINENO}"
@@ -141,7 +154,7 @@ replace_text "$path" 'Environment="EF_OUTPUT_OPENSEARCH_ECS_ENABLE=false"' 'Envi
 replace_text "$path" 'Environment="EF_OUTPUT_OPENSEARCH_TLS_ENABLE=false"' 'Environment="EF_OUTPUT_OPENSEARCH_TLS_ENABLE=true"' "${LINENO}"
 replace_text "$path" 'Environment="EF_OUTPUT_OPENSEARCH_TLS_SKIP_VERIFICATION=false"' 'Environment="EF_OUTPUT_OPENSEARCH_TLS_SKIP_VERIFICATION=true"' "${LINENO}"
 
- systemctl enable flowcoll.service && systemctl start flowcoll.service
+systemctl enable flowcoll.service && systemctl start flowcoll.service
 
 printf "\n\n\n*********Downloading and installing ElastiFlow flow dashboards\n\n"
 git clone https://github.com/elastiflow/elastiflow_for_opensearch.git /etc/elastiflow_for_opensearch/
