@@ -153,7 +153,7 @@ curl -k -XPUT -H'content-type: application/json' https://admin:"$OPENSEARCH_INIT
 #curl -k -XPUT -H'content-type: application/json' https://admin:"$OPENSEARCH_INITIAL_ADMIN_PASSWORD"@localhost:9200/_plugins/_security/api/tenants/tenant_two -d '{"description": "tenant two"}'
 
 #login to opensearch-dashboards and save the cookie.
-curl -k -XGET -u 'admin:"$OPENSEARCH_INITIAL_ADMIN_PASSWORD"' -c dashboards_cookie http://localhost:5601/api/login/
+curl -k -XGET -u "admin:$OPENSEARCH_INITIAL_ADMIN_PASSWORD" -c dashboards_cookie http://localhost:5601/api/login/
 curl -k -XGET -b dashboards_cookie http://localhost:5601/api/v1/configuration/account | jq
 
 #switch tenant. note the tenant is kept inside the cookie so we need to save it after this request
