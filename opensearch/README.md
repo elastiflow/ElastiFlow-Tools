@@ -27,7 +27,7 @@ One Ubuntu Server
 
 Instructions:
 ----------------
-1) Copy install.sh and install2.sh to your home directory
-2) Chmod +x on both files
+1) Copy install.sh to your home directory
+2) Chmod +x install.sh
 3) Run sudo ./install.sh
 4) When completed, access OpenSearch Dashboards at http://your_server_ip:5601, (admin / password displayed on screen). Change to "Tenant One"
