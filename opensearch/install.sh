@@ -184,6 +184,23 @@ else
     printf "Not successful\n\n"
 fi
 
+# Define the OpenSearch URL with credentials
+OPENSEARCH_URL="http://admin:\"yourStrongPassword123!\"@localhost:9200/"
+# Use curl to fetch the OpenSearch version and pipe it to jq for parsing
+VERSION=$(curl -s "$OPENSEARCH_URL" | jq -r '.version.number')
+# Output the version
+echo "OpenSearch Version: $VERSION"
+
+# Define the OpenSearch Dashboards URL
+DASHBOARDS_URL="http://localhost:5601/api/status"
+# Use curl to fetch the OpenSearch Dashboards version and pipe it to jq for parsing
+VERSION=$(curl -s "$DASHBOARDS_URL" | jq -r '.version.number')
+# Output the version
+echo "OpenSearch Dashboards Version: $VERSION"
+
+
+
+
 printf "\n\nGo to http://host_ip:5601 (admin / "$OPENSEARCH_INITIAL_ADMIN_PASSWORD")\n\n"
 printf "Use \"Tenant 1\""
 
