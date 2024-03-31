@@ -147,12 +147,16 @@ apt-get -qq install ./flow-collector_"$elastiflow_version"_linux_amd64.deb
 replace_text "/etc/systemd/system/flowcoll.service" "TimeoutStopSec=infinity" "TimeoutStopSec=60" "N/A"
 
 printf "\n\n\n*********Configuring ElastiFlow Flow Collector...\n\n" 
-path="/etc/systemd/system/flowcoll.service.d/flowcoll.conf"
+flowcoll_config_path="/etc/systemd/system/flowcoll.service.d/flowcoll.conf"
 replace_text "$path" 'Environment="EF_LICENSE_ACCEPTED=false"' 'Environment="EF_LICENSE_ACCEPTED=true"' "${LINENO}"
-replace_text "$path" 'Environment="EF_OUTPUT_OPENSEARCH_ENABLE=false"' 'Environment="EF_OUTPUT_OPENSEARCH_ENABLE=true"' "${LINENO}"
-replace_text "$path" 'Environment="EF_OUTPUT_OPENSEARCH_ECS_ENABLE=false"' 'Environment="EF_OUTPUT_OPENSEARCH_ECS_ENABLE=true"' "${LINENO}"
-replace_text "$path" 'Environment="EF_OUTPUT_OPENSEARCH_TLS_ENABLE=false"' 'Environment="EF_OUTPUT_OPENSEARCH_TLS_ENABLE=true"' "${LINENO}"
-replace_text "$path" 'Environment="EF_OUTPUT_OPENSEARCH_TLS_SKIP_VERIFICATION=false"' 'Environment="EF_OUTPUT_OPENSEARCH_TLS_SKIP_VERIFICATION=true"' "${LINENO}"
+replace_text "$flowcoll_config_path" '#Environment="EF_ACCOUNT_ID="' "Environment=\"EF_ACCOUNT_ID=$elastiflow_account_id\"" "${LINENO}"
+replace_text "$flowcoll_config_path" '#Environment="EF_FLOW_LICENSE_KEY="' "Environment=\"EF_FLOW_LICENSE_KEY=$elastiflow_flow_license_key\"" "${LINENO}"
+replace_text "$flowcoll_config_path" 'Environment="EF_OUTPUT_OPENSEARCH_ENABLE=false"' 'Environment="EF_OUTPUT_OPENSEARCH_ENABLE=true"' "${LINENO}"
+replace_text "$flowcoll_config_path" 'Environment="EF_OUTPUT_OPENSEARCH_ECS_ENABLE=false"' 'Environment="EF_OUTPUT_OPENSEARCH_ECS_ENABLE=true"' "${LINENO}"
+replace_text "$flowcoll_config_path" 'Environment="EF_OUTPUT_OPENSEARCH_TLS_ENABLE=false"' 'Environment="EF_OUTPUT_OPENSEARCH_TLS_ENABLE=true"' "${LINENO}"
+replace_text "$flowcoll_config_path" 'Environment="EF_OUTPUT_OPENSEARCH_TLS_SKIP_VERIFICATION=false"' 'Environment="EF_OUTPUT_OPENSEARCH_TLS_SKIP_VERIFICATION=true"' "${LINENO}"
+replace_text "$flowcoll_config_path" 'Environment="EF_OUTPUT_OPENSEARCH_PASSWORD=admin"' "Environment=\"EF_OUTPUT_OPENSEARCH_PASSWORD=$OPENSEARCH_INITIAL_ADMIN_PASSWORD\"" "${LINENO}"
+
 
 systemctl enable flowcoll.service && systemctl start flowcoll.service
 
