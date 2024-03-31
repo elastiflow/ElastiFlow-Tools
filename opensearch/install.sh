@@ -184,6 +184,20 @@ else
     printf "Not successful\n\n"
 fi
 
+# Get the first network interface starting with enp
+INTERFACE=$(ip -o link show | grep -o 'enp[^:]*' | head -n 1)
+
+if [ -z "$INTERFACE" ]; then
+    echo "No interface starting with 'enp' found."
+else
+    # Get the IP address of the interface
+    IP_ADDRESS=$(ip -o -4 addr show $INTERFACE | awk '{print $4}' | cut -d/ -f1)
+
+    if [ -z "$IP_ADDRESS" ]; then
+        echo "No IP address found for interface $INTERFACE."
+    fi
+fi
+
 version=$(curl -k -XGET https://admin:"yourStrongPassword123!"@localhost:9200 | jq -r '.version.number')
 printf "Installed OpenSearch Version: $version\n"
 
