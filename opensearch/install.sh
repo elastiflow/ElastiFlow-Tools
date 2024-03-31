@@ -212,7 +212,7 @@ printf "Operating System: $version\n\n"
 
 
 
-printf "\n\nGo to http://host_ip:5601 (admin / "$OPENSEARCH_INITIAL_ADMIN_PASSWORD")\n\n"
+printf "\n\nGo to http://$IP_ADDRESS:5601 (admin / "$OPENSEARCH_INITIAL_ADMIN_PASSWORD")\n\n"
 printf "Use \"Tenant 1\""
 
 printf "\n\n\n*********\nAll done.\n\n"
