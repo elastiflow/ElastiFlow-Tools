@@ -184,21 +184,17 @@ else
     printf "Not successful\n\n"
 fi
 
-# Define the OpenSearch URL with credentials
-OPENSEARCH_URL="http://admin:\"yourStrongPassword123!\"@localhost:9200/"
-# Use curl to fetch the OpenSearch version and pipe it to jq for parsing
-VERSION=$(curl -s "$OPENSEARCH_URL" | jq -r '.version.number')
-# Output the version
-echo "OpenSearch Version: $VERSION"
+version=$(curl -s http://admin:"$OPENSEARCH_INITIAL_ADMIN_PASSWORD"@localhost:9200/" | jq -r '.version.number')
+print "Installed OpenSearch Version: $version\n"
 
-# Define the OpenSearch Dashboards URL
-DASHBOARDS_URL="http://localhost:5601/api/status"
-# Use curl to fetch the OpenSearch Dashboards version and pipe it to jq for parsing
-VERSION=$(curl -s "$DASHBOARDS_URL" | jq -r '.version.number')
-# Output the version
-echo "OpenSearch Dashboards Version: $VERSION"
+version=$(curl -s http://admin:"$OPENSEARCH_INITIAL_ADMIN_PASSWORD"@localhost:5601/api/status" | jq -r '.version.number')
+print "Installed OpenSearch Dashboards Version: $version\n"
 
+version=$(/usr/share/elastiflow/bin/flowcoll -version)
+printf "Installed ElastiFlow version: $version\n"
 
+version=$(lsb_release -d | awk -F'\t' '{print $2}')
+printf "Operating System: $version\n\n"
 
 
 printf "\n\nGo to http://host_ip:5601 (admin / "$OPENSEARCH_INITIAL_ADMIN_PASSWORD")\n\n"
