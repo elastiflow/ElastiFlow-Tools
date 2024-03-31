@@ -211,8 +211,8 @@ version=$(lsb_release -d | awk -F'\t' '{print $2}')
 printf "Operating System: $version\n\n"
 
 
-
-printf "\n\nGo to http://$IP_ADDRESS:5601 (admin / "$OPENSEARCH_INITIAL_ADMIN_PASSWORD")\n\n"
-printf "Use \"Tenant 1\""
+printf "\e[5;37m\n\nGo to http://$IP_ADDRESS:5601 (admin / "$OPENSEARCH_INITIAL_ADMIN_PASSWORD")\n\n\e[0m"
+printf "Use \"Tenant 1\"\n"
+printf "Open ElastiFlow dashboard: “ElastiFlow (flow): Overview\"\n\n"
 
 printf "\n\n\n*********\nAll done.\n\n"
