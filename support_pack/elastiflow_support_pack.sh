@@ -1,7 +1,9 @@
+#!/bin/bash
+
 # version 1.5
 # author: O.J. Wolanyk
 
-#!/bin/bash
+
 
 # Setup
 current_time=$(date "+%Y%m%d%H%M%S")
@@ -15,9 +17,6 @@ temp_dir="temp_elastiflow_$current_time"
 
 # Create temporary directory
 mkdir -p $temp_dir
-
-
-#!/bin/bash
 
 # Function to get hardware information
 get_hardware_info() {
