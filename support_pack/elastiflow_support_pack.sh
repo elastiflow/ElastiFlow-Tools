@@ -1,4 +1,4 @@
-# version 1.3
+# version 1.5
 # author: O.J. Wolanyk
 
 #!/bin/bash
