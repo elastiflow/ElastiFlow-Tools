@@ -183,8 +183,8 @@ for path in "${paths[@]}"; do
             dir_size=$(( dir_size + $(stat -c '%s' "$file") / 1024 / 1024 )) # Size in MB
         done < <(find "$path" -type f -print0)
         
-        if [[ $dir_size -gt 50 ]]; then
-            echo "$path is larger than 50MB, skipping..."
+        if [[ $dir_size -gt 100 ]]; then
+            echo "$path is larger than 100MB, skipping..."
             continue # Skip this directory
         fi
 
