@@ -16,6 +16,53 @@ temp_dir="temp_elastiflow_$current_time"
 # Create temporary directory
 mkdir -p $temp_dir
 
+
+#!/bin/bash
+
+# Function to get hardware information
+get_hardware_info() {
+    # Print system information
+    echo "=== System Information ==="
+    echo "Hostname: $(hostname)"
+    echo "Kernel Version: $(uname -r)"
+    echo "Operating System: $(cat /etc/os-release | grep "PRETTY_NAME" | cut -d '"' -f 2)"
+    echo
+
+    # Print CPU information
+    echo "=== CPU Information ==="
+    lscpu
+    echo
+
+    # Print memory information
+    echo "=== Memory Information ==="
+    free -h
+    echo
+
+    # Print disk information
+    echo "=== Disk Information ==="
+    df -h
+    echo
+
+    # Print PCI devices information
+    echo "=== PCI Devices Information ==="
+    lspci
+    echo
+
+    # Print USB devices information
+    echo "=== USB Devices Information ==="
+    lsusb
+    echo
+
+    # Print network interfaces information
+    echo "=== Network Interfaces Information ==="
+    ip addr
+    echo
+
+    # Print installed software packages
+    echo "=== Installed Software Packages ==="
+    dpkg -l
+}
+
 # Initialize log file
 exec &> >(tee -a "$temp_dir/$log_file") # Capture all output to log file
 
@@ -112,10 +159,31 @@ declare -a paths=(
 
 # Copy files to temporary directory
 echo "Copying directories and files..."
+
+# Function to check if a file is binary
+is_binary() {
+    # Use the 'file' command to check if the file is binary
+    if file "$1" | grep -q "text"; then
+        return 1 # Not binary
+    else
+        return 0 # Binary
+    fi
+}
+
+# Loop through each path
 for path in "${paths[@]}"; do
     if [[ -d $path ]]; then
         # It's a directory, check its size first
-        dir_size=$(du -sm "$path" | cut -f1) # Get size in MB
+        dir_size=0 # Initialize directory size
+        # Loop through files in the directory
+        while IFS= read -r -d '' file; do
+            if is_binary "$file"; then
+                continue # Skip binary files
+            fi
+            # Add the size of non-binary files to the directory size
+            dir_size=$(( dir_size + $(stat -c '%s' "$file") / 1024 / 1024 )) # Size in MB
+        done < <(find "$path" -type f -print0)
+        
         if [[ $dir_size -gt 50 ]]; then
             echo "$path is larger than 50MB, skipping..."
             continue # Skip this directory
@@ -127,15 +195,14 @@ for path in "${paths[@]}"; do
         # It's a file, check if it's a log file by its path
         if [[ $path == *.log ]]; then
             # It's a log file, copy only the last 1 MB
-        #   dd if="$path" of="$temp_dir/$(basename "$path")" bs=1M count=1 2>/dev/null || echo "$path not found, skipping..."
-            tail -c $(( 1024*1024 )) $path > "$temp_dir/$(basename "$path")"
-            
+            tail -c $(( 1024*1024 )) "$path" > "$temp_dir/$(basename "$path")"
         else
             # Not a log file, copy normally
             cp "$path" "$temp_dir" 2>/dev/null || echo "$path not found, skipping..."
         fi
     fi
 done
+
 ####obtain node stats...
 check_port_9200_usage
 port_usage=$?
@@ -198,6 +265,8 @@ fi
   echo "Memory Usage:"
   free -m
   echo "----------------------------------------------"
+
+  get_hardware_info
 
   
 } > "$temp_dir/$system_info_file"
