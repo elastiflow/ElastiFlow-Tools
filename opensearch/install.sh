@@ -148,7 +148,7 @@ replace_text "/etc/systemd/system/flowcoll.service" "TimeoutStopSec=infinity" "T
 
 printf "\n\n\n*********Configuring ElastiFlow Flow Collector...\n\n" 
 flowcoll_config_path="/etc/systemd/system/flowcoll.service.d/flowcoll.conf"
-replace_text "$path" 'Environment="EF_LICENSE_ACCEPTED=false"' 'Environment="EF_LICENSE_ACCEPTED=true"' "${LINENO}"
+replace_text "$flowcoll_config_path" 'Environment="EF_LICENSE_ACCEPTED=false"' 'Environment="EF_LICENSE_ACCEPTED=true"' "${LINENO}"
 replace_text "$flowcoll_config_path" '#Environment="EF_ACCOUNT_ID="' "Environment=\"EF_ACCOUNT_ID=$elastiflow_account_id\"" "${LINENO}"
 replace_text "$flowcoll_config_path" '#Environment="EF_FLOW_LICENSE_KEY="' "Environment=\"EF_FLOW_LICENSE_KEY=$elastiflow_flow_license_key\"" "${LINENO}"
 replace_text "$flowcoll_config_path" 'Environment="EF_OUTPUT_OPENSEARCH_ENABLE=false"' 'Environment="EF_OUTPUT_OPENSEARCH_ENABLE=true"' "${LINENO}"
