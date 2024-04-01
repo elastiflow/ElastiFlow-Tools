@@ -203,7 +203,7 @@ else
 fi
 
 version=$(curl -k -XGET https://admin:"yourStrongPassword123!"@localhost:9200 | jq -r '.version.number')
-printf "Installed OpenSearch Version: $version\n"
+printf "\n\nInstalled OpenSearch Version: $version\n"
 
 version=$(curl -s http://admin:"$OPENSEARCH_INITIAL_ADMIN_PASSWORD"@localhost:5601/api/status | jq -r '.version.number')
 printf "Installed OpenSearch Dashboards Version: $version\n"
