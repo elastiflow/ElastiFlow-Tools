@@ -37,6 +37,9 @@ printf "\n\n\n*********Stopping Ubuntu pop-up "Daemons using outdated libraries"
 needrestart_conf_path="/etc/needrestart/needrestart.conf"
 replace_text "$needrestart_conf_path" "#\$nrconf{restart} = 'i';" "\$nrconf{restart} = 'a';" "${LINENO}"
 
+printf "\n\n\n*********Disable memory paging and swapping...\n\n"
+swapoff -a
+
 printf "\n\n\n*********Configuring JVM memory usage...\n\n"
 # Get the total installed memory from /proc/meminfo in kB
 total_mem_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
@@ -58,7 +61,7 @@ fi
 jvm_options="-Xms${jvm_mem_gb}g\n-Xmx${jvm_mem_gb}g"
 
 # Echo the options and use tee to write to the file
-echo -e $jvm_options | tee /etc/elasticsearch/jvm.options.d/heap.options > /dev/null
+echo -e $jvm_options | tee /etc/opensearch/jvm.options.d/heap.options > /dev/null
 
 echo "OpenSearch JVM options set to use $jvm_mem_gb GB for both -Xms and -Xmx."
 
