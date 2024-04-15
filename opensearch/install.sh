@@ -39,6 +39,7 @@ replace_text "$needrestart_conf_path" "#\$nrconf{restart} = 'i';" "\$nrconf{rest
 
 printf "\n\n\n*********Disable memory paging and swapping...\n\n"
 swapoff -a
+bootstrap.memory_lock=true
 # Make a copy of /etc/fstab
 cp /etc/fstab /etc/fstab_backup
 # Prepend a '#' to every line containing the word 'swap' in the backup file
