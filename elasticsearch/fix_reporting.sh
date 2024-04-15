@@ -1,3 +1,6 @@
+#!/bin/bash
+
+
 printf "\n\n\n*********Generating Kibana saved objects encryption key...\n\n"
 # Run the command to generate encryption keys quietly
 output=$(/usr/share/kibana/bin/kibana-encryption-keys generate -q)
@@ -15,3 +18,5 @@ fi
 
 printf "\n\n\n*********Restarting Kibana and Elastic services...\n\n"
 systemctl daemon-reload && systemctl restart kibana.service && systemctl restart elasticsearch.service
+
+printf "\n\nAll done!\n"
