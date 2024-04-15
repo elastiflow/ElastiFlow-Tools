@@ -39,6 +39,10 @@ replace_text "$needrestart_conf_path" "#\$nrconf{restart} = 'i';" "\$nrconf{rest
 
 printf "\n\n\n*********Disable memory paging and swapping...\n\n"
 swapoff -a
+# Make a copy of /etc/fstab
+cp /etc/fstab /etc/fstab_backup
+# Prepend a '#' to every line containing the word 'swap' in the backup file
+sed -i '/swap/s/^/#/' /etc/fstab_backup
 
 printf "\n\n\n*********Configuring JVM memory usage...\n\n"
 # Get the total installed memory from /proc/meminfo in kB
