@@ -200,6 +200,22 @@ printf "\n\n\n*********Configuring Kibana - set elasticsearch.hosts to localhost
 kibana_config_path="/etc/kibana/kibana.yml"
 replace_text "$kibana_config_path" "elasticsearch.hosts: \['https:\/\/[^']*'\]" "elasticsearch.hosts: \['https:\/\/localhost:9200'\]" "${LINENO}"
 
+printf "\n\n\n*********Generating Kibana reporting encryption key...\n\n"
+# Run the command to generate encryption keys quietly
+output=$(/usr/share/kibana/bin/kibana-encryption-keys generate -q)
+
+# Extract the line that starts with 'xpack.reporting.encryptionKey'
+key_line=$(echo "$output" | grep '^xpack.reporting.encryptionKey')
+
+# Check if the key line was found
+if [[ -n "$key_line" ]]; then
+    # Append the key line to /etc/kibana/kibana.yml
+    echo "$key_line" | sudo tee -a /etc/kibana/kibana.yml > /dev/null
+else
+    echo "No encryption key line found."
+fi
+
+
 printf "\n\n\n*********Enabling and starting Kibana service...\n\n"
 systemctl daemon-reload && systemctl enable kibana.service && systemctl start kibana.service
 
