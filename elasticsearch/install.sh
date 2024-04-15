@@ -196,7 +196,7 @@ replace_text "$kibana_config_path" "#server.host: \"localhost\"" "server.host: \
 printf "\n\n\n*********Enrolling Kibana with Elastic...\n\n"
 /usr/share/kibana/bin/kibana-setup --enrollment-token $kibana_token
 
-printf "\n\n\n*********Configuring Kibana - set elasticsearch.hosts to localhost instead of DHCP IP\n\n"
+printf "\n\n\n*********Configuring Kibana - set elasticsearch.hosts to localhost instead of DHCP IP...\n\n"
 kibana_config_path="/etc/kibana/kibana.yml"
 replace_text "$kibana_config_path" "elasticsearch.hosts: \['https:\/\/[^']*'\]" "elasticsearch.hosts: \['https:\/\/localhost:9200'\]" "${LINENO}"
 
