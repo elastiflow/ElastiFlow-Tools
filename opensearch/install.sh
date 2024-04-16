@@ -67,7 +67,7 @@ fi
 jvm_options="-Xms${jvm_mem_gb}g\n-Xmx${jvm_mem_gb}g"
 # Echo the options and use tee to write to the file
 #comment out all current instances of -Xms in the jvm.options file
-sudo sed -i '/-Xmx/s/^/#/' /etc/opensearch/jvm.options
+sudo sed -i '/^-Xm/s/^/#/' /etc/opensearch/jvm.options
 echo -e $jvm_options | tee /etc/opensearch/jvm.options > /dev/null
 echo "OpenSearch JVM options set to use $jvm_mem_gb GB for both -Xms and -Xmx."
 
