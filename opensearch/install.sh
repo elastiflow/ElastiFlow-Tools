@@ -20,6 +20,12 @@ replace_text() {
     sed -i.bak "s|$old_text|$new_text|g" "$file_path" || handle_error "Failed to replace text in $file_path." "$line_num"
 }
 
+# Ensure the script is run as root
+if [ "$(id -u)" -ne 0 ]; then
+    echo "This script must be run as root" 1>&2
+    exit 1
+fi
+
 printf "*********\n"
 printf "*********\n"
 printf "*********Setting up ElastiFlow VM...*********\n"
