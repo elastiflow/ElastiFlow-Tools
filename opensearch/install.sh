@@ -100,7 +100,6 @@ echo -e "$jvm_options" | tee -a /etc/opensearch/jvm.options > /dev/null
 echo "OpenSearch JVM options set to use $jvm_mem_gb GB for both -Xms and -Xmx."
 
 
-
 #Once complete, enable OpenSearch.
 systemctl enable opensearch && systemctl start opensearch
 
@@ -126,13 +125,7 @@ echo "discovery.type: single-node" |  tee -a "$config_path"
 # be sure to re-enable it. Otherwise you can skip this setting.
 #plugins.security.disabled: false
 
-#Modify the values for initial and maximum heap sizes. As a starting point, you should set these values to half of the available system memory. For dedicated hosts this value can be increased based on your workflow requirements.
-#As an example, if the host machine has 8 GB of memory, then you might want to set the initial and maximum heap sizes to 4 GB:
-config_path="/etc/opensearch/jvm.options"
-replace_text "$config_path" '## -Xms4g' '-Xms4g' "${LINENO}"
-replace_text "$config_path" '## -Xmx4g' '-Xmx4g' "${LINENO}"
-
- systemctl enable opensearch && systemctl start opensearch
+systemctl enable opensearch && systemctl start opensearch
 
 #############install opensearch dashboards
 #Install the necessary packages.
