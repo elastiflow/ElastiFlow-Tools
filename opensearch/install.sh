@@ -144,7 +144,7 @@ config_path="/etc/opensearch-dashboards/opensearch_dashboards.yml"
 # Use 0.0.0.0 to bind to any available interface.
 replace_text "$config_path" '# server.host: "localhost"' 'server.host: "0.0.0.0"' "${LINENO}"
 
- systemctl enable opensearch-dashboards && systemctl start opensearch-dashboards
+systemctl enable opensearch-dashboards && systemctl start opensearch-dashboards
 
 printf "\n\n\n*********Downloading and installing ElastiFlow Flow Collector...\n\n" 
 #Install Elastiflow flow collector
@@ -210,6 +210,34 @@ else
         echo "No IP address found for interface $INTERFACE."
     fi
 fi
+
+
+
+# Loop through each service in the array
+
+SERVICES=("opensearch.service" "opensearch-dashboards.service" "flowcoll.service") # Replace these with actual service names
+for SERVICE_NAME in "${SERVICES[@]}"; do
+    # Check if the service is active
+    if systemctl is-active --quiet "$SERVICE_NAME"; then
+        # If the service is up, print the message in green
+        echo -e "\e[32m$SERVICE_NAME is up ✓\e[0m"
+    else
+        # If the service is not up, print the message in red
+        echo -e "\e[31m$SERVICE_NAME is not up X\e[0m"
+    fi
+done
+
+if [ "$success" == "true" ]; then
+     echo -e "\e[32mDashboards are installed ✓\e[0m"
+else
+     echo -e "\e[31mDashboards are not installed X\e[0m"
+fi
+
+
+
+
+
+
 
 version=$(curl -k -XGET https://admin:"yourStrongPassword123!"@localhost:9200 | jq -r '.version.number')
 printf "\n\nInstalled OpenSearch Version: $version\n"
