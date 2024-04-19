@@ -233,12 +233,6 @@ else
      echo -e "\e[31mDashboards are not installed X\e[0m"
 fi
 
-
-
-
-
-
-
 version=$(curl -k -XGET https://admin:"yourStrongPassword123!"@localhost:9200 | jq -r '.version.number')
 printf "\n\nInstalled OpenSearch Version: $version\n"
 
