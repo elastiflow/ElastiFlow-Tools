@@ -73,7 +73,7 @@ if [ -f "$needrestart_conf_path" ]; then
     echo "$needrestart_conf_path exists."
     replace_text "$needrestart_conf_path" "#\$nrconf{restart} = 'i';" "\$nrconf{restart} = 'a';" "${LINENO}"
 else
-    echo "$needrestart_conf_path does not exist."
+    echo "\n\n$needrestart_conf_path does not exist."
 fi
 
 printf "\n\n\n*********System tuning starting...\n\n"
