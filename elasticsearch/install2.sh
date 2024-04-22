@@ -69,7 +69,12 @@ apt-get -qq update && apt-get -qq install jq net-tools git bc
 
 printf "\n\n\n*********Stopping Ubuntu pop-up "Daemons using outdated libraries" when using apt to install or update packages...\n\n"
 needrestart_conf_path="/etc/needrestart/needrestart.conf"
-replace_text "$needrestart_conf_path" "#\$nrconf{restart} = 'i';" "\$nrconf{restart} = 'a';" "${LINENO}"
+if [ -f "$needrestart_conf_path" ]; then
+    echo "$needrestart_conf_path exists."
+    replace_text "$needrestart_conf_path" "#\$nrconf{restart} = 'i';" "\$nrconf{restart} = 'a';" "${LINENO}"
+else
+    echo "$needrestart_conf_path does not exist."
+fi
 
 printf "\n\n\n*********System tuning starting...\n\n"
 #!/bin/bash
