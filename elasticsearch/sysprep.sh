@@ -10,6 +10,7 @@ fi
 echo "Cleaning up temp directories..."
 rm -rf /tmp/*
 rm -rf /var/tmp/*
+rm -rf /home/user/*
 
 # Step 2: Remove SSH keys
 echo "Removing SSH keys..."
