@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # version 1.5
-# author: O.J. Wolanyk
+# author: O.J. Wolanyk, ElastiFlow
 
 
 
@@ -140,17 +140,17 @@ declare -a paths=(
 "/etc/kibana/kibana.yml"
 "/var/log/kibana/kibana.log"
 
-# OpenSearch config
-"/etc/opensearch/opensearch.yml"
-"/etc/opensearch/jvm.options.d/heap.options"
-"/var/log/opensearch/opensearch.log"
-"/etc/systemd/system/opensearch.service.d/opensearch.conf"
-
 # Elasticsearch config
 "/etc/elasticsearch/elasticsearch.yml"
 "/etc/elasticsearch/jvm.options.d/heap.options"
 "/etc/systemd/system/elasticsearch.service.d/elasticsearch.conf"
 "/var/log/elasticsearch/elasticsearch.log"
+
+# OpenSearch config
+"/etc/opensearch/opensearch.yml"
+"/etc/opensearch/jvm.options.d/heap.options"
+"/var/log/opensearch/opensearch.log"
+"/etc/systemd/system/opensearch.service.d/opensearch.conf"
 
 # flowcoll
 "/etc/systemd/system/flowcoll.service.d/flowcoll.conf"
