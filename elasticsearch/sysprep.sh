@@ -42,9 +42,9 @@ echo "Removing old kernels..."
 apt-get autoremove --purge
 
 # Step 7: Zero out free space to reduce image size (optional)
-echo "Zeroing free space to reduce image size... This might take a while."
-dd if=/dev/zero of=/bigemptyfile bs=1M
-rm -f /bigemptyfile
+#echo "Zeroing free space to reduce image size... This might take a while."
+#dd if=/dev/zero of=/bigemptyfile bs=1M
+#rm -f /bigemptyfile
 
 # Completion
 echo "Cleanup complete. System ready for imaging."
