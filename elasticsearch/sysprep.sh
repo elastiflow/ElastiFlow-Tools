@@ -31,7 +31,17 @@ rm -f /root/.bash_history
 rm -f /root/.zsh_history
 rm -f /user/.bash_history
 rm -f /user/.zsh_history
-history -c
+
+# Iterate over each user's home directory
+for user_home in /home/*; do
+  # Check if the .bash_history file exists and delete it
+  if [ -f "$user_home/.bash_history" ]; then
+    echo "Clearing history for $(basename $user_home)"
+    > "$user_home/.bash_history"  # This empties the file without deleting it
+  fi
+done
+
+
 
 # Step 4: Clean apt cache
 echo "Cleaning apt cache..."
