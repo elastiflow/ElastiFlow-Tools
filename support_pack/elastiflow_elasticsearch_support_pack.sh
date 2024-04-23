@@ -67,13 +67,29 @@ exec &> >(tee -a "$temp_dir/$log_file") # Capture all output to log file
 
 check_port_9200_usage() {
     if nc -z localhost 9200; then
-        echo "I think I found Elasticsearch. Port 9200 is in use."
-        return 1
+        echo "Port 9200 is in use. Do you have OpenSearch or Elasticsearch installed? (Enter 'opensearch' or 'elastic'):"
+        read software
+
+        case $software in
+            opensearch)
+                echo "OpenSearch is installed."
+                return 2
+                ;;
+            elastic)
+                echo "Elasticsearch is installed."
+                return 1
+                ;;
+            *)
+                echo "Invalid input. Please enter 'opensearch' or 'elastic'."
+                return 3  # Added a return code for invalid input
+                ;;
+        esac
     else
-        echo "Port 9200 is not in use. Elasticsearch might not be running."
+        echo "Port 9200 is not in use. Elasticsearch or OpenSearch might not be running."
         return 0
     fi
 }
+
 
 attempt_fetch() {
     local ip=$1
