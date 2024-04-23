@@ -29,6 +29,9 @@ done
 # Clear root user history
 rm -f /root/.bash_history
 rm -f /root/.zsh_history
+rm -f /user/.bash_history
+rm -f /user/.zsh_history
+history -c
 
 # Step 4: Clean apt cache
 echo "Cleaning apt cache..."
