@@ -70,7 +70,7 @@ check_port_9200_usage() {
         echo "I think I found Elasticsearch. Port 9200 is in use."
         return 1
     else
-        echo "Port 9200 is not in use. Elasticsearch might not be running."
+        echo "Port 9200 is not in use. Elasticsearch / Opensearch might not be running or is on a different machine."
         return 0
     fi
 }
