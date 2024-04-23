@@ -12,19 +12,6 @@ rm -rf /tmp/*
 rm -rf /var/tmp/*
 rm -rf /home/user/*
 
-# Step 2: Remove SSH keys
-echo "Removing SSH keys..."
-rm -f /etc/ssh/ssh_host_*
-
-# Step 3: Clear user command history
-echo "Clearing user command histories..."
-for user_home in /home/*; do
-    if [ -d "$user_home" ]; then
-        rm -f $user_home/.bash_history
-        rm -f $user_home/.zsh_history
-        # You can add other shell history files to clean
-    fi
-done
 
 # Clear root user history
 rm -f /root/.bash_history
@@ -40,8 +27,6 @@ for user_home in /home/*; do
     > "$user_home/.bash_history"  # This empties the file without deleting it
   fi
 done
-
-
 
 # Step 4: Clean apt cache
 echo "Cleaning apt cache..."
