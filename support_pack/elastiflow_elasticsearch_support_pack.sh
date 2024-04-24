@@ -18,6 +18,48 @@ temp_dir="temp_elastiflow_$current_time"
 # Create temporary directory
 mkdir -p $temp_dir
 
+attempt_fetch() {
+    local retry_choice
+    local default_ip="localhost"
+    local default_port=9200
+    local default_username="elastic"
+    local default_password="elastic"
+
+    while true; do
+        # Prompt user for inputs with defaults
+        read -p "Enter IP address [$default_ip]: " ip
+        ip=${ip:-$default_ip}
+
+        read -p "Enter port [$default_port]: " port
+        port=${port:-$default_port}
+
+        read -p "Enter username [$default_username]: " username
+        username=${username:-$default_username}
+
+        read -p "Enter password [$default_password]: " password
+        password=${password:-$default_password}
+
+        # Attempt to fetch node stats
+        response=$(curl -sk -u "$username:$password" "https://$ip:$port/_nodes/stats/os,process,indices?pretty")
+        echo "$response" | grep "cluster_name" &> /dev/null
+        if [ $? -eq 0 ]; then
+            echo "Successfully fetched node stats."
+            mkdir -p "$temp_dir"  # Ensure temp directory exists
+            echo "$response" > "$temp_dir/node_stats.txt" # Save the successful response to "node_stats.txt"
+            return 0
+        else
+            echo "Failed to fetch node stats."
+            read -p "Do you want to retry? (yes/no) " retry_choice
+            case $retry_choice in
+                [Yy]* ) continue;;
+                * ) echo "Exiting without success."; return 1;;
+            esac
+        fi
+    done
+}
+
+
+
 # Function to get hardware information
 get_hardware_info() {
     # Print system information
@@ -64,65 +106,6 @@ get_hardware_info() {
 
 # Initialize log file
 exec &> >(tee -a "$temp_dir/$log_file") # Capture all output to log file
-
-check_port_9200_usage() {
-    if nc -z localhost 9200; then
-        echo "I think I found Elasticsearch. Port 9200 is in use."
-        return 1
-    else
-        echo "Port 9200 is not in use. Elasticsearch / Opensearch might not be running or is on a different machine."
-        return 0
-    fi
-}
-
-
-attempt_fetch() {
-    local ip=$1
-    local username=$2
-    local password=$3
-
-    # Attempt to fetch node stats
-    response=$(curl -sk -u "$username:$password" "https://$ip:9200/_nodes/stats/os,process,indices?pretty")
-    echo "$response" | grep "cluster_name" &> /dev/null
-    if [ $? -eq 0 ]; then
-        echo "Successfully fetched node stats."
-        echo "$response" > "$temp_dir/node_stats.txt" # Save the successful response to "node_stats.txt"
-        return 0
-    else
-        echo "Failed to fetch node stats."
-        return 1
-    fi
-}
-
-prompt_credentials_and_fetch() {
-    read -p "Would you like to obtain node stats? (y by default): " confirm
-    if [[ $confirm =~ ^[Nn]$ ]]; then
-        echo "User chose not to obtain node stats. Continuing with the rest of the script."
-        return 0
-    fi
-
-    while true; do
-        read -p "Enter Elasticsearch IP address or host (localhost by default): " ip
-        ip=${ip:-localhost}
-
-        read -p "Enter your Elasticsearch username: " username
-        read -s -p "Enter your Elasticsearch password: " password
-        echo
-
-        if attempt_fetch "$ip" "$username" "$password"; then
-            return 0
-        fi
-
-        read -t 10 -p "Attempt failed. Do you want to retry? (y/n): " retry
-       if [[ $? -gt 128 ]]; then
-            echo -e "\nTimeout reached. Continuing with the rest of the script."
-            return 1
-        elif [[ $retry =~ ^[Nn]$ ]]; then
-            echo "User chose not to retry. Continuing with the rest of the script."
-            return 1
-        fi
-    done  
-}
 
 
 echo "Starting ElastiFlow Support Pack at $(date)"
@@ -211,16 +194,7 @@ for path in "${paths[@]}"; do
 done
 
 ####obtain node stats...
-check_port_9200_usage
-port_usage=$?
-
-if [ $port_usage -eq 1 ]; then
-    echo "Proceeding since port 9200 is in use."
-    prompt_credentials_and_fetch
-else
-    echo "Exiting since Elasticsearch might not be running."
-    exit 1
-fi
+attempt_fetch
 
 
 # Capture system information
