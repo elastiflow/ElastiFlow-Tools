@@ -168,7 +168,7 @@ is_binary() {
 # Loop through each path
 for path in "${paths[@]}"; do
     if [[ ! -e $path ]]; then
-        echo "$path does not exist, skipping..."
+        echo -e "\033[0;31m$path does not exist, skipping...\033[0m"  # Red for errors
         continue # Skip to the next path if the current one does not exist
     fi
 
@@ -185,23 +185,24 @@ for path in "${paths[@]}"; do
         done < <(find "$path" -type f -print0)
         
         if [[ $dir_size -gt 100 ]]; then
-            echo "$path is larger than 100MB, skipping..."
+            echo -e "\033[0;31m$path is larger than 100MB, skipping...\033[0m"
             continue # Skip this directory
         fi
 
         # If the directory is not larger than 100MB, copy everything
-        cp -r "$path" "$temp_dir" 2>/dev/null || echo "$path could not be copied, skipping..."
+        cp -r "$path" "$temp_dir" 2>/dev/null && echo -e "\033[0;32mSuccessfully copied $path to $temp_dir\033[0m"
     else
         # It's a file, check if it's a log file by its path
         if [[ $path == *.log ]]; then
             # It's a log file, copy only the last 1 MB
-            tail -c $(( 1024 * 1024 )) "$path" > "$temp_dir/$(basename "$path")"
+            tail -c $(( 1024 * 1024 )) "$path" > "$temp_dir/$(basename "$path")" && echo -e "\033[0;32mSuccessfully copied last 1MB of $path to $temp_dir\033[0m"
         else
             # Not a log file, copy normally
-            cp "$path" "$temp_dir" 2>/dev/null || echo "$path not found, skipping..."
+            cp "$path" "$temp_dir" 2>/dev/null && echo -e "\033[0;32mSuccessfully copied $path to $temp_dir\033[0m"
         fi
     fi
 done
+
 
 ####obtain node stats...
 attempt_fetch
