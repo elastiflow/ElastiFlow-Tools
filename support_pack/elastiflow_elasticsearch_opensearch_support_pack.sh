@@ -131,10 +131,15 @@ declare -a paths=(
 "/var/log/elasticsearch/elasticsearch.log"
 
 # OpenSearch config
+#ubuntu
 "/etc/opensearch/opensearch.yml"
-"/etc/opensearch/jvm.options.d/heap.options"
+"/etc/opensearch/jvm.options"
 "/var/log/opensearch/opensearch.log"
 "/etc/systemd/system/opensearch.service.d/opensearch.conf"
+"/usr/share/opensearch-dashboards/config/opensearch_dashboards.yml"
+
+#debian
+"/usr/lib/sysctl.d/opensearch.conf"
 
 # flowcoll
 "/etc/systemd/system/flowcoll.service.d/flowcoll.conf"
@@ -221,6 +226,10 @@ attempt_fetch
   echo "----------------------------------------------"
   echo "Kibana Version:"
   /usr/share/kibana/bin/kibana -version
+  
+  echo "----------------------------------------------"
+  echo "Opensearch Version:"
+  /usr/share/opensearch/bin/opensearch -version
   
   echo "----------------------------------------------"
   echo "Open ports:"
