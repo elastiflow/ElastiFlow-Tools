@@ -167,6 +167,11 @@ is_binary() {
 
 # Loop through each path
 for path in "${paths[@]}"; do
+    if [[ ! -e $path ]]; then
+        echo "$path does not exist, skipping..."
+        continue # Skip to the next path if the current one does not exist
+    fi
+
     if [[ -d $path ]]; then
         # It's a directory, check its size first
         dir_size=0 # Initialize directory size
@@ -184,13 +189,13 @@ for path in "${paths[@]}"; do
             continue # Skip this directory
         fi
 
-        # If the directory is not larger than 50MB, copy everything
-        cp -r "$path" "$temp_dir" 2>/dev/null || echo "$path not found, skipping..."
+        # If the directory is not larger than 100MB, copy everything
+        cp -r "$path" "$temp_dir" 2>/dev/null || echo "$path could not be copied, skipping..."
     else
         # It's a file, check if it's a log file by its path
         if [[ $path == *.log ]]; then
             # It's a log file, copy only the last 1 MB
-            tail -c $(( 1024*1024 )) "$path" > "$temp_dir/$(basename "$path")"
+            tail -c $(( 1024 * 1024 )) "$path" > "$temp_dir/$(basename "$path")"
         else
             # Not a log file, copy normally
             cp "$path" "$temp_dir" 2>/dev/null || echo "$path not found, skipping..."
