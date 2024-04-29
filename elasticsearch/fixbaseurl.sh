@@ -29,5 +29,8 @@ replace_text() {
 }
 
 
-kibana_config_path="/etc/kibana/kibana.yml"
-replace_text "$kibana_config_path" '#server.publicBaseUrl: ""' 'server.publicBaseUrl: "http://kibana.example.com:5601"' "${LINENO}"
+printf "\n\n\n*********Enabling TLS for browser to Kibana...\n\n"
+
+replace_text "$kibana_config_path" '#server.ssl.enabled: false' 'server.ssl.enabled: true' "${LINENO}"
+replace_text "$kibana_config_path" '#server.ssl.certificate: /path/to/your/server.crt' 'server.ssl.certificate: /usr/share/kibana/kibana-server/kibana-server.csr' "${LINENO}"
+replace_text "$kibana_config_path" '#server.ssl.key: /path/to/your/server.key' 'server.ssl.key: /usr/share/kibana/kibana-server/kibana-server.key' "${LINENO}"
