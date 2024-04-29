@@ -206,6 +206,22 @@ kibana_config_path="/etc/kibana/kibana.yml"
 replace_text "$kibana_config_path" "elasticsearch.hosts: \['https:\/\/[^']*'\]" "elasticsearch.hosts: \['https:\/\/localhost:9200'\]" "${LINENO}"
 replace_text "$kibana_config_path" '#server.publicBaseUrl: ""' 'server.publicBaseUrl: "http://kibana.example.com:5601"' "${LINENO}"
 
+printf "\n\n\n*********Enabling TLS for browser to Kibana...\n\n"
+
+replace_text "$kibana_config_path" '#server.ssl.enabled: false' 'server.ssl.enabled: true' "${LINENO}"
+replace_text "$kibana_config_path" '#server.ssl.certificate: /path/to/your/server.crt' 'server.ssl.certificate: /usr/share/kibana/kibana-server/kibana-server.csr' "${LINENO}"
+replace_text "$kibana_config_path" '#server.ssl.key: /path/to/your/server.key' 'server.ssl.key: /usr/share/kibana/kibana-server/kibana-server.key' "${LINENO}"
+
+#server.ssl.enabled: false
+#server.ssl.certificate: /path/to/your/server.crt
+#server.ssl.key: /path/to/your/server.key
+
+
+
+
+server.ssl.certificate: $KBN_PATH_CONF/kibana-server.crt
+server.ssl.key: $KBN_PATH_CONF/kibana-server.key
+
 
 printf "\n\n\n*********Generating Kibana saved objects encryption key...\n\n"
 # Run the command to generate encryption keys quietly
