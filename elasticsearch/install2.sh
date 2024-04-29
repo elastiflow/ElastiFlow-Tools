@@ -64,8 +64,8 @@ printf "\n\n\n*********Removing Ubuntu update service...\n\n"
 #systemctl stop unattended-upgrades.service 
 apt remove -y unattended-upgrades
 
-printf "\n\n\n*********Installing jq, net-tools, git, bc, gpg, java...\n\n"
-apt-get -qq update && apt-get -qq install jq net-tools git bc gpg default-jre curl wget
+printf "\n\n\n*********Installing prereqs...\n\n"
+apt-get -qq update && apt-get -qq install jq net-tools git bc gpg default-jre curl wget unzip apt-transport-https
 
 printf "\n\n\n*********Stopping Ubuntu pop-up "Daemons using outdated libraries" when using apt to install or update packages...\n\n"
 needrestart_conf_path="/etc/needrestart/needrestart.conf"
