@@ -1,5 +1,8 @@
 #!/bin/bash
 
+kibana_config_path="/etc/kibana/kibana.yml"
+
+
 handle_error() {
     local error_msg="$1"
     local line_num="$2"
