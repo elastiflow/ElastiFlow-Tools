@@ -206,12 +206,12 @@ kibana_config_path="/etc/kibana/kibana.yml"
 replace_text "$kibana_config_path" "elasticsearch.hosts: \['https:\/\/[^']*'\]" "elasticsearch.hosts: \['https:\/\/localhost:9200'\]" "${LINENO}"
 replace_text "$kibana_config_path" '#server.publicBaseUrl: ""' 'server.publicBaseUrl: "http://kibana.example.com:5601"' "${LINENO}"
 
-printf "\n\n\n*********Enabling TLS for browser to Kibana...\n\n"
-/usr/share/elasticsearch/bin/elasticsearch-certutil csr -s -name kibana-server -dns example.com,www.example.com --out csr-bundle.zip
-unzip  /usr/share/elasticsearch/csr-bundle.zip -d /usr/share/kibana/
-replace_text "$kibana_config_path" '#server.ssl.enabled: false' 'server.ssl.enabled: true' "${LINENO}"
-replace_text "$kibana_config_path" '#server.ssl.certificate: /path/to/your/server.crt' 'server.ssl.certificate: /usr/share/kibana/kibana-server/kibana-server.csr' "${LINENO}"
-replace_text "$kibana_config_path" '#server.ssl.key: /path/to/your/server.key' 'server.ssl.key: /usr/share/kibana/kibana-server/kibana-server.key' "${LINENO}"
+#printf "\n\n\n*********Enabling TLS for browser to Kibana...\n\n"
+#/usr/share/elasticsearch/bin/elasticsearch-certutil csr -s -name kibana-server -dns example.com,www.example.com --out csr-bundle.zip
+#unzip  /usr/share/elasticsearch/csr-bundle.zip -d /usr/share/kibana/
+#replace_text "$kibana_config_path" '#server.ssl.enabled: false' 'server.ssl.enabled: true' "${LINENO}"
+#replace_text "$kibana_config_path" '#server.ssl.certificate: /path/to/your/server.crt' 'server.ssl.certificate: /usr/share/kibana/kibana-server/kibana-server.csr' "${LINENO}"
+#replace_text "$kibana_config_path" '#server.ssl.key: /path/to/your/server.key' 'server.ssl.key: /usr/share/kibana/kibana-server/kibana-server.key' "${LINENO}"
 
 
 
