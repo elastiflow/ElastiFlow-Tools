@@ -213,13 +213,6 @@ replace_text "$kibana_config_path" '#server.publicBaseUrl: ""' 'server.publicBas
 #replace_text "$kibana_config_path" '#server.ssl.certificate: /path/to/your/server.crt' 'server.ssl.certificate: /usr/share/kibana/kibana-server/kibana-server.csr' "${LINENO}"
 #replace_text "$kibana_config_path" '#server.ssl.key: /path/to/your/server.key' 'server.ssl.key: /usr/share/kibana/kibana-server/kibana-server.key' "${LINENO}"
 
-
-
-
-server.ssl.certificate: $KBN_PATH_CONF/kibana-server.crt
-server.ssl.key: $KBN_PATH_CONF/kibana-server.key
-
-
 printf "\n\n\n*********Generating Kibana saved objects encryption key...\n\n"
 # Run the command to generate encryption keys quietly
 output=$(/usr/share/kibana/bin/kibana-encryption-keys generate -q)
