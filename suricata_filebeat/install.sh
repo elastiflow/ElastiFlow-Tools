@@ -57,7 +57,7 @@ printf "Configuring Suricata Filebeat to look at eve.log file\n\n"
   }
 }' /etc/filebeat/modules.d/suricata.yml
 
-printf "Running the filebeat setup (this will create the filebeat indexes, dashboards etc in Elasticsearch)\n\n"
+printf "Running the filebeat setup (this will create the filebeat indexes, dashboards etc. in Elasticsearch)\n\n"
 filebeat setup -e
 
 printf "Starting filebeat...\n"
