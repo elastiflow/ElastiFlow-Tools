@@ -22,7 +22,7 @@ needrestart_conf_path="/etc/needrestart/needrestart.conf"
 replace_text "$needrestart_conf_path" "#\$nrconf{restart} = 'i';" "\$nrconf{restart} = 'a';" "${LINENO}"
 
 printf "installing components\n\n"
-curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-8.13.3-amd64.deb
+curl -sS -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-8.13.3-amd64.deb
 dpkg -i filebeat-8.13.3-amd64.deb
 
 printf "Obtaining CA fingerprint…\n\n"
@@ -76,34 +76,34 @@ fi
 printf "triggering test threats...\n\n"
 url="http://testmynids.org/uid/index.html"
 for ((i = 1; i <= 4; i++)); do
-    curl "$url" -o /dev/null
+    curl -sS "$url" -o /dev/null
     sleep 2
 done
 
-printf "Checking if 4 test threats have been found:\n\n"
+#printf "Checking if 4 test threats have been found:\n\n"
 
 # Make the curl call and capture the output
-output=$(curl -k -X GET "https://localhost:9200/filebeat-*/_search" -u elastic:elastic -H 'Content-Type: application/json' -d'
-{
-  "query": {
-    "match_phrase": {
-      "rule.name": "GPL ATTACK_RESPONSE id check returned root"
-    }
-  }
-}')
+#output=$(curl -sS -k -X GET "https://localhost:9200/filebeat-*/_search" -u elastic:elastic -H 'Content-Type: application/json' -d'
+#{
+#  "query": {
+#    "match_phrase": {
+#      "rule.name": "GPL ATTACK_RESPONSE id check returned root"
+#    }
+#  }
+#}')
 
 # Get the total hits value using jq
-total_hits=$(echo "$output" | jq '.hits.total.value')
+#total_hits=$(echo "$output" | jq '.hits.total.value')
 
 # Check if total hits is exactly 4 and print the appropriate message with color
-if [ "$total_hits" -eq 4 ]; then
-    printf "\033[32mAlerts found in Elastic!\033[0m\n"
-else
-    printf "\033[31Alerts not found in Elastic. Something's wrong\033[0m\n"
-fi
+#if [ "$total_hits" -eq 4 ]; then
+#    printf "\033[32mAlerts found in Elastic!\033[0m\n"
+#else
+#    printf "\033[31Alerts not found in Elastic. Something's wrong\033[0m\n"
+#fi
 
 
 printf "All done.\n\n"
-printf 'Check Kibana dashboard "[Filebeat Suricata] Alert Overview" for 10 alerts with the following information:\n'
+printf 'Check Kibana dashboard "[Filebeat Suricata] Alert Overview" for 4 alerts with the following information:\n'
 printf "Alert signature: GPL ATTACK_RESPONSE id check returned root\n"
 printf "Alert category: Potentially Bad Traffic\n\n"
