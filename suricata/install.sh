@@ -58,7 +58,7 @@ log_file="/var/log/suricata/fast.log"
 search_text="GPL ATTACK_RESPONSE id check"
 
 # Run the curl command
-curl -s "$url" -o /dev/null
+#curl -s "$url" -o /dev/null
 
 sleep 5
 
@@ -68,7 +68,7 @@ if grep -qE "$search_text" "$log_file"; then
     echo -e "\e[32m\"$search_text\" found in $log_file\e[0m"
 else
     # If not found, print a message
-    echo "No threat detected in the log file."
+    echo "No threat detected in the log file. Something's not right\n\n"
 fi
 
 printf "\n\nSuricata installation complete. Monitoring interface $interface.\n\n"
