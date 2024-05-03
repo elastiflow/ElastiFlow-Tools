@@ -81,6 +81,6 @@ for ((i = 1; i <= 10; i++)); do
 done
 
 printf "All done.\n\n"
-printf "Check Kibana for 10 events with the following information:\n"
+printf 'Check Kibana dashboard "[Filebeat Suricata] Alert Overview" for 10 alerts with the following information:\n'
 printf "Alert signature: GPL ATTACK_RESPONSE id check returned root\n\n"
 printf "Alert category: Potentially Bad Traffic\n\n"
