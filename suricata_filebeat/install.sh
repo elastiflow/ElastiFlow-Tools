@@ -73,7 +73,7 @@ else
     echo "The $service_name service is not active."
 fi
 
-printf "triggering test threats..."
+printf "triggering test threats...\n\n"
 url="http://testmynids.org/uid/index.html"
 for ((i = 1; i <= 10; i++)); do
     curl "$url" -o /dev/null
