@@ -75,12 +75,12 @@ fi
 
 printf "triggering test threats...\n\n"
 url="http://testmynids.org/uid/index.html"
-for ((i = 1; i <= 10; i++)); do
+for ((i = 1; i <= 4; i++)); do
     curl "$url" -o /dev/null
     sleep 2
 done
 
-printf "Checking if 10 test threats have been found:\n\n"
+printf "Checking if 4 test threats have been found:\n\n"
 
 # Make the curl call and capture the output
 output=$(curl -k -X GET "https://localhost:9200/filebeat-*/_search" -u elastic:elastic -H 'Content-Type: application/json' -d'
@@ -95,8 +95,8 @@ output=$(curl -k -X GET "https://localhost:9200/filebeat-*/_search" -u elastic:e
 # Get the total hits value using jq
 total_hits=$(echo "$output" | jq '.hits.total.value')
 
-# Check if total hits is exactly 10 and print the appropriate message with color
-if [ "$total_hits" -eq 10 ]; then
+# Check if total hits is exactly 4 and print the appropriate message with color
+if [ "$total_hits" -eq 4 ]; then
     printf "\033[32mAlerts found in Elastic!\033[0m\n"
 else
     printf "\033[31Alerts not found in Elastic. Something's wrong\033[0m\n"
