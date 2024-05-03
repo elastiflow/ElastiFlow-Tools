@@ -22,8 +22,8 @@ needrestart_conf_path="/etc/needrestart/needrestart.conf"
 replace_text "$needrestart_conf_path" "#\$nrconf{restart} = 'i';" "\$nrconf{restart} = 'a';" "${LINENO}"
 
 printf "installing components\n\n"
-curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-8.12.0-amd64.deb
-dpkg -i filebeat-8.12.0-amd64.deb
+curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-8.13.3-amd64.deb
+dpkg -i filebeat-8.13.3-amd64.deb
 
 printf "Obtaining CA fingerprint…\n\n"
 cert_file="/etc/elasticsearch/certs/http_ca.crt"
