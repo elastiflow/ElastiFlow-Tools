@@ -1,3 +1,7 @@
+#!/bin/bash
+
+
+
 curl -X GET "http://localhost:9200/your-index-name/_search" -H 'Content-Type: application/json' -d'
 {
   "query": {
