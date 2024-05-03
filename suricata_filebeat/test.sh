@@ -2,7 +2,7 @@
 
 
 
-curl -X GET "http://localhost:9200/your-index-name/_search" -H 'Content-Type: application/json' -d'
+curl -X GET "http://localhost:9200/filebeat-*/_search" -H 'Content-Type: application/json' -d'
 {
   "query": {
     "match_phrase": {
