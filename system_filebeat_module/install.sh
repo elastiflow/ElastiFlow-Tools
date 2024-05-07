@@ -1,5 +1,7 @@
 #!/bin/bash
 
+$system_module_config=/etc/filebeat/modules.d/system.yml
+
 # Replace text in a file with error handling
 replace_text() {
     local file_path="$1"
@@ -25,4 +27,9 @@ printf "installing components\n\n"
 curl -sS -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-8.13.3-amd64.deb
 dpkg -i filebeat-8.13.3-amd64.deb
 
-filebeat modules enable nginx
+filebeat modules enable system
+
+cp /etc/filebeat/modules.d/system.yml.disabled $system_module_config
+
+replace_text "/path/to/your/file.yaml" "syslog:\n    enabled: false" "syslog:\n    enabled: true"
+replace_text "/path/to/your/file.yaml" "auth:\n    enabled: false" "auth:\n    enabled: true"
