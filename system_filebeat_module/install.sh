@@ -32,5 +32,5 @@ cp /etc/filebeat/modules.d/system.yml.disabled $system_module_config
 
 replace_text "$system_module_config" "enabled: false" "enabled: true"
 
-sudo systemctl stop filebeat
-sudo systemctl start filebeat
+sudo systemctl stop filebeat.service
+sudo systemctl start filebeat.service
