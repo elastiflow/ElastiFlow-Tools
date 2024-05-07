@@ -31,4 +31,3 @@ filebeat modules enable system
 cp /etc/filebeat/modules.d/system.yml.disabled $system_module_config
 
 replace_text "$system_module_config" "enabled: false" "enabled: true"
-replace_text "$system_module_config" "enabled: false" "enabled: true"
