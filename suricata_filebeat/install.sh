@@ -61,7 +61,8 @@ printf "Running the filebeat setup (this will create the filebeat indexes, dashb
 filebeat setup -e > /dev/null 2>&1
 
 printf "Starting filebeat...\n"
-service filebeat start
+sudo systemctl stop filebeat.service
+sudo systemctl start filebeat.service
 
 sleep 10
 
