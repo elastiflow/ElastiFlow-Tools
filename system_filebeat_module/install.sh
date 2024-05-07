@@ -1,6 +1,6 @@
 #!/bin/bash
 
-$system_module_config=/etc/filebeat/modules.d/system.yml
+system_module_config="/etc/filebeat/modules.d/system.yml"
 
 # Replace text in a file with error handling
 replace_text() {
