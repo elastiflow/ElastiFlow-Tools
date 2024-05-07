@@ -11,7 +11,6 @@ replace_text() {
     sed -i.bak "s|$old_text|$new_text|g" "$file_path" || handle_error "Failed to replace text in $file_path." "$line_num"
 }
 
-
 printf "\n\n\n*********Removing Ubuntu update service...\n\n"
 #systemctl stop unattended-upgrades.service 
 apt remove -y unattended-upgrades
