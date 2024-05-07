@@ -45,7 +45,7 @@ sed -i '/^ *output.elasticsearch:$/,/^ *hosts: \["localhost:9200"\]/ {
 
 
 printf "Enabling Suricata...\n\n"
- filebeat modules enable suricata
+filebeat modules enable suricata
 
 printf "Configuring Suricata Filebeat to look at eve.log file\n\n"
 # sed -i '/^ *eve:$/,/^ *enabled: false$/ s/^ *eve:$/  eve:\n    enabled: false\n  var.paths: ["\/var\/log\/suricata\/eve.json"]/' /etc/filebeat/modules.d/suricata.yml
