@@ -11,11 +11,8 @@ elastiflow_flow_license_key=""
 
 ########################################################
 
-
-
 elastiflow_version="6.4.2"
 flowcoll_config_path="/etc/systemd/system/flowcoll.service.d/flowcoll.conf"
-
 
 # Function to handle errors
 handle_error() {
