@@ -47,8 +47,6 @@ replace_text() {
 }
 
 
-
-
 if [ "$(id -u)" -ne 0 ]; then
     echo "This script must be run as root" 1>&2
     exit 1
@@ -56,7 +54,7 @@ fi
 
 printf "*********\n"
 printf "*********\n"
-printf "*********Setting up ElastiFlow VM...*********\n"
+printf "*********Setting up ElastiFlow environment...*********\n"
 printf "*********\n"
 printf "*********\n"
 
@@ -109,7 +107,6 @@ sysctl -p
 echo "Kernel parameters updated in /etc/sysctl.conf with previous configurations commented out."
 
 
-
 #Increase System Limits (all ES nodes)
 #Increased system limits should be specified in a systemd attributes file for the elasticsearch service.
 mkdir /etc/systemd/system/elasticsearch.service.d && \
@@ -117,7 +114,6 @@ echo -e "[Service]\nLimitNOFILE=131072\nLimitNPROC=8192\nLimitMEMLOCK=infinity\n
 tee /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf > /dev/null
 echo "System limits set"
 printf "\n\n\n*********System tuning done...\n\n"
-
 
 
 printf "\n\n\n*********Sleeping 20 seconds to give dpkg time to clean up...\n\n"
@@ -130,7 +126,6 @@ elastic_install_log=$(apt-get -qq update && apt-get -qq install elasticsearch | 
 elastic_password=$(echo "$elastic_install_log" | awk -F' : ' '/The generated password for the elastic built-in superuser/{print $2}') 
 elastic_password=$(echo -n "$elastic_password" | tr -cd '[:print:]')
 printf "\n\n\n*********Elastic password is $elastic_password\n\n"
-
 
 printf "\n\n\n*********Configuring JVM memory usage...\n\n"
 # Get the total installed memory from /proc/meminfo in kB
@@ -156,9 +151,6 @@ jvm_options="-Xms${jvm_mem_gb}g\n-Xmx${jvm_mem_gb}g"
 echo -e $jvm_options | tee /etc/elasticsearch/jvm.options.d/heap.options > /dev/null
 
 echo "Elasticsearch JVM options set to use $jvm_mem_gb GB for both -Xms and -Xmx."
-
-
-
 
 printf "\n\n\n*********Enabling and starting ElasticSearch service...\n\n"
 systemctl daemon-reload && systemctl enable elasticsearch.service && systemctl start elasticsearch.service
@@ -206,13 +198,6 @@ kibana_config_path="/etc/kibana/kibana.yml"
 replace_text "$kibana_config_path" "elasticsearch.hosts: \['https:\/\/[^']*'\]" "elasticsearch.hosts: \['https:\/\/localhost:9200'\]" "${LINENO}"
 replace_text "$kibana_config_path" '#server.publicBaseUrl: ""' 'server.publicBaseUrl: "http://kibana.example.com:5601"' "${LINENO}"
 
-#printf "\n\n\n*********Enabling TLS for browser to Kibana...\n\n"
-#/usr/share/elasticsearch/bin/elasticsearch-certutil csr -s -name kibana-server -dns example.com,www.example.com --out csr-bundle.zip
-#unzip  /usr/share/elasticsearch/csr-bundle.zip -d /usr/share/kibana/
-#replace_text "$kibana_config_path" '#server.ssl.enabled: false' 'server.ssl.enabled: true' "${LINENO}"
-#replace_text "$kibana_config_path" '#server.ssl.certificate: /path/to/your/server.crt' 'server.ssl.certificate: /usr/share/kibana/kibana-server/kibana-server.csr' "${LINENO}"
-#replace_text "$kibana_config_path" '#server.ssl.key: /path/to/your/server.key' 'server.ssl.key: /usr/share/kibana/kibana-server/kibana-server.key' "${LINENO}"
-
 printf "\n\n\n*********Generating Kibana saved objects encryption key...\n\n"
 # Run the command to generate encryption keys quietly
 output=$(/usr/share/kibana/bin/kibana-encryption-keys generate -q)
@@ -227,7 +212,6 @@ if [[ -n "$key_line" ]]; then
 else
     echo "No encryption key line found."
 fi
-
 
 printf "\n\n\n*********Enabling and starting Kibana service...\n\n"
 systemctl daemon-reload && systemctl enable kibana.service && systemctl start kibana.service
@@ -251,7 +235,6 @@ elastic_password="elastic"
 
 printf "\n\n\n*********Configuring ElastiFlow Flow Collector...\n\n" 
 
-
 replace_text "$flowcoll_config_path" 'Environment="EF_LICENSE_ACCEPTED=false"' 'Environment="EF_LICENSE_ACCEPTED=true"' "${LINENO}"
 replace_text "$flowcoll_config_path" '#Environment="EF_ACCOUNT_ID="' "Environment=\"EF_ACCOUNT_ID=$elastiflow_account_id\"" "${LINENO}"
 replace_text "$flowcoll_config_path" '#Environment="EF_FLOW_LICENSE_KEY="' "Environment=\"EF_FLOW_LICENSE_KEY=$elastiflow_flow_license_key\"" "${LINENO}"
@@ -260,29 +243,6 @@ replace_text "$flowcoll_config_path" 'Environment="EF_OUTPUT_ELASTICSEARCH_ECS_E
 replace_text "$flowcoll_config_path" 'Environment="EF_OUTPUT_ELASTICSEARCH_PASSWORD=changeme"' "Environment=\"EF_OUTPUT_ELASTICSEARCH_PASSWORD=$elastic_password\"" "${LINENO}"
 replace_text "$flowcoll_config_path" 'Environment="EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE=false"' 'Environment="EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE=true"' "${LINENO}"
 replace_text "$flowcoll_config_path" 'Environment="EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION=false"' 'Environment="EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION=true"' "${LINENO}"
-
-
-
-#############ONLY USE THIS IF YOU WANT TO CONFIGURE EVERYTHING WITH FLOWCOLL.YML. Also, it's buggy for some reason
-#flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
-#replace_text "$flowcoll_config_path" '#EF_LICENSE_ACCEPTED: "false"' 'EF_LICENSE_ACCEPTED: "true"' "${LINENO}"
-#replace_text "$flowcoll_config_path" '#EF_OUTPUT_ELASTICSEARCH_ENABLE: "false"' 'EF_OUTPUT_ELASTICSEARCH_ENABLE: "true"' "${LINENO}"
-#replace_text "$flowcoll_config_path" '#EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE: "false"' 'EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE: "true"' "${LINENO}"
-#replace_text "$flowcoll_config_path" '#EF_OUTPUT_ELASTICSEARCH_PASSWORD: changeme' "EF_OUTPUT_ELASTICSEARCH_PASSWORD: $elastic_password" "${LINENO}"
-#replace_text "$flowcoll_config_path" '#EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: "false"' 'EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: "true"' "${LINENO}"
-#replace_text "$flowcoll_config_path" '#EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: "false"' '#EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: "true"' "${LINENO}"
-
-#Disable / unset all settings in /etc/systemd/system/flowcoll.service.d/flowcoll.conf since settings in flowcoll.conf override settings in flowcoll.yml
-#Directory where you want to search and replace "Environment=" if not preceded by "#"
-#flowcoll_config_path="/etc/systemd/system/flowcoll.service.d/flowcoll.conf"
-## Use find to locate files, then use sed to replace "Environment=" with "#Environment=" 
-## only if "Environment=" is not already preceded by "#"
-#find "$flowcoll_config_path" -type f -exec sed -i '/^[^#]*Environment=/s/Environment=/#Environment=/' {} +
-#echo "Replacement complete."
-#############ONLY USE THIS IF YOU WANT TO CONFIGURE EVERYTHING WITH FLOWCOLL.YML. Also, it's buggy for some reason
-
-
-
 
 #Configure flowcoll service to stop after 60 seconds when asked to terminate so this does not hold up the system forever on shutdown.
 replace_text "/etc/systemd/system/flowcoll.service" "TimeoutStopSec=infinity" "TimeoutStopSec=60" "N/A"
@@ -317,7 +277,6 @@ fi
 #printf "\n\n\n*********Elastic trial license started\n\n"
 #curl -X POST -k 'https://localhost:9200/_license/start_trial?acknowledge=true' -u elastic:$elastic_password
 
-
 # Loop through each service in the array
 
 SERVICES=("elasticsearch.service" "kibana.service" "flowcoll.service") # Replace these with actual service names
@@ -337,7 +296,6 @@ if [ "$dashboards_success" == "true" ]; then
 else
      echo -e "\e[31mDashboards are not installed X\e[0m"
 fi
-
 
 # Get the first network interface starting with enp
 INTERFACE=$(ip -o link show | grep -o 'enp[^:]*' | head -n 1)
@@ -366,10 +324,8 @@ printf "Installed ElastiFlow version: $version\n"
 version=$(lsb_release -d | awk -F'\t' '{print $2}')
 printf "Operating System: $version\n\n"
 
-
-
 printf "\e[5;37m\n\nGo to http://$IP_ADDRESS:5601/app/dashboards (elastic / elastic)\n\n\e[0m"
+
 printf "Open ElastiFlow dashboard: “ElastiFlow (flow): Overview\"\n\n"
 
 printf "\n\nDone\n"
-
