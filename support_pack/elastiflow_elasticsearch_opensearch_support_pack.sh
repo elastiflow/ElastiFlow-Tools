@@ -104,10 +104,6 @@ attempt_fetch_saved_objects() {
 # Output file for the exported saved objects
 OUTPUT_FILE="kibana_saved_objects_backup.ndjson"
 
-# Attempt to fetch connection details
-if ! attempt_fetch_saved_objects; then
-    exit 1
-fi
 
 # Export all saved objects
 echo "Exporting all saved objects..."
