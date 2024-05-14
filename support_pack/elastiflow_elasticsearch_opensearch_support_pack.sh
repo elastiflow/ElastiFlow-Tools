@@ -18,7 +18,7 @@ temp_dir="temp_elastiflow_$current_time"
 # Create temporary directory
 mkdir -p $temp_dir
 
-attempt_fetch() {
+attempt_fetch_nodestats() {
     local retry_choice
     local default_ip="localhost"
     local default_port=9200
@@ -57,6 +57,77 @@ attempt_fetch() {
         fi
     done
 }
+
+
+#!/bin/bash
+
+# Function to attempt fetching data with user prompts
+attempt_fetch_saved_objects() {
+    local retry_choice
+    local default_ip="localhost"
+    local default_port=5601
+    local default_username="elastic"
+    local default_password="elastic"
+
+    while true; do
+        # Prompt user for inputs with defaults
+        read -p "Enter IP address [$default_ip]: " ip
+        ip=${ip:-$default_ip}
+
+        read -p "Enter port [$default_port]: " port
+        port=${port:-$default_port}
+
+        read -p "Enter username [$default_username]: " username
+        username=${username:-$default_username}
+
+        read -s -p "Enter password [$default_password]: " password
+        password=${password:-$default_password}
+        echo
+
+        # Attempt to connect to Kibana
+        response=$(curl -sk -u "$username:$password" "http://$ip:$port/api/status")
+        echo "$response" | grep "\"status\":{\"overall\":{\"state\":\"green\"" &> /dev/null
+        if [ $? -eq 0 ]; then
+            echo "Successfully connected to Kibana."
+            KIBANA_URL="http://$ip:$port"
+            USERNAME="$username"
+            PASSWORD="$password"
+            return 0
+        else
+            echo "Failed to connect to Kibana."
+            read -p "Do you want to retry? (yes/no) " retry_choice
+            case $retry_choice in
+                [Yy]* ) continue;;
+                * ) echo "Exiting without success."; return 1;;
+            esac
+        fi
+    done
+}
+
+# Output file for the exported saved objects
+OUTPUT_FILE="kibana_saved_objects_backup.ndjson"
+
+# Attempt to fetch connection details
+if ! attempt_fetch; then
+    exit 1
+fi
+
+# Export all saved objects
+echo "Exporting all saved objects..."
+curl -s -u "$USERNAME:$PASSWORD" -X POST "$KIBANA_URL/api/saved_objects/_export" -H "kbn-xsrf: true" -H "Content-Type: application/json" -d '{
+  "type": "",
+  "includeReferencesDeep": true
+}' --output "$OUTPUT_FILE"
+
+# Check if the export was successful
+if [ $? -eq 0 ]; then
+  echo "All saved objects successfully backed up to $OUTPUT_FILE"
+else
+  echo "Failed to back up saved objects."
+  exit 1
+fi
+
+
 
 
 
@@ -205,7 +276,10 @@ done
 
 
 ####obtain node stats...
-attempt_fetch
+attempt_fetch_nodestats
+
+####back up saved objects
+attempt_fetch_saved_objects
 
 
 # Capture system information
