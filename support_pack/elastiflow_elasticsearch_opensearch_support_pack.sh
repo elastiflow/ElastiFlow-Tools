@@ -92,7 +92,7 @@ attempt_fetch_saved_objects() {
             KIBANA_URL="http://$ip:$port"
             USERNAME="$username"
             PASSWORD="$password"
-            return 0
+            backup_saved_objects
         else
             echo "Failed to connect to Kibana."
             read -p "Do you want to retry? (yes/no) " retry_choice
@@ -103,7 +103,9 @@ attempt_fetch_saved_objects() {
         fi
 
     done
+}
 
+backup_saved_objects() {
 # Output file for the exported saved objects
 OUTPUT_FILE="kibana_saved_objects_backup.ndjson"
 
@@ -120,8 +122,8 @@ if [ $? -eq 0 ]; then
 else
   echo "Failed to back up saved objects."
 fi
-
 }
+
 
 # Function to get hardware information
 get_hardware_info() {
