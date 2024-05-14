@@ -110,19 +110,13 @@ backup_saved_objects() {
 # Output file for the exported saved objects
 OUTPUT_FILE="kibana_saved_objects_backup.ndjson"
 
-# Export specific saved objects
-echo "Exporting specific saved objects..."
+# Export all saved objects of specific types
+echo "Exporting all saved objects of specific types..."
 curl -s -u "$USERNAME:$PASSWORD" -X POST "$KIBANA_URL/api/saved_objects/_export" -H "kbn-xsrf: true" -H "Content-Type: application/json" -d '{
-  "objects": [
-    {"type": "dashboard"},
-    {"type": "visualization"},
-    {"type": "search"},
-    {"type": "index-pattern"},
-    {"type": "map"},
-    {"type": "lens"}
-  ],
+  "type": ["dashboard", "visualization", "search", "index-pattern", "map", "lens"],
   "includeReferencesDeep": true
 }' --output "$OUTPUT_FILE"
+
 
 
 # Check if the export was successful
