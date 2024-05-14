@@ -108,7 +108,7 @@ attempt_fetch_saved_objects() {
 OUTPUT_FILE="kibana_saved_objects_backup.ndjson"
 
 # Attempt to fetch connection details
-if ! attempt_fetch; then
+if ! attempt_fetch_saved_objects; then
     exit 1
 fi
 
