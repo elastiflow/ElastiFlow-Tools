@@ -103,11 +103,9 @@ attempt_fetch_saved_objects() {
         fi
 
     done
-}
 
 # Output file for the exported saved objects
 OUTPUT_FILE="kibana_saved_objects_backup.ndjson"
-
 
 # Export all saved objects
 echo "Exporting all saved objects..."
@@ -123,6 +121,7 @@ else
   echo "Failed to back up saved objects."
 fi
 
+}
 
 # Function to get hardware information
 get_hardware_info() {
