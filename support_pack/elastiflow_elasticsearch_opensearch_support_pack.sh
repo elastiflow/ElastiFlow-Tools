@@ -93,6 +93,7 @@ attempt_fetch_saved_objects() {
             USERNAME="$username"
             PASSWORD="$password"
             backup_saved_objects
+            return 0
         else
             echo "Failed to connect to Kibana."
             read -p "Do you want to retry? (yes/no) " retry_choice
