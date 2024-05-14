@@ -316,19 +316,16 @@ for path in "${paths[@]}"; do
 done
 }
 
-####obtain node stats...
-attempt_fetch_node_stats
+# obtain node stats...
+#attempt_fetch_node_stats
 
-####back up saved objects
-attempt_fetch_saved_objects
+# back up saved objects
+#attempt_fetch_saved_objects
 
+# capture system information
+get_hardware_info > "$temp_dir/$system_info_file"
 
-# Capture system information
-{
-  get_hardware_info
-} > "$temp_dir/$system_info_file"
-
-# Create the archive
+# create the archive
 echo "Creating archive..."
 tar -czf $archive_name -C $temp_dir . 2>/dev/null
 echo "Archive created: $archive_name"
