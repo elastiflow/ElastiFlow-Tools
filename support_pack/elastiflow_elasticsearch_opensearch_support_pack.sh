@@ -325,6 +325,9 @@ done
 # capture system information
 get_hardware_info > "$temp_dir/$system_info_file"
 
+# backup configs
+backup_configs
+
 # create the archive
 echo "Creating archive..."
 tar -czf $archive_name -C $temp_dir . 2>/dev/null
