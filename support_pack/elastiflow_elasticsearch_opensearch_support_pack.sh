@@ -81,9 +81,12 @@ attempt_fetch_saved_objects() {
         password=${password:-$default_password}
         echo
 
-        # Attempt to connect to Kibana
+       # Attempt to connect to Kibana
         response=$(curl -sk -u "$username:$password" "http://$ip:$port/api/status")
-        echo "$response" | grep "\"status\":{\"overall\":{\"state\":\"green\"" &> /dev/null
+        
+        # Check if the "name" field is present in the response
+        echo "$response" | jq -e '.name' &> /dev/null
+        
         if [ $? -eq 0 ]; then
             echo "Successfully connected to Kibana."
             KIBANA_URL="http://$ip:$port"
@@ -98,6 +101,7 @@ attempt_fetch_saved_objects() {
                 * ) echo "Exiting without success."; return 1;;
             esac
         fi
+
     done
 }
 
