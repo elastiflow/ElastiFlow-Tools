@@ -36,8 +36,8 @@ printf "\n\n\n*********Removing Ubuntu update service...\n\n"
 #systemctl stop unattended-upgrades.service 
 apt remove -y unattended-upgrades
 
-printf "\n\n\n*********Installing jq and git...\n\n"
-apt-get -qq update && apt-get -qq install jq net-tools git
+printf "\n\n\n*********Installing prereqs...\n\n"
+apt-get -qq update && apt-get -qq install jq net-tools git bc gpg default-jre curl wget unzip apt-transport-https
 
 printf "\n\n\n*********Stopping Ubuntu pop-up "Daemons using outdated libraries" when using apt to install or update packages...\n\n"
 needrestart_conf_path="/etc/needrestart/needrestart.conf"
@@ -49,8 +49,6 @@ swapoff -a
 cp /etc/fstab /etc/fstab_backup
 # Prepend a '#' to every line containing the word 'swap' in the backup file
 sed -i '/swap/s/^/#/' /etc/fstab
-
-
 
 printf "\n\n\n*********Configuring 65536 as max open files for opensearch user...\n\n"
 # Set nofile limit in /etc/security/limits.conf
