@@ -180,15 +180,15 @@ get_hardware_info() {
  
   echo "----------------------------------------------"
   echo "Elasticsearch Version:"
-  /usr/share/elasticsearch/bin/elasticsearch -version
+  /usr/share/elasticsearch/bin/elasticsearch -version 2>/dev/null || echo "ElasticSearch version information not available"
  
   echo "----------------------------------------------"
   echo "Kibana Version:"
-  /usr/share/kibana/bin/kibana -version
+  /usr/share/kibana/bin/kibana -version 2>/dev/null || echo "Kibana version information not available"
   
   echo "----------------------------------------------"
   echo "Opensearch Version:"
-  /usr/share/opensearch/bin/opensearch -version
+  /usr/share/opensearch/bin/opensearch -version 2>/dev/null || echo "Opensearch version information not available"
   
   echo "----------------------------------------------"
   echo "Open ports:"
