@@ -166,6 +166,58 @@ get_hardware_info() {
     # Print installed software packages
     echo "=== Installed Software Packages ==="
     dpkg -l
+
+    echo "----------------------------------------------"
+    echo "Date and Time: $(date)"
+  
+    echo "----------------------------------------------" 
+    echo "Operating System Version:"
+    uname -a
+
+    echo "----------------------------------------------"
+    echo "ElastiFlow Flow Collector Version:"
+    /usr/share/elastiflow/bin/flowcoll -version 2>/dev/null || echo "ElastiFlow version information not available"
+  
+  echo "----------------------------------------------"
+  echo "ElastiFlow SNMP Collector Version:"
+  /usr/share/elastiflow/bin/snmpcoll -version 2>/dev/null || echo "SNMP Collector version information not available"
+ 
+  echo "----------------------------------------------"
+  echo "Elasticsearch Version:"
+  /usr/share/elasticsearch/bin/elasticsearch -version
+ 
+  echo "----------------------------------------------"
+  echo "Kibana Version:"
+  /usr/share/kibana/bin/kibana -version
+  
+  echo "----------------------------------------------"
+  echo "Opensearch Version:"
+  /usr/share/opensearch/bin/opensearch -version
+  
+  echo "----------------------------------------------"
+  echo "Open ports:"
+  ss -tulpn | grep LISTEN
+
+  echo "----------------------------------------------"
+  echo "Running Processes:"
+  ps -aux
+  
+  echo "----------------------------------------------"
+  echo "Services:"
+  systemctl list-unit-files --type=service | grep enabled
+  
+  echo "----------------------------------------------"
+  echo "Network Configuration:"
+  ip addr
+  
+  echo "----------------------------------------------"
+  echo "Disk Space Usage:"
+  df -h
+  
+  echo "----------------------------------------------"
+  echo "Memory Usage:"
+  free -m
+  echo "----------------------------------------------"
 }
 
 # Initialize log file
@@ -277,61 +329,7 @@ attempt_fetch_saved_objects
 
 # Capture system information
 {
-  echo "----------------------------------------------"
-  echo "Date and Time: $(date)"
-  
-  echo "----------------------------------------------" 
-  echo "Operating System Version:"
-  uname -a
-
-  echo "----------------------------------------------"
-  echo "ElastiFlow Flow Collector Version:"
-  /usr/share/elastiflow/bin/flowcoll -version 2>/dev/null || echo "ElastiFlow version information not available"
-  
-  echo "----------------------------------------------"
-  echo "ElastiFlow SNMP Collector Version:"
-  /usr/share/elastiflow/bin/snmpcoll -version 2>/dev/null || echo "SNMP Collector version information not available"
- 
-  echo "----------------------------------------------"
-  echo "Elasticsearch Version:"
-  /usr/share/elasticsearch/bin/elasticsearch -version
- 
-  echo "----------------------------------------------"
-  echo "Kibana Version:"
-  /usr/share/kibana/bin/kibana -version
-  
-  echo "----------------------------------------------"
-  echo "Opensearch Version:"
-  /usr/share/opensearch/bin/opensearch -version
-  
-  echo "----------------------------------------------"
-  echo "Open ports:"
-  ss -tulpn | grep LISTEN
-
-  echo "----------------------------------------------"
-  echo "Running Processes:"
-  ps -aux
-  
-  echo "----------------------------------------------"
-  echo "Services:"
-  systemctl list-unit-files --type=service | grep enabled
-  
-  echo "----------------------------------------------"
-  echo "Network Configuration:"
-  ip addr
-  
-  echo "----------------------------------------------"
-  echo "Disk Space Usage:"
-  df -h
-  
-  echo "----------------------------------------------"
-  echo "Memory Usage:"
-  free -m
-  echo "----------------------------------------------"
-
   get_hardware_info
-
-  
 } > "$temp_dir/$system_info_file"
 
 # Create the archive
