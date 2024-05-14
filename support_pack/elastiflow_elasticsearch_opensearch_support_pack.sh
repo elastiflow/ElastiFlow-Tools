@@ -58,9 +58,6 @@ attempt_fetch_node_stats() {
     done
 }
 
-
-#!/bin/bash
-
 # Function to attempt fetching data with user prompts
 attempt_fetch_saved_objects() {
     local retry_choice
