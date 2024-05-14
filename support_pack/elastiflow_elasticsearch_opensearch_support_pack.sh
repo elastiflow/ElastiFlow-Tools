@@ -222,7 +222,7 @@ exec &> >(tee -a "$temp_dir/$log_file") # Capture all output to log file
 
 echo "Starting ElastiFlow Support Pack at $(date)"
 
-
+backup_configs() {
 # Array of paths to copy
 declare -a paths=(
 #dir
@@ -314,7 +314,7 @@ for path in "${paths[@]}"; do
         fi
     fi
 done
-
+}
 
 ####obtain node stats...
 attempt_fetch_node_stats
