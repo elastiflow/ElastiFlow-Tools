@@ -121,7 +121,7 @@ curl -s -u "$USERNAME:$PASSWORD" -X POST "$KIBANA_URL/api/saved_objects/_export"
 if [ $? -eq 0 ]; then
   echo "All saved objects successfully backed up to $OUTPUT_FILE"
   mkdir -p "$temp_dir"  # Ensure temp directory exists
-  cp $OUTPUT_FILE "$temp_dir/$OUTPUT_FILE
+  cp "$OUTPUT_FILE" "$temp_dir/$OUTPUT_FILE"
   
 else
   echo "Failed to back up saved objects."
