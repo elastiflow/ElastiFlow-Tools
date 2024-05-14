@@ -117,11 +117,7 @@ if [ $? -eq 0 ]; then
   echo "All saved objects successfully backed up to $OUTPUT_FILE"
 else
   echo "Failed to back up saved objects."
-  exit 1
 fi
-
-
-
 
 
 # Function to get hardware information
