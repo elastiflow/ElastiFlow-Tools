@@ -317,10 +317,10 @@ done
 }
 
 # obtain node stats...
-#attempt_fetch_node_stats
+attempt_fetch_node_stats
 
 # back up saved objects
-#attempt_fetch_saved_objects
+attempt_fetch_saved_objects
 
 # capture system information
 get_hardware_info > "$temp_dir/$system_info_file"
