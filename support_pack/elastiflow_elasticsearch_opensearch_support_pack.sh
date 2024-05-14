@@ -18,7 +18,7 @@ temp_dir="temp_elastiflow_$current_time"
 # Create temporary directory
 mkdir -p $temp_dir
 
-attempt_fetch_nodestats() {
+attempt_fetch_node_stats() {
     local retry_choice
     local default_ip="localhost"
     local default_port=9200
@@ -276,7 +276,7 @@ done
 
 
 ####obtain node stats...
-attempt_fetch_nodestats
+attempt_fetch_node_stats
 
 ####back up saved objects
 attempt_fetch_saved_objects
