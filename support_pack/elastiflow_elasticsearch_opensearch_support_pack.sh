@@ -20,42 +20,52 @@ mkdir -p $temp_dir
 
 attempt_fetch_node_stats() {
     local retry_choice
+    local fetch_choice
     local default_ip="localhost"
     local default_port=9200
     local default_username="elastic"
     local default_password="elastic"
 
-    while true; do
-        # Prompt user for inputs with defaults
-        read -p "Enter IP address [$default_ip]: " ip
-        ip=${ip:-$default_ip}
+    read -p "Do you want to obtain node stats? (yes/no) " fetch_choice
+    case $fetch_choice in
+        [Yy]* )
+            while true; do
+                # Prompt user for inputs with defaults
+                read -p "Enter IP address [$default_ip]: " ip
+                ip=${ip:-$default_ip}
 
-        read -p "Enter port [$default_port]: " port
-        port=${port:-$default_port}
+                read -p "Enter port [$default_port]: " port
+                port=${port:-$default_port}
 
-        read -p "Enter username [$default_username]: " username
-        username=${username:-$default_username}
+                read -p "Enter username [$default_username]: " username
+                username=${username:-$default_username}
 
-        read -p "Enter password [$default_password]: " password
-        password=${password:-$default_password}
+                read -p "Enter password [$default_password]: " password
+                password=${password:-$default_password}
 
-        # Attempt to fetch node stats
-        response=$(curl -sk -u "$username:$password" "https://$ip:$port/_nodes/stats/os,process,indices?pretty")
-        echo "$response" | grep "cluster_name" &> /dev/null
-        if [ $? -eq 0 ]; then
-            echo "Successfully fetched node stats."
-            mkdir -p "$temp_dir"  # Ensure temp directory exists
-            echo "$response" > "$temp_dir/node_stats.txt" # Save the successful response to "node_stats.txt"
-            return 0
-        else
-            echo "Failed to fetch node stats."
-            read -p "Do you want to retry? (yes/no) " retry_choice
-            case $retry_choice in
-                [Yy]* ) continue;;
-                * ) echo "Exiting without success."; return 1;;
-            esac
-        fi
-    done
+                # Attempt to fetch node stats
+                response=$(curl -sk -u "$username:$password" "https://$ip:$port/_nodes/stats/os,process,indices?pretty")
+                echo "$response" | grep "cluster_name" &> /dev/null
+                if [ $? -eq 0 ]; then
+                    echo "Successfully fetched node stats."
+                    mkdir -p "$temp_dir"  # Ensure temp directory exists
+                    echo "$response" > "$temp_dir/node_stats.txt" # Save the successful response to "node_stats.txt"
+                    return 0
+                else
+                    echo "Failed to fetch node stats."
+                    read -p "Do you want to retry? (yes/no) " retry_choice
+                    case $retry_choice in
+                        [Yy]* ) continue;;
+                        * ) echo "Exiting without success."; return 1;;
+                    esac
+                fi
+            done
+            ;;
+        * )
+            echo "Exiting without attempting to fetch node stats."
+            return 1
+            ;;
+    esac
 }
 
 # Function to attempt fetching data with user prompts
@@ -327,6 +337,31 @@ for path in "${paths[@]}"; do
 done
 }
 
+wrap_up() {
+
+    # create the archive
+    echo "Creating archive..."
+    tar -czf $archive_name -C $temp_dir . 2>/dev/null
+    echo "Archive created: $archive_name"
+    
+    # Output final details
+    files_count=$(tar -tzf $archive_name | wc -l)
+    echo "Number of files archived: $files_count"
+    
+    # Output the archive size using ls
+    archive_size=$(ls -l "$archive_name" | awk '{print $5}')
+    echo "Archive size: $archive_size bytes"
+    
+    full_path=$(realpath $archive_name)
+    echo -e "\033[32mPlease send this file to ElastiFlow:\n$full_path\033[0m"
+    
+    # Clean up
+    echo "Cleaning up..."
+    rm -rf $temp_dir
+    
+    echo "Done."
+}
+
 # obtain node stats...
 attempt_fetch_node_stats
 
@@ -339,24 +374,6 @@ get_hardware_info > "$temp_dir/$system_info_file"
 # backup configs
 backup_configs
 
-# create the archive
-echo "Creating archive..."
-tar -czf $archive_name -C $temp_dir . 2>/dev/null
-echo "Archive created: $archive_name"
+#wrap up
+wrap_up
 
-# Output final details
-files_count=$(tar -tzf $archive_name | wc -l)
-echo "Number of files archived: $files_count"
-
-# Output the archive size using ls
-archive_size=$(ls -l "$archive_name" | awk '{print $5}')
-echo "Archive size: $archive_size bytes"
-
-full_path=$(realpath $archive_name)
-echo -e "\033[32mPlease send this file to ElastiFlow:\n$full_path\033[0m"
-
-# Clean up
-echo "Cleaning up..."
-rm -rf $temp_dir
-
-echo "Done."
