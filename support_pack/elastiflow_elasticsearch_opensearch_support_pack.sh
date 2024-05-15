@@ -71,50 +71,61 @@ attempt_fetch_node_stats() {
 # Function to attempt fetching data with user prompts
 attempt_fetch_saved_objects() {
     local retry_choice
+    local share_choice
     local default_ip="localhost"
     local default_port=5601
     local default_username="elastic"
     local default_password="elastic"
 
-    while true; do
-        # Prompt user for inputs with defaults
-        read -p "Enter IP address [$default_ip]: " ip
-        ip=${ip:-$default_ip}
+    read -p "Do you want to share dashboards? (yes/no) " share_choice
+    case $share_choice in
+        [Yy]* )
+            while true; do
+                # Prompt user for inputs with defaults
+                read -p "Enter IP address [$default_ip]: " ip
+                ip=${ip:-$default_ip}
 
-        read -p "Enter port [$default_port]: " port
-        port=${port:-$default_port}
+                read -p "Enter port [$default_port]: " port
+                port=${port:-$default_port}
 
-        read -p "Enter username [$default_username]: " username
-        username=${username:-$default_username}
+                read -p "Enter username [$default_username]: " username
+                username=${username:-$default_username}
 
-        read -s -p "Enter password [$default_password]: " password
-        password=${password:-$default_password}
-        echo
+                read -s -p "Enter password [$default_password]: " password
+                password=${password:-$default_password}
+                echo
 
-       # Attempt to connect to Kibana
-        response=$(curl -sk -u "$username:$password" "http://$ip:$port/api/status")
-        
-        # Check if the "name" field is present in the response
-        echo "$response" | jq -e '.name' &> /dev/null
-        
-        if [ $? -eq 0 ]; then
-            echo "Successfully connected to Kibana."
-            KIBANA_URL="http://$ip:$port"
-            USERNAME="$username"
-            PASSWORD="$password"
-            backup_saved_objects
-            return 0
-        else
-            echo "Failed to connect to Kibana."
-            read -p "Do you want to retry? (yes/no) " retry_choice
-            case $retry_choice in
-                [Yy]* ) continue;;
-                * ) echo "Exiting without success."; return 1;;
-            esac
-        fi
+                # Attempt to connect to Kibana
+                response=$(curl -sk -u "$username:$password" "http://$ip:$port/api/status")
+                
+                # Check if the "name" field is present in the response
+                echo "$response" | jq -e '.name' &> /dev/null
+                
+                if [ $? -eq 0 ]; then
+                    echo "Successfully connected to Kibana."
+                    KIBANA_URL="http://$ip:$port"
+                    USERNAME="$username"
+                    PASSWORD="$password"
+                    backup_saved_objects
+                    return 0
+                else
+                    echo "Failed to connect to Kibana."
+                    read -p "Do you want to retry? (yes/no) " retry_choice
+                    case $retry_choice in
+                        [Yy]* ) continue;;
+                        * ) echo "Exiting without success."; return 1;;
+                    esac
+                fi
 
-    done
+            done
+            ;;
+        * )
+            echo "Exiting without attempting to share dashboards."
+            return 1
+            ;;
+    esac
 }
+
 
 backup_saved_objects() {
 # Output file for the exported saved objects
