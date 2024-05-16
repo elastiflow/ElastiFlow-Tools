@@ -300,20 +300,11 @@ declare -a paths=(
 # Copy files to temporary directory
 echo "Copying directories and files..."
 
-# Function to check if a file is binary, an archive, or contains "Geolite"
 skip_files() {
     local file_path="$1"
     local archive_extensions=("zip" "tar.gz" "rar" "7z" "tar" "gz")
     local geolite_pattern="(?i).*geolite.*"
     
-    # Use the 'file' command to check if the file is binary
-    if file "$file_path" | grep -q "text"; then
-        # Not binary, continue checking for archive or Geolite
-        :
-    else
-        return 0 # Binary
-    fi
-
     # Check if the file is an archive
     for ext in "${archive_extensions[@]}"; do
         if [[ "$file_path" == *.$ext ]]; then
@@ -323,13 +314,11 @@ skip_files() {
 
     # Check if the file contains "Geolite" in any case variation followed by any characters
     if [[ "$file_path" =~ $geolite_pattern ]]; then
-        printf "$file_path\n\n"
         return 1 # Contains "Geolite"
     fi
 
-    return 0 # Not binary, not an archive, does not contain "Geolite"
+    return 0 # Not an archive and does not contain "Geolite"
 }
-
 
 
 # Loop through each path
