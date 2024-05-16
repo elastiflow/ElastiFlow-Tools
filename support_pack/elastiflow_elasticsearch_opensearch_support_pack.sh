@@ -300,15 +300,15 @@ declare -a paths=(
 # Copy files to temporary directory
 echo "Copying directories and files..."
 
-# Function to check if a file is binary, an archive, or contains "Maxmind"
+# Function to check if a file is binary, an archive, or contains "Geolite"
 skip_files() {
     local file_path="$1"
     local archive_extensions=("zip" "tar.gz" "rar" "7z" "tar" "gz")
-    local maxmind_pattern="[Mm][Aa][Xx][Mm][Ii][Nn][Dd]"
+    local geolite_pattern="[Gg][Ee][Oo][Ll][Ii][Tt][Ee]"
     
     # Use the 'file' command to check if the file is binary
     if file "$file_path" | grep -q "text"; then
-        # Not binary, continue checking for archive or Maxmind
+        # Not binary, continue checking for archive or Geolite
         :
     else
         return 0 # Binary
@@ -321,12 +321,12 @@ skip_files() {
         fi
     done
 
-    # Check if the file contains "Maxmind" in any case variation
-    if [[ "$file_path" =~ $maxmind_pattern ]]; then
-        return 1 # Contains "Maxmind"
+    # Check if the file contains "Geolite" in any case variation
+    if [[ "$file_path" =~ $geolite_pattern ]]; then
+        return 1 # Contains "Geolite"
     fi
 
-    return 0 # Not binary, not an archive, does not contain "Maxmind"
+    return 0 # Not binary, not an archive, does not contain "Geolite"
 }
 
 
