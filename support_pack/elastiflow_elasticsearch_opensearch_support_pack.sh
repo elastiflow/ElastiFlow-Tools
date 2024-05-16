@@ -194,6 +194,7 @@ get_system_info() {
     # Print installed software packages
     echo "=== Installed Software Packages ==="
     dpkg -l
+    rpm -qa
 
     echo "----------------------------------------------"
     echo "Date and Time: $(date)"
