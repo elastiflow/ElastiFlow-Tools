@@ -153,7 +153,7 @@ fi
 
 
 # Function to get hardware information
-get_hardware_info() {
+get_system_info() {
     # Print system information
     echo "=== System Information ==="
     echo "Hostname: $(hostname)"
@@ -380,7 +380,7 @@ attempt_fetch_node_stats
 attempt_fetch_saved_objects
 
 # capture system information
-get_hardware_info > "$temp_dir/$system_info_file"
+get_system_info > "$temp_dir/$system_info_file"
 
 # backup configs
 backup_configs
