@@ -299,15 +299,35 @@ declare -a paths=(
 # Copy files to temporary directory
 echo "Copying directories and files..."
 
-# Function to check if a file is binary
-is_binary() {
+# Function to check if a file is binary, an archive, or contains "Maxmind"
+skip_files() {
+    local file_path="$1"
+    local archive_extensions=("zip" "tar.gz" "rar" "7z" "tar" "gz")
+    local maxmind_pattern="[Mm][Aa][Xx][Mm][Ii][Nn][Dd]"
+    
     # Use the 'file' command to check if the file is binary
-    if file "$1" | grep -q "text"; then
-        return 1 # Not binary
+    if file "$file_path" | grep -q "text"; then
+        # Not binary, continue checking for archive or Maxmind
+        :
     else
         return 0 # Binary
     fi
+
+    # Check if the file is an archive
+    for ext in "${archive_extensions[@]}"; do
+        if [[ "$file_path" == *.$ext ]]; then
+            return 1 # Archive file
+        fi
+    done
+
+    # Check if the file contains "Maxmind" in any case variation
+    if [[ "$file_path" =~ $maxmind_pattern ]]; then
+        return 1 # Contains "Maxmind"
+    fi
+
+    return 0 # Not binary, not an archive, does not contain "Maxmind"
 }
+
 
 # Loop through each path
 for path in "${paths[@]}"; do
@@ -321,10 +341,10 @@ for path in "${paths[@]}"; do
         dir_size=0 # Initialize directory size
         # Loop through files in the directory
         while IFS= read -r -d '' file; do
-            if is_binary "$file"; then
+            if skip_files "$file"; then
                 continue # Skip binary files
             fi
-            # Add the size of non-binary files to the directory size
+            # Add the size of non-skipped files to the directory size
             dir_size=$(( dir_size + $(stat -c '%s' "$file") / 1024 / 1024 )) # Size in MB
         done < <(find "$path" -type f -print0)
         
