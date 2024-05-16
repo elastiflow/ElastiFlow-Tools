@@ -323,6 +323,7 @@ skip_files() {
 
     # Check if the file contains "Geolite" in any case variation followed by any characters
     if [[ "$file_path" =~ $geolite_pattern ]]; then
+        printf "$file_path\n\n"
         return 1 # Contains "Geolite"
     fi
 
