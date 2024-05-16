@@ -304,7 +304,7 @@ echo "Copying directories and files..."
 skip_files() {
     local file_path="$1"
     local archive_extensions=("zip" "tar.gz" "rar" "7z" "tar" "gz")
-    local geolite_pattern="[Gg][Ee][Oo][Ll][Ii][Tt][Ee]"
+    local geolite_pattern="[Gg][Ee][Oo][Ll][Ii][Tt][Ee].*"
     
     # Use the 'file' command to check if the file is binary
     if file "$file_path" | grep -q "text"; then
@@ -321,13 +321,14 @@ skip_files() {
         fi
     done
 
-    # Check if the file contains "Geolite" in any case variation
+    # Check if the file contains "Geolite" in any case variation followed by any characters
     if [[ "$file_path" =~ $geolite_pattern ]]; then
         return 1 # Contains "Geolite"
     fi
 
     return 0 # Not binary, not an archive, does not contain "Geolite"
 }
+
 
 
 # Loop through each path
