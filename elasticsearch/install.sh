@@ -1,5 +1,7 @@
 #!/bin/bash
 
+$osversion=""
+
 ########################################################
 
 # If you do not have an ElastiFlow Account ID and ElastiFlow Flow License Key, 
@@ -64,10 +66,62 @@ ID_LOWER=$(echo "$ID" | tr '[:upper:]' '[:lower:]')
 # Check if the OS is Ubuntu Server 22.04 or greater, or Debian 11 or greater
 if [[ "$ID_LOWER" == "ubuntu" && "$VERSION_ID" == "22.04" ]] || [[ "$ID_LOWER" == "ubuntu" && version_ge "$VERSION_ID" "22.04" ]]; then
     echo "Running on Ubuntu 22.04 or greater"
+    osversion="ubuntu"
+
 elif [[ "$ID_LOWER" == "debian" && "$VERSION_ID" == "11" ]] || [[ "$ID_LOWER" == "debian" && version_ge "$VERSION_ID" "11" ]]; then
     echo "Running on Debian 11 or greater"
+    osversion="debian"
+
 else
     echo "This script requires Ubuntu 22.04 or greater, or Debian 11 or greater" 1>&2
+    exit 1
+fi
+}
+
+#configure network for dhcp and fallback to static
+net_config(){
+# Check if the OS is Ubuntu or Debian
+if [[ "$ID_LOWER" == "ubuntu" ]]; then
+    # Define the file path
+    FILE_PATH="/etc/netplan/00-installer-config.yaml"
+    BACKUP_PATH="/etc/netplan/00-installer-config.yaml.bak"
+
+    # Back up the current configuration file
+    if [ -f "$FILE_PATH" ]; then
+        echo "Backing up the current Netplan configuration to $BACKUP_PATH"
+        cp "$FILE_PATH" "$BACKUP_PATH"
+    else
+        echo "No existing Netplan configuration found. Creating a new configuration file."
+    fi
+
+    # Replace the content with the new configuration
+    cat <<EOL > "$FILE_PATH"
+network:
+  version: 2
+  ethernets:
+    enp0s3:
+      dhcp4: true
+      dhcp4-overrides:
+        use-dns: false
+      dhcp-timeout: 60
+      dhcp-fallback:
+        addresses:
+          - 192.168.55.100/24
+        gateway4: 192.168.55.1
+        nameservers:
+          addresses: [8.8.8.8, 8.8.4.4]
+EOL
+
+    echo "Netplan configuration updated successfully."
+
+    # Apply the new Netplan configuration
+    netplan apply
+
+    echo "Netplan configuration applied."
+elif [[ "$ID_LOWER" == "debian" ]]; then
+    echo "hey there"
+else
+    echo "This script requires Ubuntu or Debian" 1>&2
     exit 1
 fi
 }
@@ -351,4 +405,8 @@ printf "\e[5;37m\n\nGo to http://$IP_ADDRESS:5601/app/dashboards (elastic / elas
 
 printf "Open ElastiFlow dashboard: “ElastiFlow (flow): Overview\"\n\n"
 
+#configure network for dhcp wiht fallback to static
+net_config
+
 printf "\n\nDone\n"
+
