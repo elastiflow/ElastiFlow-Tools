@@ -45,43 +45,37 @@ replace_text() {
 }
 
 
-check_compatibility(){
+check_for_root(){
 # Check if the script is run as root
 if [ "$(id -u)" -ne 0 ]; then
     echo "This script must be run as root" 1>&2
     exit 1
 fi
-
-# Function to compare versions
-version_ge() {
-    printf '%s\n%s' "$2" "$1" | sort -C -V
 }
 
-# Get the OS name and version
+check_for_version(){
+# Parse /etc/os-release to get OS information
 . /etc/os-release
 
 # Convert ID to lowercase
 ID_LOWER=$(echo "$ID" | tr '[:upper:]' '[:lower:]')
 
-# Check if the OS is Ubuntu Server 22.04 or greater, or Debian 11 or greater
-if [[ "$ID_LOWER" == "ubuntu" && "$VERSION_ID" == "22.04" ]] || [[ "$ID_LOWER" == "ubuntu" && version_ge "$VERSION_ID" "22.04" ]]; then
-    echo "Running on Ubuntu 22.04 or greater"
-    $osversion="ubuntu"
-
-elif [[ "$ID_LOWER" == "debian" && "$VERSION_ID" == "11" ]] || [[ "$ID_LOWER" == "debian" && version_ge "$VERSION_ID" "11" ]]; then
-    echo "Running on Debian 11 or greater"
-    $osversion="debian"
-
+# Check if the OS is Ubuntu or Debian
+if [[ "$ID_LOWER" == "ubuntu" ]]; then
+    echo "Found Ubuntu"
+elif [[ "$ID_LOWER" == "debian" ]]; then
+    echo "Found Debian"
 else
-    echo "This script requires Ubuntu 22.04 or greater, or Debian 11 or greater" 1>&2
+    echo "This script only supports Ubuntu or Debian" 1>&2
     exit 1
 fi
 }
 
+
 #configure network for dhcp and fallback to static
 net_config(){
 # Check if the OS is Ubuntu or Debian
-if [[ "$ID_LOWER" == "ubuntu" ]]; then
+if [[ "$osversion" == "ubuntu" ]]; then
     # Define the file path
     FILE_PATH="/etc/netplan/00-installer-config.yaml"
     BACKUP_PATH="/etc/netplan/00-installer-config.yaml.bak"
@@ -118,7 +112,7 @@ EOL
     netplan apply
 
     echo "Netplan configuration applied."
-elif [[ "$ID_LOWER" == "debian" ]]; then
+elif [[ "$osversion" == "debian" ]]; then
     echo "hey there"
 else
     echo "This script requires Ubuntu or Debian" 1>&2
