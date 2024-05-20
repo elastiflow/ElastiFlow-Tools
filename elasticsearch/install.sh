@@ -63,8 +63,10 @@ ID_LOWER=$(echo "$ID" | tr '[:upper:]' '[:lower:]')
 # Check if the OS is Ubuntu or Debian
 if [[ "$ID_LOWER" == "ubuntu" ]]; then
     echo "Found Ubuntu"
+    osversion="ubuntu"
 elif [[ "$ID_LOWER" == "debian" ]]; then
     echo "Found Debian"
+    osversion="debian"
 else
     echo "This script only supports Ubuntu or Debian" 1>&2
     exit 1
@@ -72,24 +74,12 @@ fi
 }
 
 
-#configure network for dhcp and fallback to static
-net_config(){
-# Check if the OS is Ubuntu or Debian
-if [[ "$osversion" == "ubuntu" ]]; then
-    # Define the file path
-    FILE_PATH="/etc/netplan/00-installer-config.yaml"
-    BACKUP_PATH="/etc/netplan/00-installer-config.yaml.bak"
-
-    # Back up the current configuration file
-    if [ -f "$FILE_PATH" ]; then
-        echo "Backing up the current Netplan configuration to $BACKUP_PATH"
-        cp "$FILE_PATH" "$BACKUP_PATH"
-    else
-        echo "No existing Netplan configuration found. Creating a new configuration file."
-    fi
-
-    # Replace the content with the new configuration
-    cat <<EOL > "$FILE_PATH"
+net_config() {
+    # Check if the OS is Ubuntu or Debian
+    if [[ "$osversion" == "ubuntu" ]]; then
+        # Replace the content with the new configuration
+        FILE_PATH="/etc/netplan/00-installer-config.yaml"
+        cat <<EOL > "$FILE_PATH"
 network:
   version: 2
   ethernets:
@@ -105,19 +95,12 @@ network:
         nameservers:
           addresses: [8.8.8.8, 8.8.4.4]
 EOL
-
-    echo "Netplan configuration updated successfully."
-
-    # Apply the new Netplan configuration
-    netplan apply
-
-    echo "Netplan configuration applied."
-elif [[ "$osversion" == "debian" ]]; then
-    echo "hey there"
-else
-    echo "This script requires Ubuntu or Debian" 1>&2
-    exit 1
-fi
+    elif [[ "$osversion" == "debian" ]]; then
+        echo "hey there"
+    else
+        echo "This script requires Ubuntu or Debian" 1>&2
+        exit 1
+    fi
 }
 
 
