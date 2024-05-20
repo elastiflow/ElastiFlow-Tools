@@ -23,7 +23,7 @@ What this script does:
 
 Requirements:
 ----------------
-One Ubuntu Server version 22 or 23 - fresh install
+One Ubuntu Server version 22 or 23, or Debian server version 11 or 12, freshly installed
 
 Instructions:
 ----------------
