@@ -43,10 +43,34 @@ replace_text() {
 }
 
 
+check_compatibility(){
+# Check if the script is run as root
 if [ "$(id -u)" -ne 0 ]; then
     echo "This script must be run as root" 1>&2
     exit 1
 fi
+
+# Function to compare versions
+version_ge() {
+    printf '%s\n%s' "$2" "$1" | sort -C -V
+}
+
+# Get the OS name and version
+. /etc/os-release
+
+# Check if the OS is Ubuntu Server 22.04 or greater, or Debian 11 or greater
+if [[ "$ID" == "ubuntu" && "$VERSION_ID" == "22.04" ]] || [[ "$ID" == "ubuntu" && version_ge "$VERSION_ID" "22.04" ]]; then
+    echo "Running on Ubuntu 22.04 or greater"
+elif [[ "$ID" == "debian" && "$VERSION_ID" == "11" ]] || [[ "$ID" == "debian" && version_ge "$VERSION_ID" "11" ]]; then
+    echo "Running on Debian 11 or greater"
+else
+    echo "This script requires Ubuntu 22.04 or greater, or Debian 11 or greater" 1>&2
+    exit 1
+fi
+}
+
+
+check_compatibility()
 
 printf "*********\n"
 printf "*********\n"
