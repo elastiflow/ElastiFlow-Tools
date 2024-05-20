@@ -85,15 +85,13 @@ network:
   ethernets:
     enp0s3:
       dhcp4: true
-      dhcp4-overrides:
-        use-dns: false
-      dhcp-timeout: 60
-      dhcp-fallback:
-        addresses:
-          - 192.168.55.100/24
-        gateway4: 192.168.55.1
-        nameservers:
-          addresses: [8.8.8.8, 8.8.4.4]
+      addresses:
+        - 192.168.55.100/24
+      routes:
+       - to: default
+         via: 192.168.55.1
+      nameservers:
+        addresses: [8.8.8.8, 8.8.4.4]
 EOL
     elif [[ "$osversion" == "debian" ]]; then
         echo "hey there"
