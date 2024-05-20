@@ -58,10 +58,13 @@ version_ge() {
 # Get the OS name and version
 . /etc/os-release
 
+# Convert ID to lowercase
+ID_LOWER=$(echo "$ID" | tr '[:upper:]' '[:lower:]')
+
 # Check if the OS is Ubuntu Server 22.04 or greater, or Debian 11 or greater
-if [[ "$ID" == "ubuntu" && "$VERSION_ID" == "22.04" ]] || [[ "$ID" == "ubuntu" && version_ge "$VERSION_ID" "22.04" ]]; then
+if [[ "$ID_LOWER" == "ubuntu" && "$VERSION_ID" == "22.04" ]] || [[ "$ID_LOWER" == "ubuntu" && version_ge "$VERSION_ID" "22.04" ]]; then
     echo "Running on Ubuntu 22.04 or greater"
-elif [[ "$ID" == "debian" && "$VERSION_ID" == "11" ]] || [[ "$ID" == "debian" && version_ge "$VERSION_ID" "11" ]]; then
+elif [[ "$ID_LOWER" == "debian" && "$VERSION_ID" == "11" ]] || [[ "$ID_LOWER" == "debian" && version_ge "$VERSION_ID" "11" ]]; then
     echo "Running on Debian 11 or greater"
 else
     echo "This script requires Ubuntu 22.04 or greater, or Debian 11 or greater" 1>&2
