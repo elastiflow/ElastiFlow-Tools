@@ -1,7 +1,6 @@
 #!/bin/bash
 
-osversion=""
-
+osversion="pending"
 ########################################################
 
 # If you do not have an ElastiFlow Account ID and ElastiFlow Flow License Key, 
