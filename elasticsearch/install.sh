@@ -53,7 +53,7 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 }
 
-check_for_version(){
+check_compatibility(){
 # Parse /etc/os-release to get OS information
 . /etc/os-release
 
@@ -121,7 +121,7 @@ fi
 }
 
 
-check_compatibility()
+check_compatibility
 
 printf "*********\n"
 printf "*********\n"
