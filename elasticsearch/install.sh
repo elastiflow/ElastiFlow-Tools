@@ -1,7 +1,6 @@
 #!/bin/bash
 
-osversion="pending"
-GLOBAL_VAR="I am a global variable"
+osversion=""
 
 ########################################################
 
