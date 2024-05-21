@@ -12,17 +12,36 @@ FILE_PATH=/etc/systemd/system/flowcoll.service.d/flowcoll.conf
 
 # Function to check if ElastiFlow is installed
 check_elastiflow_installed() {
-  if ! dpkg -l | grep "flowcoll"; then
+  if ! dpkg -l | grep -q "flowcoll"; then
     echo -e "${RED}ElastiFlow is not installed. Exiting.${NC}"
     exit 1
   fi
 }
 
-# Function to check if flowcoll.conf exists
-check_flowcoll_conf_exists() {
+# Function to check if flowcoll.conf exists and prompt to restore if missing
+check_and_prompt_restore_flowcoll_conf() {
   if [ ! -f "$FILE_PATH" ]; then
-    echo -e "${RED}$FILE_PATH does not exist. Exiting.${NC}"
-    exit 1
+    echo -e "${RED}$FILE_PATH does not exist.${NC}"
+    while true; do
+      read -p "Do you want to restore flowcoll.conf to its original state from the .deb file? (yes/y or no/n or quit/q): " restore
+      case $restore in
+        yes|y)
+          restore_original
+          break
+          ;;
+        no|n)
+          echo -e "${RED}flowcoll.conf is required. Exiting.${NC}"
+          exit 1
+          ;;
+        quit|q)
+          echo "Exiting script."
+          exit 0
+          ;;
+        *)
+          echo "Invalid input. Please enter yes/y, no/n, or quit/q."
+          ;;
+      esac
+    done
   fi
 }
 
@@ -289,8 +308,8 @@ show_intro
 # Check if ElastiFlow is installed
 check_elastiflow_installed
 
-# Check if flowcoll.conf exists
-check_flowcoll_conf_exists
+# Check if flowcoll.conf exists and prompt to restore if missing
+check_and_prompt_restore_flowcoll_conf
 
 while true; do
   read -p "Do you want to restore flowcoll.conf to its original state? (yes/y or no/n or quit/q): " restore
