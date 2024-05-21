@@ -1,356 +1,330 @@
+# Version 1.0
+
 #!/bin/bash
 
-osversion=""
+# Define color codes
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
 
-########################################################
+# Path to flowcoll.conf
+FILE_PATH=/etc/systemd/system/flowcoll.service.d/flowcoll.conf
 
-# If you do not have an ElastiFlow Account ID and ElastiFlow Flow License Key, 
-# please go here: https://elastiflow.com/get-started
-# Paste these values on the corresponding line, between the quotes
-
-elastiflow_account_id=""
-elastiflow_flow_license_key=""
-
-elastiflow_version="6.4.2"
-flowcoll_config_path="/etc/systemd/system/flowcoll.service.d/flowcoll.conf"
-########################################################
-
-# Function to handle errors
-handle_error() {
-    local error_msg="$1"
-    local line_num="$2"
-    local user_decision
-
-    echo "Error at line $line_num: $error_msg"
-    echo "Do you wish to continue? (y/n):"
-    read user_decision
-
-    if [[ $user_decision == "y" ]]; then
-        echo "Continuing execution..."
-    elif [[ $user_decision == "n" ]]; then
-        echo "Exiting..."
-        exit 1
-    else
-        echo "Invalid input. Exiting..."
-        exit 1
-    fi
-}
-# Replace text in a file with error handling
-replace_text() {
-    local file_path="$1"
-    local old_text="$2"
-    local new_text="$3"
-    local line_num="$4"
-    sed -i.bak "s|$old_text|$new_text|g" "$file_path" || handle_error "Failed to replace text in $file_path." "$line_num"
-}
-
-
-check_for_root(){
-# Check if the script is run as root
-if [ "$(id -u)" -ne 0 ]; then
-    echo "This script must be run as root" 1>&2
+# Function to check if ElastiFlow is installed
+check_elastiflow_installed() {
+  if ! dpkg -l | grep "flowcoll"; then
+    echo -e "${RED}ElastiFlow is not installed. Exiting.${NC}"
     exit 1
-fi
+  fi
 }
 
-check_compatibility(){
-# Parse /etc/os-release to get OS information
-. /etc/os-release
-
-# Convert ID to lowercase
-ID_LOWER=$(echo "$ID" | tr '[:upper:]' '[:lower:]')
-
-# Check if the OS is Ubuntu or Debian
-if [[ "$ID_LOWER" == "ubuntu" ]]; then
-    echo "Found Ubuntu"
-    osversion="ubuntu"
-elif [[ "$ID_LOWER" == "debian" ]]; then
-    echo "Found Debian"
-    osversion="debian"
-else
-    echo "This script only supports Ubuntu or Debian" 1>&2
+# Function to check if flowcoll.conf exists
+check_flowcoll_conf_exists() {
+  if [ ! -f "$FILE_PATH" ]; then
+    echo -e "${RED}$FILE_PATH does not exist. Exiting.${NC}"
     exit 1
-fi
+  fi
 }
 
+# Function to reload systemd daemon and restart flowcoll service
+reload_and_restart_flowcoll() {
+  sudo systemctl daemon-reload
+  sudo systemctl restart flowcoll.service
+}
 
-check_compatibility
+# Function to check the health of flowcoll.service and rerun the configuration if necessary
+check_service_health() {
+  echo "Checking if flowcoll.service stays running for at least 10 seconds..."
+  i=10
+  while [ $i -ge 1 ]; do
+    echo -ne "Waiting: $i\033[0K\r"
+    sleep 1
+    i=$((i-1))
+  done
 
-printf "*********\n"
-printf "*********\n"
-printf "*********Setting up ElastiFlow environment...*********\n"
-printf "*********\n"
-printf "*********\n"
-
-printf "\n\n\n*********Removing Ubuntu update service...\n\n"
-#systemctl stop unattended-upgrades.service 
-apt remove -y unattended-upgrades
-
-printf "\n\n\n*********Installing prereqs...\n\n"
-apt-get -qq update && apt-get -qq install jq net-tools git bc gpg default-jre curl wget unzip apt-transport-https
-
-printf "\n\n\n*********Stopping Ubuntu pop-up "Daemons using outdated libraries" when using apt to install or update packages...\n\n"
-needrestart_conf_path="/etc/needrestart/needrestart.conf"
-if [ -f "$needrestart_conf_path" ]; then
-    echo "$needrestart_conf_path exists."
-    replace_text "$needrestart_conf_path" "#\$nrconf{restart} = 'i';" "\$nrconf{restart} = 'a';" "${LINENO}"
-else
-    printf "\n\n$needrestart_conf_path does not exist."
-fi
-
-printf "\n\n\n*********System tuning starting...\n\n"
-#!/bin/bash
-
-# Define kernel parameters as a block of text
-kernel_tuning=$(cat <<EOF
-#####ElastiFlow tuning parameters######
-net.core.netdev_max_backlog=4096
-net.core.rmem_default=262144
-net.core.rmem_max=67108864
-net.ipv4.udp_rmem_min=131072
-net.ipv4.udp_mem=2097152 4194304 8388608
-vm.max_map_count=262144
-#######################################
-EOF
-)
-
-# This comments out existing lines containing these parameters in /etc/sysctl.conf
-sed -i '/net.core.netdev_max_backlog=/s/^/#/' /etc/sysctl.conf
-sed -i '/net.core.rmem_default=/s/^/#/' /etc/sysctl.conf
-sed -i '/net.core.rmem_max=/s/^/#/' /etc/sysctl.conf
-sed -i '/net.ipv4.udp_rmem_min=/s/^/#/' /etc/sysctl.conf
-sed -i '/net.ipv4.udp_mem=/s/^/#/' /etc/sysctl.conf
-sed -i '/vm.max_map_count=/s/^/#/' /etc/sysctl.conf
-
-# Append the new kernel parameters block to /etc/sysctl.conf
-echo "$kernel_tuning" >> /etc/sysctl.conf
-
-# Reload the sysctl settings
-sysctl -p
-
-echo "Kernel parameters updated in /etc/sysctl.conf with previous configurations commented out."
-
-
-#Increase System Limits (all ES nodes)
-#Increased system limits should be specified in a systemd attributes file for the elasticsearch service.
-mkdir /etc/systemd/system/elasticsearch.service.d && \
-echo -e "[Service]\nLimitNOFILE=131072\nLimitNPROC=8192\nLimitMEMLOCK=infinity\nLimitFSIZE=infinity\nLimitAS=infinity" | \
-tee /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf > /dev/null
-echo "System limits set"
-printf "\n\n\n*********System tuning done...\n\n"
-
-
-printf "\n\n\n*********Sleeping 20 seconds to give dpkg time to clean up...\n\n"
-sleep 20s
-
-printf "\n\n\n*********Installing ElasticSearch...\n\n"
-wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | gpg --dearmor -o /usr/share/keyrings/elasticsearch-keyring.gpg || handle_error "Failed to add Elasticsearch GPG key." "${LINENO}"
-echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] https://artifacts.elastic.co/packages/8.x/apt stable main" | tee /etc/apt/sources.list.d/elastic-8.x.list || handle_error "Failed to add Elasticsearch GPG key." "${LINENO}"
-elastic_install_log=$(apt-get -qq update && apt-get -qq install elasticsearch | stdbuf -oL tee /dev/tty) || handle_error "Failed to install Elasticsearch." "${LINENO}"
-elastic_password=$(echo "$elastic_install_log" | awk -F' : ' '/The generated password for the elastic built-in superuser/{print $2}') 
-elastic_password=$(echo -n "$elastic_password" | tr -cd '[:print:]')
-printf "\n\n\n*********Elastic password is $elastic_password\n\n"
-
-printf "\n\n\n*********Configuring JVM memory usage...\n\n"
-# Get the total installed memory from /proc/meminfo in kB
-total_mem_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
-
-# Convert the memory from kB to GB and divide by 3 to get 1/3, using bc for floating point support
-one_third_mem_gb=$(echo "$total_mem_kb / 1024 / 1024 / 3" | bc -l)
-
-# Use printf to round the floating point number to an integer
-rounded_mem_gb=$(printf "%.0f" $one_third_mem_gb)
-
-# Ensure the value does not exceed 31GB
-if [ $rounded_mem_gb -gt 31 ]; then
-    jvm_mem_gb=31
-else
-    jvm_mem_gb=$rounded_mem_gb
-fi
-
-# Prepare the JVM options string with the calculated memory size
-jvm_options="-Xms${jvm_mem_gb}g\n-Xmx${jvm_mem_gb}g"
-
-# Echo the options and use tee to write to the file
-echo -e $jvm_options | tee /etc/elasticsearch/jvm.options.d/heap.options > /dev/null
-
-echo "Elasticsearch JVM options set to use $jvm_mem_gb GB for both -Xms and -Xmx."
-
-printf "\n\n\n*********Enabling and starting ElasticSearch service...\n\n"
-systemctl daemon-reload && systemctl enable elasticsearch.service && systemctl start elasticsearch.service
-
-printf "\n\n\n*********Sleeping 20 seconds to give service time to stabilize...\n\n"
-sleep 20s
-
-if systemctl is-active --quiet elasticsearch.service; then
-  printf "\n\n\n*********\e[32mElasticsearch service is up\e[0m\n\n"
-else
-  echo "Elasticsearch is not running."
-fi
-
-printf "\n\n\n*********Checking if Elastic server is up...\n\n"
-#curl_result=$(curl -s --cacert /etc/elasticsearch/certs/http_ca.crt -u elastic:$elastic_password https://localhost:9200 | tee /dev/tty) 
-curl_result=$(curl -s -k -u elastic:$elastic_password https://localhost:9200 | tee /dev/tty) 
-
-search_text='cluster_name" : "elasticsearch'
-if echo "$curl_result" | grep -q "$search_text"; then
-    echo -e "\e[32mElastic is up!\e[0m\n\n"
-else
-  echo -e "Something's wrong with Elastic...\n\n"
-fi
-
-printf "\n\n\n*********Generating Kibana enrollment token...\n\n"
-kibana_token=$(/usr/share/elasticsearch/bin/elasticsearch-create-enrollment-token -s kibana)
-printf "\n\n\nKibana enrollment token is:\n\n $kibana_token\n\n"
-
-printf "\n\n\n*********Sleeping 20 seconds to give dpkg time to clean up...\n\n"
-sleep 20s
-
-printf "\n\n\n*********Downloading and installing Kibana...\n\n"
-apt-get -qq update && apt-get -qq install kibana
-
-printf "\n\n\n*********Configuring Kibana - set 0.0.0.0 as server.host\n\n"
-## The default is 'localhost', which usually means remote machines will not be able to connect.
-kibana_config_path="/etc/kibana/kibana.yml"
-replace_text "$kibana_config_path" "#server.host: \"localhost\"" "server.host: \"0.0.0.0\"" "${LINENO}"
-
-printf "\n\n\n*********Enrolling Kibana with Elastic...\n\n"
-/usr/share/kibana/bin/kibana-setup --enrollment-token $kibana_token
-
-printf "\n\n\n*********Configuring Kibana - set elasticsearch.hosts to localhost instead of DHCP IP...\n\n"
-kibana_config_path="/etc/kibana/kibana.yml"
-replace_text "$kibana_config_path" "elasticsearch.hosts: \['https:\/\/[^']*'\]" "elasticsearch.hosts: \['https:\/\/localhost:9200'\]" "${LINENO}"
-replace_text "$kibana_config_path" '#server.publicBaseUrl: ""' 'server.publicBaseUrl: "http://kibana.example.com:5601"' "${LINENO}"
-
-printf "\n\n\n*********Generating Kibana saved objects encryption key...\n\n"
-# Run the command to generate encryption keys quietly
-output=$(/usr/share/kibana/bin/kibana-encryption-keys generate -q)
-
-# Extract the line that starts with 'xpack.reporting.encryptionKey'
-key_line=$(echo "$output" | grep '^xpack.encryptedSavedObjects.encryptionKey')
-
-# Check if the key line was found
-if [[ -n "$key_line" ]]; then
-    # Append the key line to /etc/kibana/kibana.yml
-    echo "$key_line" | sudo tee -a /etc/kibana/kibana.yml > /dev/null
-else
-    echo "No encryption key line found."
-fi
-
-printf "\n\n\n*********Enabling and starting Kibana service...\n\n"
-systemctl daemon-reload && systemctl enable kibana.service && systemctl start kibana.service
-
-printf "\n\n\n*********Sleeping 20 seconds to give service time to stabilize...\n\n"
-sleep 20s
-
-printf "\n\n\n*********Downloading and installing ElastiFlow Flow Collector...\n\n" 
-#Install Elastiflow flow collector
-wget -O flow-collector_"$elastiflow_version"_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_"$elastiflow_version"_linux_amd64.deb
-apt-get -qq install libpcap-dev
-apt-get -qq install ./flow-collector_"$elastiflow_version"_linux_amd64.deb
-
-printf "\n\n\n*********Changing Elastic password to \"elastic\"...\n\n"
-curl -k -X POST -u elastic:$elastic_password "https://localhost:9200/_security/user/elastic/_password" -H 'Content-Type: application/json' -d'
-{
-  "password" : "elastic"
-}'
-
-elastic_password="elastic"
-
-printf "\n\n\n*********Configuring ElastiFlow Flow Collector...\n\n" 
-
-replace_text "$flowcoll_config_path" 'Environment="EF_LICENSE_ACCEPTED=false"' 'Environment="EF_LICENSE_ACCEPTED=true"' "${LINENO}"
-replace_text "$flowcoll_config_path" '#Environment="EF_ACCOUNT_ID="' "Environment=\"EF_ACCOUNT_ID=$elastiflow_account_id\"" "${LINENO}"
-replace_text "$flowcoll_config_path" '#Environment="EF_FLOW_LICENSE_KEY="' "Environment=\"EF_FLOW_LICENSE_KEY=$elastiflow_flow_license_key\"" "${LINENO}"
-replace_text "$flowcoll_config_path" 'Environment="EF_OUTPUT_ELASTICSEARCH_ENABLE=false"' 'Environment="EF_OUTPUT_ELASTICSEARCH_ENABLE=true"' "${LINENO}"
-replace_text "$flowcoll_config_path" 'Environment="EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE=false"' 'Environment="EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE=true"' "${LINENO}"
-replace_text "$flowcoll_config_path" 'Environment="EF_OUTPUT_ELASTICSEARCH_PASSWORD=changeme"' "Environment=\"EF_OUTPUT_ELASTICSEARCH_PASSWORD=$elastic_password\"" "${LINENO}"
-replace_text "$flowcoll_config_path" 'Environment="EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE=false"' 'Environment="EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE=true"' "${LINENO}"
-replace_text "$flowcoll_config_path" 'Environment="EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION=false"' 'Environment="EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION=true"' "${LINENO}"
-
-#Configure flowcoll service to stop after 60 seconds when asked to terminate so this does not hold up the system forever on shutdown.
-replace_text "/etc/systemd/system/flowcoll.service" "TimeoutStopSec=infinity" "TimeoutStopSec=60" "N/A"
-
-printf "\n\n\n*********Enabling and starting ElastiFlow service...\n\n"
-#Start Elastiflow flow collector
-systemctl daemon-reload && systemctl enable flowcoll.service && systemctl start flowcoll.service
-
-#Install Elastiflow SNMP collector
-#wget https://elastiflow-releases.s3.us-east-2.amazonaws.com/snmp-collector/snmp-collector_6.4.2_linux_amd64.deb
-#apt install ./snmp-collector_6.4.2_linux_amd64.deb
-#systemctl daemon-reload && systemctl enable snmpcoll.service && systemctl start snmp.service
-
-printf "\n\n\n*********Sleeping 20 seconds to give service time to stabilize...\n\n"
-sleep 20s
-
-printf "\n\n\n*********Downloading and installing ElastiFlow flow dashboards\n\n"
-git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
-response=$(curl --connect-timeout 10 -X POST -u elastic:$elastic_password "localhost:5601/api/saved_objects/_import?overwrite=true" -H "kbn-xsrf: true" --form file=@/etc/elastiflow_for_elasticsearch/kibana/flow/kibana-8.2.x-flow-ecs.ndjson -H 'kbn-xsrf: true')
-
-dashboards_success=$(echo "$response" | jq -r '.success')
-
-if [ "$dashboards_success" == "true" ]; then
-    printf "Flow dashboards installed successfully.\n\n"
-else
-    printf "Flow dashboards not installed successfully\n\n"
-fi
-
-#printf "\n\n\n*********Clean up - Shutting down machine\n\n"
-#shutdown -h now
-
-#printf "\n\n\n*********Elastic trial license started\n\n"
-#curl -X POST -k 'https://localhost:9200/_license/start_trial?acknowledge=true' -u elastic:$elastic_password
-
-# Loop through each service in the array
-
-SERVICES=("elasticsearch.service" "kibana.service" "flowcoll.service") # Replace these with actual service names
-for SERVICE_NAME in "${SERVICES[@]}"; do
-    # Check if the service is active
-    if systemctl is-active --quiet "$SERVICE_NAME"; then
-        # If the service is up, print the message in green
-        echo -e "\e[32m$SERVICE_NAME is up ✓\e[0m"
+  if ! sudo systemctl is-active --quiet flowcoll.service; then
+    echo -e "${RED}flowcoll.service did not stay started.${NC}"
+    
+    # Check logs for "license error"
+    if sudo journalctl -u flowcoll.service | grep -q "license error"; then
+      echo -e "${RED}License error found in logs. Rerunning trial configuration.${NC}"
+      configure_trial
+      reload_and_restart_flowcoll
     else
-        # If the service is not up, print the message in red
-        echo -e "\e[31m$SERVICE_NAME is not up X\e[0m"
+      restore_latest_backup
+      reload_and_restart_flowcoll
+      echo "Rerunning the configuration routine."
+      configure_trial
+      reload_and_restart_flowcoll
     fi
+    
+    return 1
+  else
+    echo -e "${GREEN}flowcoll.service restarted successfully and stayed running for at least 10 seconds.${NC}"
+    return 0
+  fi
+}
+
+# Function to restore the latest backup of flowcoll.conf
+restore_latest_backup() {
+  LATEST_BACKUP=$(ls -t ${FILE_PATH}.bak.* | head -1)
+  
+  if [ -f "$LATEST_BACKUP" ]; then
+    sudo cp -f "$LATEST_BACKUP" "$FILE_PATH"
+    echo "Restored $FILE_PATH from the latest backup: $LATEST_BACKUP."
+  else
+    echo -e "${RED}No backup file found to restore.${NC}"
+  fi
+}
+
+# Function to validate input
+validate_input() {
+  local input="$1"
+  
+  # Check for non-printable characters
+  if echo "$input" | grep -q '[^[:print:]]'; then
+    echo -e "${RED}Input contains non-printable characters.${NC}"
+    return 1
+  fi
+  
+  # Check for escape codes
+  if echo "$input" | grep -q $'\e'; then
+    echo -e "${RED}Input contains escape codes.${NC}"
+    return 1
+  fi
+
+  # Check if input is empty
+  if [ -z "$input" ]; then
+    echo -e "${RED}Input is empty.${NC}"
+    return 1
+  fi
+
+  # Check if input exceeds 1000 characters
+  if [ ${#input} -gt 1000 ]; then
+    echo -e "${RED}Input exceeds 1000 characters.${NC}"
+    return 1
+  fi
+
+  return 0
+}
+
+# Function to prompt for validated input
+prompt_for_input() {
+  local prompt_message="$1"
+  local input_var_name="$2"
+  local input
+
+  while true; do
+    read -p "$prompt_message" input
+    if validate_input "$input"; then
+      eval "$input_var_name='$input'"
+      break
+    fi
+  done
+}
+
+# Function to configure ElastiFlow fully featured trial
+configure_trial() {
+  # Prompt the user to enable fully featured trial
+  while true; do
+    read -p "Do you want to install the fully featured trial? (yes/y or no/n or quit/q): " enable_trial
+    case $enable_trial in
+      yes|y)
+        enable_trial="yes"
+        break
+        ;;
+      no|n)
+        enable_trial="no"
+        break
+        ;;
+      quit|q)
+        echo "Exiting script."
+        exit 0
+        ;;
+      *)
+        echo "Invalid input. Please enter yes/y, no/n, or quit/q."
+        ;;
+    esac
+  done
+
+  if [ "$enable_trial" = "yes" ]; then
+    # Prompt for ElastiFlow account ID and license key
+    prompt_for_input "Enter your ElastiFlow account ID: " account_id
+    prompt_for_input "Enter your ElastiFlow license key: " license_key
+
+    # Backup the existing configuration file with timestamp
+    TIMESTAMP=$(date +%Y%m%d%H%M%S)
+    sudo cp -f "$FILE_PATH" "${FILE_PATH}.bak.$TIMESTAMP"
+
+    # Delete existing lines for EF_LICENSE_ACCEPTED, EF_ACCOUNT_ID, and EF_FLOW_LICENSE_KEY
+    sudo sed -i '/EF_LICENSE_ACCEPTED/d; /EF_ACCOUNT_ID/d; /EF_FLOW_LICENSE_KEY/d' "$FILE_PATH"
+
+    # Add new configuration lines after the [Service] section
+    sudo sed -i "/\[Service\]/a Environment=\"EF_LICENSE_ACCEPTED=true\"\nEnvironment=\"EF_ACCOUNT_ID=$account_id\"\nEnvironment=\"EF_FLOW_LICENSE_KEY=$license_key\"" "$FILE_PATH"
+
+    # Reload and restart flowcoll service
+    reload_and_restart_flowcoll
+
+    # Check if flowcoll.service is active
+    if check_service_health configure_trial; then
+      echo -e "${GREEN}Fully featured trial enabled with the provided ElastiFlow account ID and license key.${NC}"
+    fi
+  else
+    echo "Fully featured trial not enabled."
+  fi
+}
+
+# Function to configure MaxMind ASN and Geo enrichment
+configure_maxmind() {
+  # Prompt the user to enable MaxMind ASN and Geo enrichment
+  while true; do
+    read -p "Do you want to install MaxMind enrichment? (yes/y or no/n or quit/q): " enable_maxmind
+    case $enable_maxmind in
+      yes|y)
+        enable_maxmind="yes"
+        break
+        ;;
+      no|n)
+        enable_maxmind="no"
+        break
+        ;;
+      quit|q)
+        echo "Exiting script."
+        exit 0
+        ;;
+      *)
+        echo "Invalid input. Please enter yes/y, no/n, or quit/q."
+        ;;
+    esac
+  done
+
+  if [ "$enable_maxmind" = "yes" ]; then
+    # Prompt for MaxMind license key
+    prompt_for_input "Enter your MaxMind license key: " maxmind_license_key
+
+    # Download and extract MaxMind databases
+    sudo mkdir -p /etc/elastiflow/maxmind/
+    
+    if sudo wget -O ./Geolite2-ASN.tar.gz "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-ASN&license_key=$maxmind_license_key&suffix=tar.gz"; then
+      sudo tar -xvzf Geolite2-ASN.tar.gz --strip-components 1 -C /etc/elastiflow/maxmind/
+      sudo rm -f ./Geolite2-ASN.tar.gz
+      echo "MaxMind ASN database downloaded and extracted successfully."
+    else
+      echo -e "${RED}Failed to download MaxMind ASN database. Rerunning the configuration routine.${NC}"
+      configure_maxmind
+      return 1
+    fi
+
+    if sudo wget -O ./Geolite2-City.tar.gz "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=$maxmind_license_key&suffix=tar.gz"; then
+      sudo tar -xvzf Geolite2-City.tar.gz --strip-components 1 -C /etc/elastiflow/maxmind/
+      sudo rm -f ./Geolite2-City.tar.gz
+      echo "MaxMind GeoIP City database downloaded and extracted successfully."
+    else
+      echo -e "${RED}Failed to download MaxMind GeoIP City database. Rerunning the configuration routine.${NC}"
+      configure_maxmind
+      return 1
+    fi
+
+    # Delete existing MaxMind lines
+    sudo sed -i '/EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE/d; /EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_PATH/d; /EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE/d; /EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_PATH/d; /EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_VALUES/d; /EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_LANG/d; /EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_INCLEXCL_PATH/d; /EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_INCLEXCL_REFRESH_RATE/d' "$FILE_PATH"
+
+    # Add MaxMind heading if it does not exist and add new MaxMind configuration lines under the # MaxMind heading
+    if ! grep -q "# MaxMind" "$FILE_PATH"; then
+      echo "# MaxMind" | sudo tee -a "$FILE_PATH"
+    fi
+
+    sudo sed -i '/# MaxMind/ a Environment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE=true"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_PATH=/etc/elastiflow/maxmind/GeoLite2-ASN.mmdb"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE=true"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_PATH=/etc/elastiflow/maxmind/GeoLite2-City.mmdb"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_VALUES=city,country,country_code,location,timezone"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_LANG=en"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_INCLEXCL_PATH=/etc/elastiflow/maxmind/incl_excl.yml"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_INCLEXCL_REFRESH_RATE=15"' "$FILE_PATH"
+
+    # Reload and restart flowcoll service
+    reload_and_restart_flowcoll
+
+    # Check if flowcoll.service is active
+    if check_service_health configure_maxmind; then
+      echo -e "${GREEN}MaxMind ASN and Geo enrichment enabled with the provided license key.${NC}"
+    fi
+  else
+    echo "MaxMind ASN and Geo enrichment not enabled."
+  fi
+}
+
+# Function to restore flowcoll.conf to its original state
+restore_original() {
+  sudo wget https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_6.4.2_linux_amd64.deb -O /tmp/flow-collector.deb
+
+  # Extract the flowcoll.conf file from the downloaded .deb package
+  sudo dpkg-deb -x /tmp/flow-collector.deb /tmp/flow-collector
+  sudo cp -f /tmp/flow-collector/etc/systemd/system/flowcoll.service.d/flowcoll.conf "$FILE_PATH"
+  
+  echo "flowcoll.conf has been restored to its original state."
+
+  # Clean up the temporary files
+  sudo rm -rf /tmp/flow-collector /tmp/flow-collector.deb
+}
+
+# Function to show instructions for requesting an account ID and license key
+show_intro() {
+ echo -e "${GREEN}******************************${NC}"
+ echo -e "${GREEN}***ElastiFlow PoC Configurator***${NC}"
+ echo -e "${GREEN}******************************${NC}"
+}
+
+# Function to show instructions for requesting an account ID and license key
+show_request_instructions() {
+  echo -e "${GREEN}To request an ElastiFlow account ID and trial license key, visit:${NC}"
+  echo -e "${GREEN}https://elastiflow.com/get-started${NC}"
+  echo -e "${GREEN}******************************${NC}"
+}
+
+# Function to show instructions for obtaining a MaxMind license key
+show_maxmind_instructions() {
+  echo -e "${GREEN}Create a MaxMind account if you do not have one by going here:${NC}"
+  echo -e "${GREEN}https://www.maxmind.com/en/geolite2/signup${NC}"
+  echo -e "${GREEN}Obtain your license key by logging in to your maxmind.com account and clicking on “My Account”.${NC}"
+  echo -e "${GREEN}******************************${NC}"
+}
+
+# Main script execution
+show_intro
+
+# Check if ElastiFlow is installed
+check_elastiflow_installed
+
+# Check if flowcoll.conf exists
+check_flowcoll_conf_exists
+
+while true; do
+  read -p "Do you want to restore flowcoll.conf to its original state? (yes/y or no/n or quit/q): " restore
+  case $restore in
+    yes|y)
+      restore="yes"
+      break
+      ;;
+    no|n)
+      restore="no"
+      break
+      ;;
+    quit|q)
+      echo "Exiting script."
+      exit 0
+      ;;
+    *)
+      echo "Invalid input. Please enter yes/y, no/n, or quit/q."
+      ;;
+  esac
 done
 
-if [ "$dashboards_success" == "true" ]; then
-     echo -e "\e[32mDashboards are installed ✓\e[0m"
+if [ "$restore" = "yes" ]; then
+  restore_original
 else
-     echo -e "\e[31mDashboards are not installed X\e[0m"
+  # Show request instructions
+  show_request_instructions
+  
+  # Show MaxMind instructions
+  show_maxmind_instructions
+  
+  # Run the trial configuration function
+  configure_trial
+
+  # Run the MaxMind configuration function
+  configure_maxmind
 fi
-
-# Get the first network interface starting with enp
-INTERFACE=$(ip -o link show | grep -o 'enp[^:]*' | head -n 1)
-
-if [ -z "$INTERFACE" ]; then
-    echo "No interface starting with 'enp' found."
-else
-    # Get the IP address of the interface
-    IP_ADDRESS=$(ip -o -4 addr show $INTERFACE | awk '{print $4}' | cut -d/ -f1)
-
-    if [ -z "$IP_ADDRESS" ]; then
-        echo "No IP address found for interface $INTERFACE."
-    fi
-fi
-
-#Get installed versions
-version=$(/usr/share/elasticsearch/bin/elasticsearch --version | grep -oP 'Version: \K[\d.]+')
-printf "\n\nInstalled Elasticsearch version: $version\n" 
-
-version=$(/usr/share/kibana/bin/kibana --version --allow-root | jq -r '.config.serviceVersion.value' 2>/dev/null)
-printf "Installed Kibana version: $version\n" 
-
-version=$(/usr/share/elastiflow/bin/flowcoll -version)
-printf "Installed ElastiFlow version: $version\n"
-
-version=$(lsb_release -d | awk -F'\t' '{print $2}')
-printf "Operating System: $version\n\n"
-
-printf "\e[5;37m\n\nGo to http://$IP_ADDRESS:5601/app/dashboards (elastic / elastic)\n\n\e[0m"
-
-printf "Open ElastiFlow dashboard: “ElastiFlow (flow): Overview\"\n\n"
-
-printf "\n\nDone\n"
-
