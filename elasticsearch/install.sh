@@ -18,33 +18,6 @@ check_elastiflow_installed() {
   fi
 }
 
-# Function to check if flowcoll.conf exists and prompt to restore if missing
-check_and_prompt_restore_flowcoll_conf() {
-  if [ ! -f "$FILE_PATH" ]; then
-    echo -e "${RED}$FILE_PATH does not exist.${NC}"
-    while true; do
-      read -p "Do you want to restore flowcoll.conf to its original state from the .deb file? (yes/y or no/n or quit/q): " restore
-      case $restore in
-        yes|y)
-          restore_original
-          break
-          ;;
-        no|n)
-          echo -e "${RED}flowcoll.conf is required. Exiting.${NC}"
-          exit 1
-          ;;
-        quit|q)
-          echo "Exiting script."
-          exit 0
-          ;;
-        *)
-          echo "Invalid input. Please enter yes/y, no/n, or quit/q."
-          ;;
-      esac
-    done
-  fi
-}
-
 # Function to reload systemd daemon and restart flowcoll service
 reload_and_restart_flowcoll() {
   sudo systemctl daemon-reload
@@ -308,42 +281,33 @@ show_intro
 # Check if ElastiFlow is installed
 check_elastiflow_installed
 
-# Check if flowcoll.conf exists and prompt to restore if missing
-check_and_prompt_restore_flowcoll_conf
-
+# Initial prompt to ask the user what they want to do
 while true; do
-  read -p "Do you want to restore flowcoll.conf to its original state? (yes/y or no/n or quit/q): " restore
-  case $restore in
-    yes|y)
-      restore="yes"
+  echo "What would you like to do?"
+  echo "1. Configure fully featured trial"
+  echo "2. Enable MaxMind enrichment"
+  echo "3. Restore original flowcoll.conf from deb file"
+  echo "4. Quit"
+  read -p "Enter the number of your choice: " choice
+  case $choice in
+    1)
+      configure_trial
       break
       ;;
-    no|n)
-      restore="no"
+    2)
+      configure_maxmind
       break
       ;;
-    quit|q)
+    3)
+      restore_original
+      break
+      ;;
+    4)
       echo "Exiting script."
       exit 0
       ;;
     *)
-      echo "Invalid input. Please enter yes/y, no/n, or quit/q."
+      echo "Invalid choice. Please enter 1, 2, 3, or 4."
       ;;
   esac
 done
-
-if [ "$restore" = "yes" ]; then
-  restore_original
-else
-  # Show request instructions
-  show_request_instructions
-  
-  # Show MaxMind instructions
-  show_maxmind_instructions
-  
-  # Run the trial configuration function
-  configure_trial
-
-  # Run the MaxMind configuration function
-  configure_maxmind
-fi
