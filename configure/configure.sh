@@ -16,9 +16,11 @@ reload_and_restart_flowcoll() {
 # Function to check the health of flowcoll.service and rerun the configuration if necessary
 check_service_health() {
   echo "Checking if flowcoll.service stays running for at least 10 seconds..."
-  for i in {10..1}; do
+  i=10
+  while [ $i -ge 1 ]; do
     echo -ne "Waiting: $i\033[0K\r"
     sleep 1
+    i=$((i-1))
   done
 
   if ! sudo systemctl is-active --quiet flowcoll.service; then
@@ -33,7 +35,7 @@ check_service_health() {
       restore_latest_backup
       reload_and_restart_flowcoll
       echo "Rerunning the configuration routine."
-      $1
+      configure_trial
       reload_and_restart_flowcoll
     fi
     
@@ -49,7 +51,7 @@ restore_latest_backup() {
   FILE_PATH=/etc/systemd/system/flowcoll.service.d/flowcoll.conf
   LATEST_BACKUP=$(ls -t ${FILE_PATH}.bak.* | head -1)
   
-  if [[ -f $LATEST_BACKUP ]]; then
+  if [ -f $LATEST_BACKUP ]; then
     sudo cp -f $LATEST_BACKUP $FILE_PATH
     echo "Restored $FILE_PATH from the latest backup: $LATEST_BACKUP."
   else
@@ -60,9 +62,24 @@ restore_latest_backup() {
 # Function to configure ElastiFlow fully featured trial
 configure_trial() {
   # Prompt the user to enable fully featured trial
-  read -p "Do you want to install the fully featured trial? (yes/y or no/n): " enable_trial
+  while true; do
+    read -p "Do you want to install the fully featured trial? (yes/y or no/n): " enable_trial
+    case $enable_trial in
+      yes|y)
+        enable_trial="yes"
+        break
+        ;;
+      no|n)
+        enable_trial="no"
+        break
+        ;;
+      *)
+        echo "Invalid input. Please enter yes/y or no/n."
+        ;;
+    esac
+  done
 
-  if [[ $enable_trial == "yes" || $enable_trial == "y" ]]; then
+  if [ "$enable_trial" = "yes" ]; then
     # Prompt for ElastiFlow account ID and license key
     read -p "Enter your ElastiFlow account ID: " account_id
     read -p "Enter your ElastiFlow license key: " license_key
@@ -95,9 +112,24 @@ configure_trial() {
 # Function to configure MaxMind ASN and Geo enrichment
 configure_maxmind() {
   # Prompt the user to enable MaxMind ASN and Geo enrichment
-  read -p "Do you want to install MaxMind enrichment? (yes/y or no/n): " enable_maxmind
+  while true; do
+    read -p "Do you want to install MaxMind enrichment? (yes/y or no/n): " enable_maxmind
+    case $enable_maxmind in
+      yes|y)
+        enable_maxmind="yes"
+        break
+        ;;
+      no|n)
+        enable_maxmind="no"
+        break
+        ;;
+      *)
+        echo "Invalid input. Please enter yes/y or no/n."
+        ;;
+    esac
+  done
 
-  if [[ $enable_maxmind == "yes" || $enable_maxmind == "y" ]]; then
+  if [ "$enable_maxmind" = "yes" ]; then
     # Prompt for MaxMind license key
     read -p "Enter your MaxMind license key: " maxmind_license_key
 
@@ -132,7 +164,7 @@ configure_maxmind() {
       echo "# MaxMind" | sudo tee -a $FILE_PATH
     fi
 
-    sudo sed -i '/# MaxMind/ a Environment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE=true"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_PATH=/etc/elastiflow/maxmind/GeoLite2-ASN.mmdb"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE=true"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_PATH=/etc/elastiflow/maxmind/GeoLite2-City.mmdb"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_VALUES=city,country,country_code,location,timezone"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_LANG=en"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_INCLEXCL_PATH=/etc/elastiflow/maxmind/incl_excl.yml"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_INCLEXCL_REFRESH_RATE=15"' $FILE_PATH
+    sudo sed -i '/# Max Mind/ a Environment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE=true"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_PATH=/etc/elastiflow/maxmind/GeoLite2-ASN.mmdb"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE=true"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_PATH=/etc/elastiflow/maxmind/GeoLite2-City.mmdb"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_VALUES=city,country,country_code,location,timezone"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_LANG=en"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_INCLEXCL_PATH=/etc/elastiflow/maxmind/incl_excl.yml"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_INCLEXCL_REFRESH_RATE=15"' $FILE_PATH
 
     # Reload and restart flowcoll service
     reload_and_restart_flowcoll
@@ -150,7 +182,7 @@ configure_maxmind() {
 restore_original() {
   FILE_PATH=/etc/systemd/system/flowcoll.service.d/flowcoll.conf
 
-  if [[ -f ${FILE_PATH}.bak ]]; then
+  if [ -f ${FILE_PATH}.bak ]; then
     sudo cp -f ${FILE_PATH}.bak $FILE_PATH
     echo "flowcoll.conf restored to its original state."
   else
@@ -183,9 +215,24 @@ show_maxmind_instructions() {
 # Main script execution
 show_intro
 
-read -p "Do you want to restore flowcoll.conf to its original state? (yes/y or no/n): " restore
+while true; do
+  read -p "Do you want to restore flowcoll.conf to its original state? (yes/y or no/n): " restore
+  case $restore in
+    yes|y)
+      restore="yes"
+      break
+      ;;
+    no|n)
+      restore="no"
+      break
+      ;;
+    *)
+      echo "Invalid input. Please enter yes/y or no/n."
+      ;;
+  esac
+done
 
-if [[ $restore == "yes" || $restore == "y" ]]; then
+if [ "$restore" = "yes" ]; then
   restore_original
 else
   # Show request instructions
