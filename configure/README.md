@@ -1,5 +1,5 @@
 
-ElastiFlow PoC configurator
+ElastiFlow PoC configurator 1.0
 ================================  
 
 ## Author
