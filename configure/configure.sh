@@ -1,3 +1,5 @@
+# Version 1.0
+
 #!/bin/bash
 
 # Define color codes
