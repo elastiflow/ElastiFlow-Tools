@@ -160,8 +160,9 @@ restore_original() {
 
 # Function to show instructions for requesting an account ID and license key
 show_intro() {
-  echo -e "${GREEN}***ElastiFlow PoC Configurator***${NC}"
-  echo -e "${GREEN}******************************${NC}"
+ echo -e "${GREEN}******************************${NC}"
+ echo -e "${GREEN}***ElastiFlow PoC Configurator***${NC}"
+ echo -e "${GREEN}******************************${NC}"
 }
 
 # Function to show instructions for requesting an account ID and license key
@@ -180,6 +181,8 @@ show_maxmind_instructions() {
 }
 
 # Main script execution
+show_intro
+
 read -p "Do you want to restore flowcoll.conf to its original state? (yes/y or no/n): " restore
 
 if [[ $restore == "yes" || $restore == "y" ]]; then
