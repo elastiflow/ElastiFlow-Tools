@@ -158,12 +158,39 @@ restore_original() {
   fi
 }
 
+# Function to show instructions for requesting an account ID and license key
+show_intro() {
+  echo -e "${GREEN}***ElastiFlow PoC Configurator***${NC}"
+  echo -e "${GREEN}******************************${NC}"
+}
+
+# Function to show instructions for requesting an account ID and license key
+show_request_instructions() {
+  echo -e "${GREEN}To request an ElastiFlow account ID and trial license key, visit:${NC}"
+  echo -e "${GREEN}https://elastiflow.com/get-started${NC}"
+  echo -e "${GREEN}******************************${NC}"
+}
+
+# Function to show instructions for obtaining a MaxMind license key
+show_maxmind_instructions() {
+  echo -e "${GREEN}Create a MaxMind account if you do not have one by going here:${NC}"
+  echo -e "${GREEN}https://www.maxmind.com/en/geolite2/signup${NC}"
+  echo -e "${GREEN}Obtain your license key by logging in to your maxmind.com account and clicking on “My Account”.${NC}"
+  echo -e "${GREEN}******************************${NC}"
+}
+
 # Main script execution
 read -p "Do you want to restore flowcoll.conf to its original state? (yes/y or no/n): " restore
 
 if [[ $restore == "yes" || $restore == "y" ]]; then
   restore_original
 else
+  # Show request instructions
+  show_request_instructions
+  
+  # Show MaxMind instructions
+  show_maxmind_instructions
+  
   # Run the trial configuration function
   configure_trial
 
