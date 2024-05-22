@@ -61,7 +61,7 @@ restore_latest_backup() {
 
 # Function to configure ElastiFlow fully featured trial
 configure_trial() {
-  showtrial
+  show_trial
   
   # Prompt for ElastiFlow account ID and license key
   read -p "Enter your ElastiFlow account ID: " account_id
