@@ -126,7 +126,7 @@ configure_maxmind() {
     echo "# MaxMind" | sudo tee -a $FILE_PATH
   fi
 
-  sudo sed -i '/# MaxMind/ a Environment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE=true"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_PATH=/etc/elastiflow/maxmind/GeoLite2-ASN.mmdb"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE=true"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_PATH=/etc/elastiflow/maxmind/GeoLite2-City.mmdb"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_VALUES=city,country,country_code,location,timezone"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_LANG=en"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_INCLEXCL_PATH=/etc/elastiflow/maxmind/incl_excl.yml"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_INCLEXCL_REFRESH_RATE=15"' $FILE_PATH
+  sudo sed -i '/# Max Mind/ a Environment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE=true"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_PATH=/etc/elastiflow/maxmind/GeoLite2-ASN.mmdb"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE=true"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_PATH=/etc/elastiflow/maxmind/GeoLite2-City.mmdb"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_VALUES=city,country,country_code,location,timezone"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_LANG=en"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_INCLEXCL_PATH=/etc/elastiflow/maxmind/incl_excl.yml"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_INCLEXCL_REFRESH_RATE=15"' $FILE_PATH
 
   # Reload and restart flowcoll service
   reload_and_restart_flowcoll
@@ -146,12 +146,25 @@ download_default_conf() {
   echo -e "${GREEN}Default flowcoll.conf downloaded and copied.${NC}"
 }
 
-# Function to show instructions for requesting an account ID and license key
 show_intro() {
  echo -e "${GREEN}******************************${NC}"
  echo -e "${GREEN}*** ElastiFlow PoC Configurator ***${NC}"
  echo -e "${GREEN}******************************${NC}"
 }
+
+# Function to show instructions for requesting an account ID and license key
+show_trial() {
+ echo -e "${GREEN}Obtain ElastiFlow trial credentials from: https://elastiflow.com/get-started${NC}"
+ echo -e "${GREEN}******************************${NC}"
+}
+
+# Function to show instructions for obtaining maxmind license key
+show_maxmind() {
+ echo -e "${GREEN}Obtain Maxmind license key from: https://www.maxmind.com/en/geolite2/signup${NC}"
+ echo -e "${GREEN}Log in to Maxmind.com, click "My Account", and then "Manage License Keys"${NC}"
+ echo -e "${GREEN}******************************${NC}"
+}
+
 
 # Main script execution
 
@@ -167,11 +180,9 @@ while true; do
   case $choice in
     1)
       configure_trial
-      break
       ;;
     2)
       configure_maxmind
-      break
       ;;
     3)
       restore_latest_backup
