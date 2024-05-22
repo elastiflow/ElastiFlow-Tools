@@ -53,7 +53,8 @@ restore_latest_backup() {
   
   if [ -f $LATEST_BACKUP ]; then
     sudo cp -f $LATEST_BACKUP $FILE_PATH
-    echo "Restored $FILE_PATH from the latest backup: $LATEST_BACKUP."
+    echo -e "${GREEN}Restored $FILE_PATH from the latest backup: $LATEST_BACKUP.${NC}"
+
   else
     echo -e "${RED}No backup file found to restore.${NC}"
   fi
