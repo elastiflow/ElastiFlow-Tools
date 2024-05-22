@@ -1,5 +1,5 @@
 
-ElastiFlow PoC Configurator Version 1.2
+ElastiFlow PoC Configurator Version 1.3
 ================================  
 
 ## Author
@@ -11,8 +11,7 @@ Script to quickly configure ElastiFlow for a trial and MaxMind enrichment
 
 What this is:
 ----------------
-This bash shell script can be run on the ElastiFlow Virtual Appliance 1.4 to automatically configure the flowcoll.conf file to add in trial 
-license information and configure and download MaxMind enrichment.
+This bash shell script can be run on the ElastiFlow Virtual Appliance 1.4 to automatically configure the flowcoll.conf file to add in trial license information and configure and download MaxMind enrichment.
 
 What this script does:
 ----------------
