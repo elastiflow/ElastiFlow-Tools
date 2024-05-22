@@ -180,10 +180,11 @@ configure_maxmind() {
 
 # Function to download default flowcoll.conf file from deb file
 download_default_conf() {
-  sudo apt-get download elastiflow
-  dpkg-deb -xv elastiflow*.deb /tmp/elastiflow
+  wget -O flow-collector.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_6.4.2_linux_amd64.deb
+  dpkg-deb -xv flow-collector.deb /tmp/elastiflow > /dev/null
   sudo cp /tmp/elastiflow/etc/systemd/system/flowcoll.service.d/flowcoll.conf /etc/systemd/system/flowcoll.service.d/flowcoll.conf
-  echo "Default flowcoll.conf downloaded and copied."
+  sudo rm -rf /tmp/elastiflow
+  echo -e "${GREEN}Default flowcoll.conf downloaded and copied.${NC}"
 }
 
 # Function to show instructions for requesting an account ID and license key
@@ -194,9 +195,9 @@ show_intro() {
 }
 
 # Main script execution
-show_intro
 
 while true; do
+  show_intro
   echo "Choose an option:"
   echo "1. Configure fully featured trial"
   echo "2. Enable MaxMind enrichment"
