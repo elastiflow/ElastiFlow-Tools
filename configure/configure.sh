@@ -61,120 +61,79 @@ restore_latest_backup() {
 
 # Function to configure ElastiFlow fully featured trial
 configure_trial() {
-  # Prompt the user to enable fully featured trial
-  while true; do
-    read -p "Do you want to install the fully featured trial? (yes/y or no/n): " enable_trial
-    case $enable_trial in
-      yes|y)
-        enable_trial="yes"
-        break
-        ;;
-      no|n)
-        enable_trial="no"
-        break
-        ;;
-      *)
-        echo "Invalid input. Please enter yes/y or no/n."
-        ;;
-    esac
-  done
+  # Prompt for ElastiFlow account ID and license key
+  read -p "Enter your ElastiFlow account ID: " account_id
+  read -p "Enter your ElastiFlow license key: " license_key
 
-  if [ "$enable_trial" = "yes" ]; then
-    # Prompt for ElastiFlow account ID and license key
-    read -p "Enter your ElastiFlow account ID: " account_id
-    read -p "Enter your ElastiFlow license key: " license_key
+  # Define the file path
+  FILE_PATH=/etc/systemd/system/flowcoll.service.d/flowcoll.conf
 
-    # Define the file path
-    FILE_PATH=/etc/systemd/system/flowcoll.service.d/flowcoll.conf
+  # Backup the existing configuration file with timestamp
+  TIMESTAMP=$(date +%Y%m%d%H%M%S)
+  sudo cp -f $FILE_PATH ${FILE_PATH}.bak.$TIMESTAMP
 
-    # Backup the existing configuration file with timestamp
-    TIMESTAMP=$(date +%Y%m%d%H%M%S)
-    sudo cp -f $FILE_PATH ${FILE_PATH}.bak.$TIMESTAMP
+  # Delete existing lines for EF_LICENSE_ACCEPTED, EF_ACCOUNT_ID, and EF_FLOW_LICENSE_KEY
+  sudo sed -i '/EF_LICENSE_ACCEPTED/d; /EF_ACCOUNT_ID/d; /EF_FLOW_LICENSE_KEY/d' $FILE_PATH
 
-    # Delete existing lines for EF_LICENSE_ACCEPTED, EF_ACCOUNT_ID, and EF_FLOW_LICENSE_KEY
-    sudo sed -i '/EF_LICENSE_ACCEPTED/d; /EF_ACCOUNT_ID/d; /EF_FLOW_LICENSE_KEY/d' $FILE_PATH
+  # Add new configuration lines after the [Service] section
+  sudo sed -i "/\[Service\]/a Environment=\"EF_LICENSE_ACCEPTED=true\"\nEnvironment=\"EF_ACCOUNT_ID=$account_id\"\nEnvironment=\"EF_FLOW_LICENSE_KEY=$license_key\"" $FILE_PATH
 
-    # Add new configuration lines after the [Service] section
-    sudo sed -i "/\[Service\]/a Environment=\"EF_LICENSE_ACCEPTED=true\"\nEnvironment=\"EF_ACCOUNT_ID=$account_id\"\nEnvironment=\"EF_FLOW_LICENSE_KEY=$license_key\"" $FILE_PATH
+  # Reload and restart flowcoll service
+  reload_and_restart_flowcoll
 
-    # Reload and restart flowcoll service
-    reload_and_restart_flowcoll
-
-    # Check if flowcoll.service is active
-    if check_service_health configure_trial; then
-      echo -e "${GREEN}Fully featured trial enabled with the provided ElastiFlow account ID and license key.${NC}"
-    fi
-  else
-    echo "Fully featured trial not enabled."
+  # Check if flowcoll.service is active
+  if check_service_health configure_trial; then
+    echo -e "${GREEN}Fully featured trial enabled with the provided ElastiFlow account ID and license key.${NC}"
   fi
 }
 
 # Function to configure MaxMind ASN and Geo enrichment
 configure_maxmind() {
-  # Prompt the user to enable MaxMind ASN and Geo enrichment
-  while true; do
-    read -p "Do you want to install MaxMind enrichment? (yes/y or no/n): " enable_maxmind
-    case $enable_maxmind in
-      yes|y)
-        enable_maxmind="yes"
-        break
-        ;;
-      no|n)
-        enable_maxmind="no"
-        break
-        ;;
-      *)
-        echo "Invalid input. Please enter yes/y or no/n."
-        ;;
-    esac
-  done
+  # Prompt for MaxMind license key
+  read -p "Enter your MaxMind license key: " maxmind_license_key
 
-  if [ "$enable_maxmind" = "yes" ]; then
-    # Prompt for MaxMind license key
-    read -p "Enter your MaxMind license key: " maxmind_license_key
-
-    # Download and extract MaxMind databases
-    sudo mkdir -p /etc/elastiflow/maxmind/
+  # Download and extract MaxMind databases
+  sudo mkdir -p /etc/elastiflow/maxmind/
     
-    if sudo wget -O ./Geolite2-ASN.tar.gz "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-ASN&license_key=$maxmind_license_key&suffix=tar.gz"; then
-      sudo tar -xvzf Geolite2-ASN.tar.gz --strip-components 1 -C /etc/elastiflow/maxmind/
-      sudo rm -f ./Geolite2-ASN.tar.gz
-      echo "MaxMind ASN database downloaded and extracted successfully."
-    else
-      echo -e "${RED}Failed to download MaxMind ASN database. Rerunning the configuration routine.${NC}"
-      configure_maxmind
-      return 1
-    fi
-
-    if sudo wget -O ./Geolite2-City.tar.gz "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=$maxmind_license_key&suffix=tar.gz"; then
-      sudo tar -xvzf Geolite2-City.tar.gz --strip-components 1 -C /etc/elastiflow/maxmind/
-      sudo rm -f ./Geolite2-City.tar.gz
-      echo "MaxMind GeoIP City database downloaded and extracted successfully."
-    else
-      echo -e "${RED}Failed to download MaxMind GeoIP City database. Rerunning the configuration routine.${NC}"
-      configure_maxmind
-      return 1
-    fi
-
-    # Delete existing MaxMind lines
-    sudo sed -i '/EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE/d; /EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_PATH/d; /EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE/d; /EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_PATH/d; /EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_VALUES/d; /EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_LANG/d; /EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_INCLEXCL_PATH/d; /EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_INCLEXCL_REFRESH_RATE/d' $FILE_PATH
-
-    # Add MaxMind heading if it does not exist and add new MaxMind configuration lines under the # MaxMind heading
-    if ! grep -q "# MaxMind" $FILE_PATH; then
-      echo "# MaxMind" | sudo tee -a $FILE_PATH
-    fi
-
-    sudo sed -i '/# Max Mind/ a Environment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE=true"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_PATH=/etc/elastiflow/maxmind/GeoLite2-ASN.mmdb"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE=true"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_PATH=/etc/elastiflow/maxmind/GeoLite2-City.mmdb"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_VALUES=city,country,country_code,location,timezone"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_LANG=en"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_INCLEXCL_PATH=/etc/elastiflow/maxmind/incl_excl.yml"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_INCLEXCL_REFRESH_RATE=15"' $FILE_PATH
-
-    # Reload and restart flowcoll service
-    reload_and_restart_flowcoll
-
-    # Check if flowcoll.service is active
-    if check_service_health configure_maxmind; then
-      echo -e "${GREEN}MaxMind ASN and Geo enrichment enabled with the provided license key.${NC}"
-    fi
+  if sudo wget -O ./Geolite2-ASN.tar.gz "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-ASN&license_key=$maxmind_license_key&suffix=tar.gz"; then
+    sudo tar -xvzf Geolite2-ASN.tar.gz --strip-components 1 -C /etc/elastiflow/maxmind/
+    sudo rm -f ./Geolite2-ASN.tar.gz
+    echo "MaxMind ASN database downloaded and extracted successfully."
   else
-    echo "MaxMind ASN and Geo enrichment not enabled."
+    echo -e "${RED}Failed to download MaxMind ASN database. Rerunning the configuration routine.${NC}"
+    configure_maxmind
+    return 1
+  fi
+
+  if sudo wget -O ./Geolite2-City.tar.gz "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=$maxmind_license_key&suffix=tar.gz"; then
+    sudo tar -xvzf Geolite2-City.tar.gz --strip-components 1 -C /etc/elastiflow/maxmind/
+    sudo rm -f ./Geolite2-City.tar.gz
+    echo "MaxMind GeoIP City database downloaded and extracted successfully."
+  else
+    echo -e "${RED}Failed to download MaxMind GeoIP City database. Rerunning the configuration routine.${NC}"
+    configure_maxmind
+    return 1
+  fi
+
+  # Define the file path
+  FILE_PATH=/etc/systemd/system/flowcoll.service.d/flowcoll.conf
+
+  # Delete existing MaxMind lines
+  sudo sed -i '/EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE/d; /EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_PATH/d; /EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE/d; /EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_PATH/d; /EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_VALUES/d; /EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_LANG/d; /EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_INCLEXCL_PATH/d; /EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_INCLEXCL_REFRESH_RATE/d' $FILE_PATH
+
+  # Add MaxMind heading if it does not exist and add new MaxMind configuration lines under the # MaxMind heading
+  if ! grep -q "# MaxMind" $FILE_PATH; then
+    echo "# MaxMind" | sudo tee -a $FILE_PATH
+  fi
+
+  sudo sed -i '/# MaxMind/ a Environment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE=true"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_PATH=/etc/elastiflow/maxmind/GeoLite2-ASN.mmdb"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE=true"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_PATH=/etc/elastiflow/maxmind/GeoLite2-City.mmdb"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_VALUES=city,country,country_code,location,timezone"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_LANG=en"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_INCLEXCL_PATH=/etc/elastiflow/maxmind/incl_excl.yml"\nEnvironment="EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_INCLEXCL_REFRESH_RATE=15"' $FILE_PATH
+
+  # Reload and restart flowcoll service
+  reload_and_restart_flowcoll
+
+  # Check if flowcoll.service is active
+  if check_service_health configure_maxmind; then
+    echo -e "${GREEN}MaxMind ASN and Geo enrichment enabled with the provided license key.${NC}"
   fi
 }
 
@@ -208,9 +167,11 @@ while true; do
   case $choice in
     1)
       configure_trial
+      break
       ;;
     2)
       configure_maxmind
+      break
       ;;
     3)
       restore_latest_backup
