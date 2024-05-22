@@ -61,6 +61,8 @@ restore_latest_backup() {
 
 # Function to configure ElastiFlow fully featured trial
 configure_trial() {
+  showtrial
+  
   # Prompt for ElastiFlow account ID and license key
   read -p "Enter your ElastiFlow account ID: " account_id
   read -p "Enter your ElastiFlow license key: " license_key
@@ -89,6 +91,9 @@ configure_trial() {
 
 # Function to configure MaxMind ASN and Geo enrichment
 configure_maxmind() {
+
+  show_maxmind
+  
   # Prompt for MaxMind license key
   read -p "Enter your MaxMind license key: " maxmind_license_key
 
