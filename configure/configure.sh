@@ -1,4 +1,4 @@
-# Version 1.2
+# Version 1.3
 
 #!/bin/bash
 
@@ -178,72 +178,51 @@ configure_maxmind() {
   fi
 }
 
-# Function to restore flowcoll.conf to its original state
-restore_original() {
-  FILE_PATH=/etc/systemd/system/flowcoll.service.d/flowcoll.conf
-
-  if [ -f ${FILE_PATH}.bak ]; then
-    sudo cp -f ${FILE_PATH}.bak $FILE_PATH
-    echo "flowcoll.conf restored to its original state."
-  else
-    echo -e "${RED}No backup file found to restore.${NC}"
-  fi
+# Function to download default flowcoll.conf file from deb file
+download_default_conf() {
+  sudo apt-get download elastiflow
+  dpkg-deb -xv elastiflow*.deb /tmp/elastiflow
+  sudo cp /tmp/elastiflow/etc/systemd/system/flowcoll.service.d/flowcoll.conf /etc/systemd/system/flowcoll.service.d/flowcoll.conf
+  echo "Default flowcoll.conf downloaded and copied."
 }
 
 # Function to show instructions for requesting an account ID and license key
 show_intro() {
  echo -e "${GREEN}******************************${NC}"
- echo -e "${GREEN}***ElastiFlow PoC Configurator***${NC}"
+ echo -e "${GREEN}*** ElastiFlow PoC Configurator ***${NC}"
  echo -e "${GREEN}******************************${NC}"
-}
-
-# Function to show instructions for requesting an account ID and license key
-show_request_instructions() {
-  echo -e "${GREEN}To request an ElastiFlow account ID and trial license key, visit:${NC}"
-  echo -e "${GREEN}https://elastiflow.com/get-started${NC}"
-  echo -e "${GREEN}******************************${NC}"
-}
-
-# Function to show instructions for obtaining a MaxMind license key
-show_maxmind_instructions() {
-  echo -e "${GREEN}Create a MaxMind account if you do not have one by going here:${NC}"
-  echo -e "${GREEN}https://www.maxmind.com/en/geolite2/signup${NC}"
-  echo -e "${GREEN}Obtain your license key by logging in to your maxmind.com account and clicking on “My Account”.${NC}"
-  echo -e "${GREEN}******************************${NC}"
 }
 
 # Main script execution
 show_intro
 
 while true; do
-  read -p "Do you want to restore flowcoll.conf to its original state? (yes/y or no/n): " restore
-  case $restore in
-    yes|y)
-      restore="yes"
-      break
+  echo "Choose an option:"
+  echo "1. Configure fully featured trial"
+  echo "2. Enable MaxMind enrichment"
+  echo "3. Restore flowcoll.conf from latest backup"
+  echo "4. Download default flowcoll.conf from deb file"
+  echo "5. Quit"
+  read -p "Enter your choice (1-5): " choice
+  case $choice in
+    1)
+      configure_trial
       ;;
-    no|n)
-      restore="no"
-      break
+    2)
+      configure_maxmind
+      ;;
+    3)
+      restore_latest_backup
+      ;;
+    4)
+      download_default_conf
+      ;;
+    5)
+      echo "Exiting the script."
+      exit 0
       ;;
     *)
-      echo "Invalid input. Please enter yes/y or no/n."
+      echo "Invalid choice. Please enter a number between 1 and 5."
       ;;
   esac
 done
-
-if [ "$restore" = "yes" ]; then
-  restore_original
-else
-  # Show request instructions
-  show_request_instructions
-  
-  # Show MaxMind instructions
-  show_maxmind_instructions
-  
-  # Run the trial configuration function
-  configure_trial
-
-  # Run the MaxMind configuration function
-  configure_maxmind
-fi
