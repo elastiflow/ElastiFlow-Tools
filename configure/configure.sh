@@ -152,22 +152,24 @@ download_default_conf() {
 }
 
 show_intro() {
- echo -e "${GREEN}******************************${NC}"
+ echo -e "${GREEN}**********************************${NC}"
  echo -e "${GREEN}*** ElastiFlow PoC Configurator ***${NC}"
- echo -e "${GREEN}******************************${NC}"
+ echo -e "${GREEN}**********************************${NC}"
 }
 
 # Function to show instructions for requesting an account ID and license key
 show_trial() {
+ echo -e "${GREEN}********** Configure Trial********${NC}"
  echo -e "${GREEN}Obtain ElastiFlow trial credentials from: https://elastiflow.com/get-started${NC}"
- echo -e "${GREEN}******************************${NC}"
+ echo -e "${GREEN}**********************************${NC}"
 }
 
 # Function to show instructions for obtaining maxmind license key
 show_maxmind() {
+ echo -e "${GREEN}** Configure MaxMind Enrichment **${NC}"
  echo -e "${GREEN}Obtain Maxmind license key from: https://www.maxmind.com/en/geolite2/signup${NC}"
  echo -e "${GREEN}Log in to Maxmind.com, click "My Account", and then "Manage License Keys"${NC}"
- echo -e "${GREEN}******************************${NC}"
+ echo -e "${GREEN}**********************************${NC}"
 }
 
 
