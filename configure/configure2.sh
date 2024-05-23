@@ -7,7 +7,7 @@ NC='\033[0m' # No Color
 
 # Function to check if flowcoll.service exists
 check_service_exists() {
-  if ! systemctl list-unit-files | grep -q "flowcoll.service"; then
+  if  systemctl list-unit-files | grep -q "flowcoll.service"; then
     echo -e "${RED}flowcoll.service does not exist. Exiting.${NC}"
     exit 1
   fi
@@ -165,7 +165,8 @@ configure_maxmind() {
 download_default_conf() {
   wget -O flow-collector.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_6.4.2_linux_amd64.deb
   dpkg-deb -xv flow-collector.deb /tmp/elastiflow > /dev/null
-  sudo cp /tmp/elastiflow/etc/systemd/system/flowcoll.service.d/flowcoll.conf /etc/systemd/system/flowcoll.service.d/flowcoll.conf
+  sudo mkdir -p /etc/systemd/system/flowcoll.service.d/
+  sudo cp /tmp/elastiflow/etc/systemd/system/flowcoll.service.d/flowcoll.conf /etc/systemd/system/flowcoll.service.d/
   sudo rm -rf /tmp/elastiflow
   echo -e "${GREEN}Default flowcoll.conf downloaded and copied.${NC}"
 }
