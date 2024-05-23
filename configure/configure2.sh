@@ -1,11 +1,17 @@
 #!/bin/bash
 
-# Version 1.5
-
 # Define color codes
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
+
+# Function to check if flowcoll.service exists
+check_service_exists() {
+  if ! systemctl list-unit-files | grep -q "flowcoll.service"; then
+    echo -e "${RED}flowcoll.service does not exist. Exiting.${NC}"
+    exit 1
+  fi
+}
 
 # Function to reload systemd daemon and restart flowcoll service
 reload_and_restart_flowcoll() {
@@ -49,14 +55,26 @@ check_service_health() {
 # Function to restore the latest backup of flowcoll.conf
 restore_latest_backup() {
   FILE_PATH=/etc/systemd/system/flowcoll.service.d/flowcoll.conf
-  LATEST_BACKUP=$(ls -t ${FILE_PATH}.bak.* | head -1)
-  
+  TIMESTAMP=$(date +%Y%m%d%H%M%S)
+
+  # Backup the existing configuration file if it exists
+  if [ -f $FILE_PATH ]; then
+    sudo cp -f $FILE_PATH ${FILE_PATH}.bak.$TIMESTAMP
+    echo -e "${GREEN}Backed up the existing $FILE_PATH to ${FILE_PATH}.bak.$TIMESTAMP.${NC}"
+  fi
+
+  # Restore the latest backup
+  LATEST_BACKUP=$(ls -t ${FILE_PATH}.bak.* 2>/dev/null | head -1)
   if [ -f $LATEST_BACKUP ]; then
     sudo cp -f $LATEST_BACKUP $FILE_PATH
     echo -e "${GREEN}Restored $FILE_PATH from the latest backup: $LATEST_BACKUP.${NC}"
-
   else
-    echo -e "${RED}No backup file found to restore.${NC}"
+    # Create a default flowcoll.conf if no backup exists
+    echo "[Service]" | sudo tee $FILE_PATH > /dev/null
+    echo "Environment=\"EF_LICENSE_ACCEPTED=true\"" | sudo tee -a $FILE_PATH > /dev/null
+    echo "Environment=\"EF_ACCOUNT_ID=your_account_id\"" | sudo tee -a $FILE_PATH > /dev/null
+    echo "Environment=\"EF_FLOW_LICENSE_KEY=your_license_key\"" | sudo tee -a $FILE_PATH > /dev/null
+    echo -e "${GREEN}No backup found. Created a default $FILE_PATH.${NC}"
   fi
 }
 
@@ -295,6 +313,33 @@ EOL
   echo -e "${GREEN}Static IP address configuration applied successfully.${NC}"
 }
 
+# Function to revert network interface changes
+revert_network_changes() {
+  # List available backups
+  echo "Available backups:"
+  backups=($(ls /etc/netplan/*.bak.*))
+  for i in "${!backups[@]}"; do
+    echo "$((i+1)). ${backups[$i]}"
+  done
+  
+  # Prompt for backup to restore
+  while true; do
+    read -p "Enter the number corresponding to the backup you want to restore: " backup_number
+    if [[ $backup_number -ge 1 && $backup_number -le ${#backups[@]} ]]; then
+      backup=${backups[$((backup_number-1))]}
+      break
+    else
+      echo -e "${RED}Invalid selection. Please choose a valid backup number.${NC}"
+    fi
+  done
+  
+  # Restore the selected backup
+  sudo cp $backup /etc/netplan/$(basename $backup | sed 's/.bak.*//')
+  sudo netplan apply
+
+  echo -e "${GREEN}Network configuration reverted successfully.${NC}"
+}
+
 show_intro() {
  echo -e "${GREEN}**********************************${NC}"
  echo -e "${GREEN}*** ElastiFlow PoC Configurator ***${NC}"
@@ -318,6 +363,8 @@ show_maxmind() {
 
 # Main script execution
 
+check_service_exists
+
 while true; do
   show_intro
   echo "Choose an option:"
@@ -326,8 +373,9 @@ while true; do
   echo "3. Restore flowcoll.conf from latest backup"
   echo "4. Download default flowcoll.conf from deb file"
   echo "5. Configure static IP address"
-  echo "6. Quit"
-  read -p "Enter your choice (1-6): " choice
+  echo "6. Revert network interface changes"
+  echo "7. Quit"
+  read -p "Enter your choice (1-7): " choice
   case $choice in
     1)
       configure_trial
@@ -345,11 +393,14 @@ while true; do
       configure_static_ip
       ;;
     6)
+      revert_network_changes
+      ;;
+    7)
       echo "Exiting the script."
       exit 0
       ;;
     *)
-      echo "Invalid choice. Please enter a number between 1 and 6."
+      echo "Invalid choice. Please enter a number between 1 and 7."
       ;;
   esac
 done
