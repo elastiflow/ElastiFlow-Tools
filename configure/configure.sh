@@ -166,7 +166,7 @@ configure_maxmind() {
 
 # Function to download default flowcoll.conf file from deb file
 download_default_conf() {
-  wget -O flow-collector.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_6.4.2_linux_amd64.deb
+  wget -O flow-collector_"$elastiflow_version"_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_"$elastiflow_version"_linux_amd64.deb
   dpkg-deb -xv flow-collector.deb /tmp/elastiflow > /dev/null
   sudo mkdir -p /etc/systemd/system/flowcoll.service.d/
   sudo cp /tmp/elastiflow/etc/systemd/system/flowcoll.service.d/flowcoll.conf /etc/systemd/system/flowcoll.service.d/
