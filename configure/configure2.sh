@@ -150,19 +150,111 @@ download_default_conf() {
   echo -e "${GREEN}Default flowcoll.conf downloaded and copied.${NC}"
 }
 
+# Function to validate IP address in CIDR format
+validate_cidr() {
+  local cidr=$1
+  local valid=1
+
+  if [[ $cidr =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}\/([0-9]{1,2})$ ]]; then
+    local IFS=.
+    ip=(${cidr%%/*})
+    prefix=${cidr##*/}
+    for i in {0..3}; do
+      if [[ ${ip[$i]} -gt 255 ]]; then
+        valid=0
+      fi
+    done
+    if [[ $prefix -gt 32 ]]; then
+      valid=0
+    fi
+  else
+    valid=0
+  fi
+
+  echo $valid
+}
+
+# Function to validate IP address format
+validate_ip() {
+  local ip=$1
+  local valid=1
+
+  if [[ $ip =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+    local IFS=.
+    ip=($ip)
+    for i in {0..3}; do
+      if [[ ${ip[$i]} -gt 255 ]]; then
+        valid=0
+      fi
+    done
+  else
+    valid=0
+  fi
+
+  echo $valid
+}
+
 # Function to configure static IP address using netplan
 configure_static_ip() {
-  # List available network interfaces
+  # List available network interfaces excluding Docker interfaces
   echo "Available network interfaces:"
-  ip link show | awk -F: '$1 ~ /^[0-9]+$/ {print $2}' | sed 's/ //g'
+  interfaces=($(ip link show | awk -F: '$1 ~ /^[0-9]+$/ && $2 !~ /^ lo|^ docker/ {print $2}' | sed 's/ //g'))
+  for i in "${!interfaces[@]}"; do
+    echo "$((i+1)). ${interfaces[$i]}"
+  done
   
   # Prompt for network interface
-  read -p "Enter the interface you want to configure: " interface
+  while true; do
+    read -p "Enter the number corresponding to the interface you want to configure: " interface_number
+    if [[ $interface_number -ge 1 && $interface_number -le ${#interfaces[@]} ]]; then
+      interface=${interfaces[$((interface_number-1))]}
+      break
+    else
+      echo -e "${RED}Invalid selection. Please choose a valid interface number.${NC}"
+    fi
+  done
   
-  # Prompt for IP address, subnet mask, default gateway, and DNS servers
-  read -p "Enter IP address (CIDR format): " ip_address
+  # Set the interface to up status
+  sudo ip link set $interface up
+
+  # Prompt for IP address, default gateway, and DNS servers
+  while true; do
+    read -p "Enter IP address (CIDR format, e.g., 192.168.1.100/24): " ip_address
+    if [[ $(validate_cidr $ip_address) -eq 1 ]]; then
+      break
+    else
+      echo -e "${RED}Invalid IP address format. Please enter a valid IP address in CIDR format.${NC}"
+    fi
+  done
+
   read -p "Enter default gateway (optional): " default_gateway
+  if [[ -n "$default_gateway" && $(validate_ip $default_gateway) -eq 0 ]]; then
+    echo -e "${RED}Invalid gateway address format. Please enter a valid IP address.${NC}"
+    return
+  fi
+
   read -p "Enter DNS servers (comma separated, optional): " dns_servers
+  if [[ -n "$dns_servers" ]]; then
+    IFS=',' read -r -a dns_array <<< "$dns_servers"
+    for dns in "${dns_array[@]}"; do
+      if [[ $(validate_ip $dns) -eq 0 ]]; then
+        echo -e "${RED}Invalid DNS server address format. Please enter valid IP addresses.${NC}"
+        return
+      fi
+    done
+  fi
+
+  # Confirm configuration
+  echo -e "${GREEN}Configuration:${NC}"
+  echo "Interface: $interface"
+  echo "IP address: $ip_address"
+  echo "Default gateway: ${default_gateway:-None}"
+  echo "DNS servers: ${dns_servers:-None}"
+  read -p "Do you want to apply these settings? (y/n): " confirm
+  if [[ $confirm != "y" ]]; then
+    echo "Discarding changes."
+    return
+  fi
 
   # Find the current netplan configuration file
   netplan_file=$(find /etc/netplan -name "*.yaml" | head -n 1)
