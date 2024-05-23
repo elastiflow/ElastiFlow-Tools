@@ -5,6 +5,9 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
+elastiflow_version="6.4.4"
+
+
 # Function to check if flowcoll.service exists
 check_service_exists() {
   if ! systemctl list-unit-files | grep -q "flowcoll.service"; then
