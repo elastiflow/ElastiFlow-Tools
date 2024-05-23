@@ -7,7 +7,7 @@ NC='\033[0m' # No Color
 
 # Function to check if flowcoll.service exists
 check_service_exists() {
-  if  systemctl list-unit-files | grep -q "flowcoll.service"; then
+  if ! systemctl list-unit-files | grep -q "flowcoll.service"; then
     echo -e "${RED}flowcoll.service does not exist. Exiting.${NC}"
     exit 1
   fi
