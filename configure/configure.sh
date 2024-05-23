@@ -1,6 +1,6 @@
-# Version 1.3
-
 #!/bin/bash
+
+# Version 1.3
 
 # Define color codes
 GREEN='\033[0;32m'
