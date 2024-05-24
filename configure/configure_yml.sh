@@ -68,12 +68,6 @@ find_and_replace() {
   done
 }
 
-
-
-
-
-
-
 # Function to check if flowcoll.service exists
 check_service_exists() {
   if ! systemctl list-unit-files | grep -q "flowcoll.service"; then
