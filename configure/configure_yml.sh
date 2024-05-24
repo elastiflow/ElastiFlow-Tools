@@ -83,13 +83,6 @@ find_and_replace() {
   done
 }
 
-# Function to check if flowcoll.service exists
-check_service_exists() {
-  if ! systemctl status flowcoll.service &>/dev/null; then
-    echo -e "${RED}flowcoll.service does not exist. Exiting.${NC}"
-    exit 1
-  fi
-}
 
 # Function to reload systemd daemon and restart flowcoll service
 reload_and_restart_flowcoll() {
@@ -484,8 +477,6 @@ show_maxmind() {
 # Main script execution
 
 check_and_zero_out_flowcoll_conf
-
-check_service_exists
 
 while true; do
   show_intro
