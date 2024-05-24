@@ -7,13 +7,6 @@ NC='\033[0m' # No Color
 
 elastiflow_version="6.4.4"
 
-
-
-
-STRINGS_TO_REPLACE=(
-"EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: \"true\""
-)
-
 comment_and_add_line() {
   local FILE=$1
   local FIND=$2
