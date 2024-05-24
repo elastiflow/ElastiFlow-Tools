@@ -11,29 +11,44 @@ NC='\033[0m' # No Color
 
 elastiflow_version="6.4.4"
 
+check_and_zero_out_flowcoll_conf() {
+  local FILE=/etc/systemd/system/flowcoll.service.d/flowcoll.conf
+  if [ -f "$FILE" ]; then
+    if [ -s "$FILE" ]; then
+      TIMESTAMP=$(date +%Y%m%d%H%M%S)
+      sudo cp -f "$FILE" "${FILE}.bak.$TIMESTAMP"
+      sudo truncate -s 0 "$FILE"
+      echo -e "${GREEN}Backed up $FILE to ${FILE}.bak.$TIMESTAMP and zeroed it out.${NC}"
+    else
+      echo -e "${GREEN}$FILE is already empty.${NC}"
+    fi
+  fi
+}
+
 comment_and_add_line() {
   local FILE=$1
   local FIND=$2
   local REPLACE=$3
 
-  # Check if the line exists and if it's already commented out
-  if grep -q "^$FIND" "$FILE"; then
-    # If the line is not commented out, comment it out and add the new line underneath
-    sed -i.bak "/^$FIND/s/^/#/; /^$FIND/a $REPLACE" "$FILE"
-    echo "Commented out '$FIND' and added '$REPLACE' underneath."
-  elif grep -q "^#$FIND" "$FILE"; then
-    # If the line is already commented out, just add the new line underneath
-    sed -i.bak "/^#$FIND/a $REPLACE" "$FILE"
-    echo "Found commented out line '$FIND'. Added '$REPLACE' underneath."
+  # Escape special characters for use in sed
+  FIND_ESCAPED=$(echo "$FIND" | sed 's/[.[\*^$]/\\&/g')
+  REPLACE_ESCAPED=$(echo "$REPLACE" | sed 's/[&/\]/\\&/g')
+
+  # Check if the line exists (commented out or not) and replace it
+  if grep -q "^#\?$FIND_ESCAPED" "$FILE"; then
+    sed -i.bak "/^#\?$FIND_ESCAPED/c\\$REPLACE" "$FILE"
+    echo "Replaced existing line '$FIND' with '$REPLACE'."
   else
-    # Add the line under the heading #ElastiFlow VA installer
-    if grep -q "^#ElastiFlow VA installer" "$FILE"; then
-      sed -i.bak "/^#ElastiFlow VA installer/a $REPLACE" "$FILE"
-      echo "Added '$REPLACE' under the heading '#ElastiFlow VA installer'."
+    # Add the line under the heading #ElastiFlow PoC Configurator
+    if grep -q "^#ElastiFlow PoC Configurator" "$FILE"; then
+      sed -i.bak "/^#ElastiFlow PoC Configurator/a $REPLACE" "$FILE"
+      echo "Added '$REPLACE' under the heading '#ElastiFlow PoC Configurator'."
     else
-      echo "Heading '#ElastiFlow VA installer' not found in the file."
-      echo "Add the heading '#ElastiFlow VA installer' to the file and run the script again."
-      exit 1
+      echo "Heading '#ElastiFlow PoC Configurator' not found in the file."
+      echo "Adding the heading '#ElastiFlow PoC Configurator' to the file."
+      echo -e "\n#ElastiFlow PoC Configurator" | sudo tee -a "$FILE" > /dev/null
+      sed -i.bak "/^#ElastiFlow PoC Configurator/a $REPLACE" "$FILE"
+      echo "Added '$REPLACE' under the newly added heading '#ElastiFlow PoC Configurator'."
     fi
   fi
 }
@@ -70,7 +85,7 @@ find_and_replace() {
 
 # Function to check if flowcoll.service exists
 check_service_exists() {
-  if ! systemctl list-unit-files | grep -q "flowcoll.service"; then
+  if ! systemctl status flowcoll.service &>/dev/null; then
     echo -e "${RED}flowcoll.service does not exist. Exiting.${NC}"
     exit 1
   fi
@@ -85,12 +100,7 @@ reload_and_restart_flowcoll() {
 # Function to check the health of flowcoll.service and rerun the configuration if necessary
 check_service_health() {
   echo "Checking if flowcoll.service stays running for at least 10 seconds..."
-  i=10
-  while [ $i -ge 1 ]; do
-    echo -ne "Waiting: $i\033[0K\r"
-    sleep 1
-    i=$((i-1))
-  done
+  sleep 10
 
   if ! sudo systemctl is-active --quiet flowcoll.service; then
     echo -e "${RED}flowcoll.service did not stay started.${NC}"
@@ -132,13 +142,12 @@ restore_latest_backup() {
     sudo cp -f $LATEST_BACKUP $FILE_PATH
     echo -e "${GREEN}Restored $FILE_PATH from the latest backup: $LATEST_BACKUP.${NC}"
   else
-    # Create a default flowcoll.yml if no backup exists
-    echo -e "${GREEN}No backup found. Created a default - NOT WORKING YET $FILE_PATH.${NC}"
+    echo -e "${RED}No backup found.${NC}"
   fi
 }
 
-  # Function to configure ElastiFlow fully featured trial
-  configure_trial() {
+# Function to configure ElastiFlow fully featured trial
+configure_trial() {
 
   # Define the file path
   FILE_PATH=/etc/elastiflow/flowcoll.yml
@@ -150,9 +159,9 @@ restore_latest_backup() {
   read -p "Enter your ElastiFlow license key: " elastiflow_flow_license_key
 
   STRINGS_TO_REPLACE=(
-  "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: \"true\""
-  "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: \"${elastiflow_account_id}\""
-  "EF_FLOW_LICENSE_KEY" "EF_FLOW_LICENSE_KEY: \"${elastiflow_flow_license_key}\""
+    "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: \"true\""
+    "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: \"${elastiflow_account_id}\""
+    "EF_FLOW_LICENSE_KEY" "EF_FLOW_LICENSE_KEY: \"${elastiflow_flow_license_key}\""
   )
     
   # Backup the existing configuration file with timestamp
@@ -205,11 +214,11 @@ configure_maxmind() {
   FILE_PATH=/etc/elastiflow/flowcoll.yml
 
   STRINGS_TO_REPLACE=(
-  "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE: \"true\""
-  "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_PATH" "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_PATH: /etc/elastiflow/maxmind/GeoLite2-ASN.mmdb"
-  "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE: \"true\""
-  "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_PATH" "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_PATH: /etc/elastiflow/maxmind/GeoLite2-City.mmdb"
-  "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_VALUES" "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_VALUES: city,country,country_code,location,timezone"
+    "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE: \"true\""
+    "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_PATH" "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_PATH: \"/etc/elastiflow/maxmind/GeoLite2-ASN.mmdb\""
+    "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE: \"true\""
+    "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_PATH" "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_PATH: \"/etc/elastiflow/maxmind/GeoLite2-City.mmdb\""
+    "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_VALUES" "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_VALUES: city,country,country_code,location,timezone"
   )
 
   # Backup the existing configuration file with timestamp
@@ -230,7 +239,7 @@ configure_maxmind() {
 # Function to download default flowcoll.yml file from deb file
 download_default_conf() {
   wget -O flow-collector_"$elastiflow_version"_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_"$elastiflow_version"_linux_amd64.deb
-  dpkg-deb -xv flow-collector.deb /tmp/elastiflow > /dev/null
+  dpkg-deb -xv flow-collector_"$elastiflow_version"_linux_amd64.deb /tmp/elastiflow > /dev/null
   sudo mkdir -p /etc/systemd/system/flowcoll.service.d/
   sudo cp /tmp/elastiflow/etc/elastiflow/flowcoll.yml /etc/elastiflow/
   sudo rm -rf /tmp/elastiflow
@@ -407,6 +416,50 @@ revert_network_changes() {
   echo -e "${GREEN}Network configuration reverted successfully.${NC}"
 }
 
+install_flow_generator() {
+  # Install pmacct
+  sudo apt-get update
+  sudo apt-get install -y pmacct
+
+  # List available network interfaces excluding Docker and lo interfaces
+  echo "Available network interfaces:"
+  interfaces=($(ip link show | awk -F: '$1 ~ /^[0-9]+$/ && $2 !~ /^ lo|^ docker/ {print $2}' | sed 's/ //g'))
+  for i in "${!interfaces[@]}"; do
+    echo "$((i+1)). ${interfaces[$i]}"
+  done
+  
+  # Prompt for network interface
+  while true; do
+    read -p "Enter the number corresponding to the interface you want to monitor: " interface_number
+    if [[ $interface_number -ge 1 && $interface_number -le ${#interfaces[@]} ]]; then
+      interface=${interfaces[$((interface_number-1))]}
+      break
+    else
+      echo -e "${RED}Invalid selection. Please choose a valid interface number.${NC}"
+    fi
+  done
+
+  # Create or overwrite the pmacctd.conf file
+  sudo tee /etc/pmacct/pmacctd.conf > /dev/null <<EOL
+daemonize: false
+pcap_interface: $interface
+aggregate: src_mac, dst_mac, src_host, dst_host, src_port, dst_port, proto, tos
+plugins: nfprobe, print
+nfprobe_receiver: 127.0.0.1:9995
+! nfprobe_receiver: [FD00::2]:2100
+nfprobe_version: 9
+! nfprobe_engine: 1:1
+nfprobe_timeouts: tcp=15:maxlife=1800
+!
+! networks_file: /path/to/networks.lst
+!...
+EOL
+
+  # Run pmacctd with the configuration
+  sudo pmacctd -f /etc/pmacct/pmacctd.conf
+  echo -e "${GREEN}Flow generator installed and running.${NC}"
+}
+
 show_intro() {
  echo -e "${GREEN}**********************************${NC}"
  echo -e "${GREEN}*** ElastiFlow PoC Configurator ***${NC}"
@@ -430,6 +483,8 @@ show_maxmind() {
 
 # Main script execution
 
+check_and_zero_out_flowcoll_conf
+
 check_service_exists
 
 while true; do
@@ -441,8 +496,11 @@ while true; do
   echo "4. Download default flowcoll.yml from deb file"
   echo "5. Configure static IP address"
   echo "6. Revert network interface changes"
-  echo "7. Quit"
-  read -p "Enter your choice (1-7): " choice
+  echo "7. Edit flowcoll.yml using nano"
+  echo "8. Watch flowcoll.service log"
+  echo "9. Install flow generator (pmacct)"
+  echo "10. Quit"
+  read -p "Enter your choice (1-10): " choice
   case $choice in
     1)
       configure_trial
@@ -463,11 +521,20 @@ while true; do
       revert_network_changes
       ;;
     7)
+      sudo nano /etc/elastiflow/flowcoll.yml
+      ;;
+    8)
+      sudo journalctl -u flowcoll.service -f
+      ;;
+    9)
+      install_flow_generator
+      ;;
+    10)
       echo "Exiting the script."
       exit 0
       ;;
     *)
-      echo "Invalid choice. Please enter a number between 1 and 7."
+      echo "Invalid choice. Please enter a number between 1 and 10."
       ;;
   esac
 done
