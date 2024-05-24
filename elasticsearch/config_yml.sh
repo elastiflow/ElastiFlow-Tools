@@ -1,3 +1,5 @@
+#!/bin/bash
+
 
 replace_or_add_line() {
   local FILE=$1
