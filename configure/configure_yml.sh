@@ -240,7 +240,7 @@ configure_maxmind() {
 download_default_conf() {
   wget -O flow-collector_"$elastiflow_version"_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_"$elastiflow_version"_linux_amd64.deb
   dpkg-deb -xv flow-collector_"$elastiflow_version"_linux_amd64.deb /tmp/elastiflow > /dev/null
-  sudo mkdir -p /etc/systemd/system/flowcoll.service.d/
+  sudo mkdir -p /etc/elastiflow/
   sudo cp /tmp/elastiflow/etc/elastiflow/flowcoll.yml /etc/elastiflow/
   sudo rm -rf /tmp/elastiflow
   echo -e "${GREEN}Default flowcoll.yml downloaded and copied.${NC}"
