@@ -124,9 +124,9 @@ check_service_health() {
   fi
 }
 
-# Function to restore the latest backup of flowcoll.conf
+# Function to restore the latest backup of flowcoll.yml
 restore_latest_backup() {
-  FILE_PATH=/etc/systemd/system/flowcoll.service.d/flowcoll.conf
+  FILE_PATH=/etc/elastiflow/flowcoll.yml
   TIMESTAMP=$(date +%Y%m%d%H%M%S)
 
   # Backup the existing configuration file if it exists
@@ -141,7 +141,7 @@ restore_latest_backup() {
     sudo cp -f $LATEST_BACKUP $FILE_PATH
     echo -e "${GREEN}Restored $FILE_PATH from the latest backup: $LATEST_BACKUP.${NC}"
   else
-    # Create a default flowcoll.conf if no backup exists
+    # Create a default flowcoll.yml if no backup exists
     echo "[Service]" | sudo tee $FILE_PATH > /dev/null
     echo "Environment=\"EF_LICENSE_ACCEPTED=true\"" | sudo tee -a $FILE_PATH > /dev/null
     echo "Environment=\"EF_ACCOUNT_ID=your_account_id\"" | sudo tee -a $FILE_PATH > /dev/null
@@ -150,26 +150,29 @@ restore_latest_backup() {
   fi
 }
 
-# Function to configure ElastiFlow fully featured trial
-configure_trial() {
-  show_trial
-  
-  # Prompt for ElastiFlow account ID and license key
-  read -p "Enter your ElastiFlow account ID: " account_id
-  read -p "Enter your ElastiFlow license key: " license_key
+  # Function to configure ElastiFlow fully featured trial
+  configure_trial() {
 
   # Define the file path
-  FILE_PATH=/etc/systemd/system/flowcoll.service.d/flowcoll.conf
+  FILE_PATH=/etc/elastiflow/flowcoll.yml
+    
+  show_trial
 
+  # Prompt for ElastiFlow account ID and license key
+  read -p "Enter your ElastiFlow account ID: " elastiflow_account_id
+  read -p "Enter your ElastiFlow license key: " elastiflow_flow_license_key
+
+  STRINGS_TO_REPLACE=(
+  "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: \"true\""
+  "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: \"${elastiflow_account_id}\""
+  "EF_FLOW_LICENSE_KEY" "EF_FLOW_LICENSE_KEY: \"${elastiflow_flow_license_key}\""
+  )
+    
   # Backup the existing configuration file with timestamp
   TIMESTAMP=$(date +%Y%m%d%H%M%S)
   sudo cp -f $FILE_PATH ${FILE_PATH}.bak.$TIMESTAMP
 
-  # Delete existing lines for EF_LICENSE_ACCEPTED, EF_ACCOUNT_ID, and EF_FLOW_LICENSE_KEY
-  sudo sed -i '/EF_LICENSE_ACCEPTED/d; /EF_ACCOUNT_ID/d; /EF_FLOW_LICENSE_KEY/d' $FILE_PATH
-
-  # Add new configuration lines
-  sudo sed -i "\$a Environment=\"EF_LICENSE_ACCEPTED=true\"\nEnvironment=\"EF_ACCOUNT_ID=$account_id\"\nEnvironment=\"EF_FLOW_LICENSE_KEY=$license_key\"" $FILE_PATH
+  find_and_replace "$FILE_PATH" "${STRINGS_TO_REPLACE[@]}"
 
   # Reload and restart flowcoll service
   reload_and_restart_flowcoll
@@ -212,7 +215,7 @@ configure_maxmind() {
   fi
 
   # Define the file path
-  FILE_PATH=/etc/systemd/system/flowcoll.service.d/flowcoll.conf
+  FILE_PATH=/etc/elastiflow/flowcoll.yml
 
   # Delete existing MaxMind lines
   sudo sed -i '/EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE/d; /EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_PATH/d; /EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE/d; /EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_PATH/d; /EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_VALUES/d; /EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_LANG/d; /EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_INCLEXCL_PATH/d; /EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_INCLEXCL_REFRESH_RATE/d' $FILE_PATH
@@ -233,14 +236,14 @@ configure_maxmind() {
   fi
 }
 
-# Function to download default flowcoll.conf file from deb file
+# Function to download default flowcoll.yml file from deb file
 download_default_conf() {
   wget -O flow-collector_"$elastiflow_version"_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_"$elastiflow_version"_linux_amd64.deb
   dpkg-deb -xv flow-collector.deb /tmp/elastiflow > /dev/null
   sudo mkdir -p /etc/systemd/system/flowcoll.service.d/
-  sudo cp /tmp/elastiflow/etc/systemd/system/flowcoll.service.d/flowcoll.conf /etc/systemd/system/flowcoll.service.d/
+  sudo cp /tmp/elastiflow/etc/elastiflow/flowcoll.yml /etc/elastiflow/
   sudo rm -rf /tmp/elastiflow
-  echo -e "${GREEN}Default flowcoll.conf downloaded and copied.${NC}"
+  echo -e "${GREEN}Default flowcoll.yml downloaded and copied.${NC}"
 }
 
 # Function to validate IP address in CIDR format
@@ -443,8 +446,8 @@ while true; do
   echo "Choose an option:"
   echo "1. Configure fully featured trial"
   echo "2. Enable MaxMind enrichment"
-  echo "3. Restore flowcoll.conf from latest backup"
-  echo "4. Download default flowcoll.conf from deb file"
+  echo "3. Restore flowcoll.yml from latest backup"
+  echo "4. Download default flowcoll.yml from deb file"
   echo "5. Configure static IP address"
   echo "6. Revert network interface changes"
   echo "7. Quit"
