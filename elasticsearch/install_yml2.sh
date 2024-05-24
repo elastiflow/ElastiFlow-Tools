@@ -39,6 +39,13 @@ STRINGS_TO_REPLACE=(
 "EF_PROCESSOR_DECODE_SFLOW_FLOWS_ENABLE" "EF_PROCESSOR_DECODE_SFLOW_FLOWS_ENABLE: \"true\""
 )
 
+print_message() {
+  local message=$1
+  local color=$2
+  echo -e "${color}${message}${NC}"
+}
+
+
 comment_and_replace_line() {
   local FILE=$1
   local FIND=$2
