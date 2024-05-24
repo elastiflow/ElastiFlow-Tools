@@ -222,6 +222,10 @@ configure_maxmind() {
   "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_VALUES" "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_VALUES: city,country,country_code,location,timezone"
   )
 
+  # Backup the existing configuration file with timestamp
+  TIMESTAMP=$(date +%Y%m%d%H%M%S)
+  sudo cp -f $FILE_PATH ${FILE_PATH}.bak.$TIMESTAMP
+
   find_and_replace "$FILE_PATH" "${STRINGS_TO_REPLACE[@]}"
  
   # Reload and restart flowcoll service
