@@ -139,11 +139,7 @@ restore_latest_backup() {
     echo -e "${GREEN}Restored $FILE_PATH from the latest backup: $LATEST_BACKUP.${NC}"
   else
     # Create a default flowcoll.yml if no backup exists
-    echo "[Service]" | sudo tee $FILE_PATH > /dev/null
-    echo "Environment=\"EF_LICENSE_ACCEPTED=true\"" | sudo tee -a $FILE_PATH > /dev/null
-    echo "Environment=\"EF_ACCOUNT_ID=your_account_id\"" | sudo tee -a $FILE_PATH > /dev/null
-    echo "Environment=\"EF_FLOW_LICENSE_KEY=your_license_key\"" | sudo tee -a $FILE_PATH > /dev/null
-    echo -e "${GREEN}No backup found. Created a default $FILE_PATH.${NC}"
+    echo -e "${GREEN}No backup found. Created a default - NOT WORKING YET $FILE_PATH.${NC}"
   fi
 }
 
