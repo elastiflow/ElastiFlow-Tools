@@ -3,13 +3,13 @@
 osversion=""
 
 ########################################################
-
 # If you do not have an ElastiFlow Account ID and ElastiFlow Flow License Key, 
 # please go here: https://elastiflow.com/get-started
 # Paste these values on the corresponding line, between the quotes
-
 elastiflow_account_id=""
 elastiflow_flow_license_key=""
+########################################################
+
 elastiflow_version="6.4.4"
 flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
 ########################################################
