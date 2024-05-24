@@ -10,7 +10,6 @@ osversion=""
 
 elastiflow_account_id=""
 elastiflow_flow_license_key=""
-
 elastiflow_version="6.4.4"
 flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
 ########################################################
