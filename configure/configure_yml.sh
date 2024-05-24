@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# ElastiFlow PoC Configurator for installing ElastiFlow Trial and MaxMind enrichment
+# Version 1.5
+# Author: O.J. Wolanyk
+
 # Define color codes
 GREEN='\033[0;32m'
 RED='\033[0;31m'
