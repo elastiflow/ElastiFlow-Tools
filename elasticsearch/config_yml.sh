@@ -48,7 +48,7 @@ find_and_replace() {
 }
 
 # Example usage
-FILE="path/to/your/file"
+FILE="etc/elastiflow/flowcoll.yml"
 STRINGS_TO_REPLACE=(
   "EF_LICENSE_ACCEPTED" 'EF_LICENSE_ACCEPTED: "true"'
   "EF_ACCOUNT_ID" 'EF_ACCOUNT_ID: ""'
