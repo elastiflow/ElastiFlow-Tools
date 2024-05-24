@@ -1,6 +1,9 @@
 #!/bin/bash
 
 
+
+
+
 replace_or_add_line() {
   local FILE=$1
   local FIND=$2
@@ -53,6 +56,48 @@ FILE="path/to/your/file"
 STRINGS_TO_REPLACE=(
   "EF_LICENSE_ACCEPTED" 'EF_LICENSE_ACCEPTED: "true"'
   "ANOTHER_STRING" 'ANOTHER_STRING: "value"'
+  "EF_ACCOUNT_ID" 'EF_ACCOUNT_ID: ""'
+  "EF_FLOW_LICENSE_KEY" 'EF_FLOW_LICENSE_KEY: ""'
+  "EF_OUTPUT_ELASTICSEARCH_ENABLE" 'EF_OUTPUT_ELASTICSEARCH_ENABLE: "true"'
+  "EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE" 'EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE: "true"'
+  "EF_OUTPUT_ELASTICSEARCH_PASSWORD" 'EF_OUTPUT_ELASTICSEARCH_PASSWORD: "$elastic_password"'
+  "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE" 'EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: "true"'
+  "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION" 'EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: "true"'
+
+#EF_FLOW_SERVER_UDP_IP: 0.0.0.0
+#EF_FLOW_SERVER_UDP_PORT: 2055,4739,6343,9995
+#EF_FLOW_SERVER_UDP_READ_BUFFER_MAX_SIZE: 33554432
+#EF_PROCESSOR_DECODE_IPFIX_ENABLE: "true"
+#EF_PROCESSOR_DECODE_MAX_RECORDS_PER_PACKET: 64
+#EF_PROCESSOR_DECODE_NETFLOW1_ENABLE: "true"
+#EF_PROCESSOR_DECODE_NETFLOW5_ENABLE: "true"
+#EF_PROCESSOR_DECODE_NETFLOW6_ENABLE: "true"
+#EF_PROCESSOR_DECODE_NETFLOW7_ENABLE: "true"
+#EF_PROCESSOR_DECODE_NETFLOW9_ENABLE: "true"
+#EF_PROCESSOR_DECODE_SFLOW5_ENABLE: "true"
+#EF_PROCESSOR_DECODE_SFLOW_COUNTERS_ENABLE: "true"
+#EF_PROCESSOR_DECODE_SFLOW_FLOWS_ENABLE: "true"
+#EF_PROCESSOR_DECODE_SFLOW_FLOWS_KEEP_SAMPLES: "false" 
 )
 
 find_and_replace "$FILE" "${STRINGS_TO_REPLACE[@]}"
+
+
+
+
+
+
+
+
+
+#replace_text "$flowcoll_config_path" 'Environment="EF_LICENSE_ACCEPTED=false"' 'Environment="EF_LICENSE_ACCEPTED=true"' "${LINENO}"
+#replace_text "$flowcoll_config_path" '#Environment="EF_ACCOUNT_ID="' "Environment=\"EF_ACCOUNT_ID=$elastiflow_account_id\"" "${LINENO}"
+#replace_text "$flowcoll_config_path" '#Environment="EF_FLOW_LICENSE_KEY="' "Environment=\"EF_FLOW_LICENSE_KEY=$elastiflow_flow_license_key\"" "${LINENO}"
+#replace_text "$flowcoll_config_path" 'Environment="EF_OUTPUT_ELASTICSEARCH_ENABLE=false"' 'Environment="EF_OUTPUT_ELASTICSEARCH_ENABLE=true"' "${LINENO}"
+#replace_text "$flowcoll_config_path" 'Environment="EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE=false"' 'Environment="EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE=true"' "${LINENO}"
+#replace_text "$flowcoll_config_path" 'Environment="EF_OUTPUT_ELASTICSEARCH_PASSWORD=changeme"' "Environment=\"EF_OUTPUT_ELASTICSEARCH_PASSWORD=$elastic_password\"" "${LINENO}"
+#replace_text "$flowcoll_config_path" 'Environment="EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE=false"' 'Environment="EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE=true"' "${LINENO}"
+#replace_text "$flowcoll_config_path" 'Environment="EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION=false"' 'Environment="EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION=true"' "${LINENO}"
+
+
+
