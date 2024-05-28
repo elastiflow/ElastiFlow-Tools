@@ -747,6 +747,63 @@ reconfigure_jvm_memory() {
   print_message "Elasticsearch JVM options set to use $jvm_mem_gb GB for both -Xms and -Xmx." "$GREEN"
 }
 
+# Function to configure FPS monitoring
+configure_fps_monitoring() {
+  FILE_PATH=/etc/elastiflow/flowcoll.yml
+
+  # Backup the existing configuration file with timestamp
+  backup_existing_flowcoll
+
+  STRINGS_TO_REPLACE=(
+    "EF_OUTPUT_MONITOR_ENABLE" "EF_OUTPUT_MONITOR_ENABLE: \"true\""
+    "EF_OUTPUT_MONITOR_INTERVAL" "EF_OUTPUT_MONITOR_INTERVAL: 300"
+  )
+
+  find_and_replace "$FILE_PATH" "${STRINGS_TO_REPLACE[@]}"
+
+  # Reload and restart flowcoll service
+  reload_and_restart_flowcoll
+
+  # Check if flowcoll.service is active
+  if check_service_health configure_fps_monitoring; then
+    print_message "FPS monitoring enabled." "$GREEN"
+  else
+    print_message "Failed to enable FPS monitoring. Changes reverted. Returning to main menu." "$RED"
+  fi
+}
+
+# Function to perform health check
+perform_health_check() {
+  # Check if flowcoll.service is running
+  if sudo systemctl is-active --quiet flowcoll.service; then
+    print_message "flowcoll.service is running." "$GREEN"
+  else
+    print_message "flowcoll.service is not running." "$RED"
+  fi
+
+  # Check if there is at least 15% disk space left
+  disk_usage=$(df / | tail -1 | awk '{print $5}' | sed 's/%//')
+  if [ $disk_usage -lt 85 ]; then
+    print_message "At least 15% disk space is available." "$GREEN"
+  else
+    print_message "Less than 15% disk space is available." "$RED"
+  fi
+
+  # Check if port 9995 is open
+  if sudo netstat -tuln | grep -q ":9995"; then
+    print_message "Port 9995 is open." "$GREEN"
+  else
+    print_message "Port 9995 is not open." "$RED"
+  fi
+
+  # Check if port 9200 is open
+  if sudo netstat -tuln | grep -q ":9200"; then
+    print_message "Port 9200 is open." "$GREEN"
+  else
+    print_message "Port 9200 is not open." "$RED"
+  fi
+}
+
 # Show introductory message
 show_intro() {
   print_message "**********************************" "$GREEN"
@@ -801,8 +858,10 @@ while true; do
         echo "7. Install flow generator (pmacct)"
         echo "8. Capture packets"
         echo "9. Reconfigure JVM memory usage"
-        echo "10. Back"
-        read -p "Enter your choice (1-10): " utility_choice
+        echo "10. Configure FPS monitoring"
+        echo "11. Health check"
+        echo "12. Back"
+        read -p "Enter your choice (1-12): " utility_choice
         case $utility_choice in
           1)
             restore_latest_backup
@@ -817,7 +876,13 @@ while true; do
             revert_network_changes
             ;;
           5)
+            backup_existing_flowcoll
             sudo nano /etc/elastiflow/flowcoll.yml
+            read -p "Do you want to reload and restart flowcoll.service? (y/n): " reload_choice
+            if [[ $reload_choice == "y" ]]; then
+              reload_and_restart_flowcoll
+              check_service_health
+            fi
             ;;
           6)
             sudo journalctl -u flowcoll.service -f
@@ -832,10 +897,16 @@ while true; do
             reconfigure_jvm_memory
             ;;
           10)
+            configure_fps_monitoring
+            ;;
+          11)
+            perform_health_check
+            ;;
+          12)
             break
             ;;
           *)
-            print_message "Invalid choice. Please enter a number between 1 and 10." "$RED"
+            print_message "Invalid choice. Please enter a number between 1 and 12." "$RED"
             ;;
         esac
       done
