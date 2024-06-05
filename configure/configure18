@@ -18,20 +18,6 @@ print_message() {
   echo -e "${color}${message}${NC}"
 }
 
-check_and_zero_out_flowcoll_conf() {
-  local FILE=/etc/systemd/system/flowcoll.service.d/flowcoll.conf
-  if [ -f "$FILE" ]; then
-    if [ -s "$FILE" ]; then
-      TIMESTAMP=$(date +%Y%m%d%H%M%S)
-      sudo cp -f "$FILE" "${FILE}.bak.$TIMESTAMP"
-      sudo truncate -s 0 "$FILE"
-      print_message "Backed up $FILE to ${FILE}.bak.$TIMESTAMP and zeroed it out." "$GREEN"
-    else
-      print_message "$FILE is already empty." "$GREEN"
-    fi
-  fi
-}
-
 comment_and_add_line() {
   local FILE=$1
   local FIND=$2
