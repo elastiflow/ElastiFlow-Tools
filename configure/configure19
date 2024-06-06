@@ -681,33 +681,41 @@ EOL
 monitor_fps() {
   local file_path=/etc/elastiflow/flowcoll.yml
 
-  # Prompt user for bytes per record with default value
-  while true; do
-    read -p "Enter bytes per record (default is 250): " bytes_per_document
-    if [[ -z "$bytes_per_document" || "$bytes_per_document" =~ ^[0-9]+$ ]]; then
-      bytes_per_document=${bytes_per_document:-250}
-      break
-    else
-      echo "Invalid input. Please enter a number."
-    fi
-  done
+  if grep -q '^EF_OUTPUT_MONITOR_ENABLE: "true"' "$file_path"; then
+    print_message "Disabling FPS monitoring..." "$GREEN"
+    sed -i '/^EF_OUTPUT_MONITOR_ENABLE: "true"/c\EF_OUTPUT_MONITOR_ENABLE: "false"' "$file_path"
+    print_message "FPS monitoring disabled." "$GREEN"
+    reload_and_restart_service "flowcoll.service"
+    return
+  else
+    # Prompt user for bytes per record with default value
+    while true; do
+      read -p "Enter bytes per record (default is 250): " bytes_per_document
+      if [[ -z "$bytes_per_document" || "$bytes_per_document" =~ ^[0-9]+$ ]]; then
+        bytes_per_document=${bytes_per_document:-250}
+        break
+      else
+        echo "Invalid input. Please enter a number."
+      fi
+    done
 
-  # Prompt user for monitoring interval with default value
-  while true; do
-    read -p "Enter monitoring interval in seconds (default is 300): " EF_OUTPUT_MONITOR_INTERVAL
-    if [[ -z "$EF_OUTPUT_MONITOR_INTERVAL" || "$EF_OUTPUT_MONITOR_INTERVAL" =~ ^[0-9]+$ ]]; then
-      EF_OUTPUT_MONITOR_INTERVAL=${EF_OUTPUT_MONITOR_INTERVAL:-300}
-      break
-    else
-      echo "Invalid input. Please enter a number."
-    fi
-  done
+    # Prompt user for monitoring interval with default value
+    while true; do
+      read -p "Enter monitoring interval in seconds (default is 300): " EF_OUTPUT_MONITOR_INTERVAL
+      if [[ -z "$EF_OUTPUT_MONITOR_INTERVAL" || "$EF_OUTPUT_MONITOR_INTERVAL" =~ ^[0-9]+$ ]]; then
+        EF_OUTPUT_MONITOR_INTERVAL=${EF_OUTPUT_MONITOR_INTERVAL:-300}
+        break
+      else
+        echo "Invalid input. Please enter a number."
+      fi
+    done
 
-  print_message "Enabling FPS monitoring..." "$GREEN"
-  comment_and_add_line "$file_path" "EF_OUTPUT_MONITOR_ENABLE" 'EF_OUTPUT_MONITOR_ENABLE: "true"'
-  comment_and_add_line "$file_path" "EF_OUTPUT_MONITOR_INTERVAL" "EF_OUTPUT_MONITOR_INTERVAL: $EF_OUTPUT_MONITOR_INTERVAL"
-  print_message "FPS monitoring enabled." "$GREEN"
-  reload_and_restart_service "flowcoll.service"
+    print_message "Enabling FPS monitoring..." "$GREEN"
+    comment_and_add_line "$file_path" "EF_OUTPUT_MONITOR_ENABLE" 'EF_OUTPUT_MONITOR_ENABLE: "true"'
+    comment_and_add_line "$file_path" "EF_OUTPUT_MONITOR_INTERVAL" "EF_OUTPUT_MONITOR_INTERVAL: $EF_OUTPUT_MONITOR_INTERVAL"
+    print_message "FPS monitoring enabled." "$GREEN"
+    reload_and_restart_service "flowcoll.service"
+  fi
 
   print_message "Monitoring FPS..." "$GREEN"
   print_message "Assumptions: $bytes_per_document bytes per record." "$GREEN"
@@ -771,14 +779,24 @@ perform_health_check() {
     fi
   done
 
-  # Output result of http://localhost:8080/readyz
+  # Check http://localhost:8080/readyz
   print_message "Checking http://localhost:8080/readyz..." "$GREEN"
-  curl -s http://localhost:8080/readyz | tee /dev/tty
+  response=$(curl -s http://localhost:8080/readyz)
+  if echo "$response" | grep -q "200"; then
+    print_message "$response" "$GREEN"
+  else
+    print_message "$response" "$RED"
+  fi
   echo
-
-  # Output result of http://localhost:8080/livez
+  
+  # Check http://localhost:8080/livez
   print_message "Checking http://localhost:8080/livez..." "$GREEN"
-  curl -s http://localhost:8080/livez | tee /dev/tty
+  response=$(curl -s http://localhost:8080/livez)
+  if echo "$response" | grep -q "200"; then
+    print_message "$response" "$GREEN"
+  else
+    print_message "$response" "$RED"
+  fi
   echo
 
   # Check ElastiFlow account ID and flow license key
