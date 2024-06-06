@@ -425,7 +425,7 @@ printf "Installed ElastiFlow version: $version\n"
 version=$(lsb_release -d | awk -F'\t' '{print $2}')
 printf "Operating System: $version\n\n"
 
-version=$(java -version)
+version=$(/usr/lib/jvm/java-21-openjdk-amd64/bin/java -version 2>&1)
 printf "Installed Java version: $version\n"
 
 printf "\e[5;37m\n\nGo to http://$IP_ADDRESS:5601/app/dashboards (elastic / elastic)\n\n\e[0m"
