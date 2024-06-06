@@ -79,7 +79,9 @@ find_and_replace() {
 # Function to reload systemd daemon and restart services
 reload_and_restart_service() {
   local service=$1
+  printf "Performing daemon-reload\n"
   sudo systemctl daemon-reload
+  printf "Restarting service $service\n"
   sudo systemctl restart "$service"
 }
 
