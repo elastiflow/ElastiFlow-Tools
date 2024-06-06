@@ -770,10 +770,15 @@ perform_health_check() {
   ef_flow_license_key=$(grep '^EF_FLOW_LICENSE_KEY: ' /etc/elastiflow/flowcoll.yml | awk '{print $2}')
   ef_license_accepted=$(grep '^EF_LICENSE_ACCEPTED: ' /etc/elastiflow/flowcoll.yml | awk '{print $2}')
   
-  if [ -n "$ef_account_id" ] && [ -n "$ef_flow_license_key" ] && [ "$ef_license_accepted" == "\"true\"" ]; then
-    print_message "ElastiFlow account ID, flow license key, and license accepted are correctly configured." "$GREEN"
-    print_message "ElastiFlow account ID: $ef_account_id" "$GREEN"
-    print_message "ElastiFlow flow license key: $ef_flow_license_key" "$GREEN"
+  # Check ElastiFlow account ID and flow license key
+  ef_account_id=$(grep '^EF_ACCOUNT_ID: ' /etc/elastiflow/flowcoll.yml | awk '{print $2}' | tr -d '"')
+  ef_flow_license_key=$(grep '^EF_FLOW_LICENSE_KEY: ' /etc/elastiflow/flowcoll.yml | awk '{print $2}' | tr -d '"')
+  ef_license_accepted=$(grep '^EF_LICENSE_ACCEPTED: ' /etc/elastiflow/flowcoll.yml | awk '{print $2}' | tr -d '"')
+
+  if [ -n "$ef_account_id" ] && [ -n "$ef_flow_license_key" ] && [ "$ef_license_accepted" == "true" ]; then
+    print_message "EF_LICENSE_ACCEPTED: $ef_license_accepted" "$GREEN"
+    print_message "EF_ACCOUNT_ID: $ef_account_id" "$GREEN"
+    print_message "EF_FLOW_LICENSE_KEY: $ef_flow_license_key" "$GREEN"
   else
     print_message "ElastiFlow account ID, flow license key, or license accepted is not correctly configured." "$RED"
   fi
