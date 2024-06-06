@@ -680,6 +680,29 @@ EOL
 # Function to monitor FPS
 monitor_fps() {
   local file_path=/etc/elastiflow/flowcoll.yml
+
+  # Prompt user for bytes per record with default value
+  while true; do
+    read -p "Enter bytes per record (default is 250): " bytes_per_document
+    if [[ -z "$bytes_per_document" || "$bytes_per_document" =~ ^[0-9]+$ ]]; then
+      bytes_per_document=${bytes_per_document:-250}
+      break
+    else
+      echo "Invalid input. Please enter a number."
+    fi
+  done
+
+  # Prompt user for monitoring interval with default value
+  while true; do
+    read -p "Enter monitoring interval in seconds (default is 300): " EF_OUTPUT_MONITOR_INTERVAL
+    if [[ -z "$EF_OUTPUT_MONITOR_INTERVAL" || "$EF_OUTPUT_MONITOR_INTERVAL" =~ ^[0-9]+$ ]]; then
+      EF_OUTPUT_MONITOR_INTERVAL=${EF_OUTPUT_MONITOR_INTERVAL:-300}
+      break
+    else
+      echo "Invalid input. Please enter a number."
+    fi
+  done
+
   if grep -q '^EF_OUTPUT_MONITOR_ENABLE: "true"' "$file_path"; then
     print_message "Disabling FPS monitoring..." "$GREEN"
     sed -i '/^EF_OUTPUT_MONITOR_ENABLE: "true"/c\EF_OUTPUT_MONITOR_ENABLE: "false"' "$file_path"
@@ -689,30 +712,28 @@ monitor_fps() {
   else
     print_message "Enabling FPS monitoring..." "$GREEN"
     comment_and_add_line "$file_path" "EF_OUTPUT_MONITOR_ENABLE" 'EF_OUTPUT_MONITOR_ENABLE: "true"'
-    comment_and_add_line "$file_path" "EF_OUTPUT_MONITOR_INTERVAL" 'EF_OUTPUT_MONITOR_INTERVAL: 300'
+    comment_and_add_line "$file_path" "EF_OUTPUT_MONITOR_INTERVAL" "EF_OUTPUT_MONITOR_INTERVAL: $EF_OUTPUT_MONITOR_INTERVAL"
     print_message "FPS monitoring enabled." "$GREEN"
     reload_and_restart_service "flowcoll.service"
   fi
 
   print_message "Monitoring FPS..." "$GREEN"
-  local EF_OUTPUT_MONITOR_INTERVAL=$(grep "EF_OUTPUT_MONITOR_INTERVAL" /etc/elastiflow/flowcoll.yml | awk '{print $2}' | tr -d '"')
-  if [ -z "$EF_OUTPUT_MONITOR_INTERVAL" ]; then
-    EF_OUTPUT_MONITOR_INTERVAL=300
-  fi
-  print_message "Assumptions: 250 bytes per record." "$GREEN"
+  print_message "Assumptions: $bytes_per_document bytes per record." "$GREEN"
   print_message "Monitoring interval: $EF_OUTPUT_MONITOR_INTERVAL seconds ($((EF_OUTPUT_MONITOR_INTERVAL / 60)) minutes)." "$GREEN"
+  
   while true; do
     sudo journalctl -u flowcoll.service -f | grep --line-buffered "Monitor Output: decoding rate:" | while read -r line; do
       raw_timestamp=$(echo "$line" | grep -oP '(?<=ts":")[^"]+')
       local_time=$(date '+%Y-%m-%d %H:%M:%S')
       records_per_second=$(echo "$line" | grep -oP '(?<=decoding rate: )\d+')
-      if [ -n "$records_per_second" ]; then
-        bytes_per_document=250
+      if [ -n "$records_per_second" ] && [ "$records_per_second" -ne 0 ]; then
         storage_capacity_gb=500
         documents_per_day=$((records_per_second * 60 * 60 * 24))
         storage_capacity_bytes=$((storage_capacity_gb * 1024 * 1024 * 1024))
         days_of_storage=$(echo "$storage_capacity_bytes / ($documents_per_day * $bytes_per_document)" | bc)
         echo "[$local_time] [$raw_timestamp] Records per second: $records_per_second, Days of storage in 500 GB: $days_of_storage"
+      else
+        echo "[$local_time] [$raw_timestamp] Records per second: $records_per_second, Unable to calculate days of storage due to zero records per second."
       fi
     done
     read -t 1 -n 1 key
@@ -721,6 +742,7 @@ monitor_fps() {
     fi
   done
 }
+
 
 # Function to perform health check
 perform_health_check() {
