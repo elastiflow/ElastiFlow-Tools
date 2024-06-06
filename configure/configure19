@@ -865,9 +865,9 @@ perform_health_check() {
 
   # Check if there is an internet connection
   if wget -q --spider http://google.com; then
-    print_message "Internet connection is available." "$GREEN"
+    print_message "Internet connection is available.\n" "$GREEN"
   else
-    print_message "Internet connection is not available." "$RED"
+    print_message "Internet connection is not available.\n" "$RED"
   fi
 }
 
