@@ -703,19 +703,11 @@ monitor_fps() {
     fi
   done
 
-  if grep -q '^EF_OUTPUT_MONITOR_ENABLE: "true"' "$file_path"; then
-    print_message "Disabling FPS monitoring..." "$GREEN"
-    sed -i '/^EF_OUTPUT_MONITOR_ENABLE: "true"/c\EF_OUTPUT_MONITOR_ENABLE: "false"' "$file_path"
-    print_message "FPS monitoring disabled." "$GREEN"
-    reload_and_restart_service "flowcoll.service"
-    return
-  else
-    print_message "Enabling FPS monitoring..." "$GREEN"
-    comment_and_add_line "$file_path" "EF_OUTPUT_MONITOR_ENABLE" 'EF_OUTPUT_MONITOR_ENABLE: "true"'
-    comment_and_add_line "$file_path" "EF_OUTPUT_MONITOR_INTERVAL" "EF_OUTPUT_MONITOR_INTERVAL: $EF_OUTPUT_MONITOR_INTERVAL"
-    print_message "FPS monitoring enabled." "$GREEN"
-    reload_and_restart_service "flowcoll.service"
-  fi
+  print_message "Enabling FPS monitoring..." "$GREEN"
+  comment_and_add_line "$file_path" "EF_OUTPUT_MONITOR_ENABLE" 'EF_OUTPUT_MONITOR_ENABLE: "true"'
+  comment_and_add_line "$file_path" "EF_OUTPUT_MONITOR_INTERVAL" "EF_OUTPUT_MONITOR_INTERVAL: $EF_OUTPUT_MONITOR_INTERVAL"
+  print_message "FPS monitoring enabled." "$GREEN"
+  reload_and_restart_service "flowcoll.service"
 
   print_message "Monitoring FPS..." "$GREEN"
   print_message "Assumptions: $bytes_per_document bytes per record." "$GREEN"
