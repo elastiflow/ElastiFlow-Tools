@@ -11,6 +11,8 @@ elastiflow_flow_license_key=""
 ########################################################
 
 elastiflow_version="7.0.0"
+elasticsearch_version="8.13.4"
+kibana_version="8.13.4"
 flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
 ########################################################
 
@@ -229,7 +231,7 @@ sleep 20s
 printf "\n\n\n*********Installing ElasticSearch...\n\n"
 wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | gpg --dearmor -o /usr/share/keyrings/elasticsearch-keyring.gpg || handle_error "Failed to add Elasticsearch GPG key." "${LINENO}"
 echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] https://artifacts.elastic.co/packages/8.x/apt stable main" | tee /etc/apt/sources.list.d/elastic-8.x.list || handle_error "Failed to add Elasticsearch repository." "${LINENO}"
-elastic_install_log=$(apt-get -qq update && apt-get -qq install elasticsearch=8.13.4 | stdbuf -oL tee /dev/tty) || handle_error "Failed to install Elasticsearch." "${LINENO}"
+elastic_install_log=$(apt-get -qq update && apt-get -qq install elasticsearch=$elasticsearch_version | stdbuf -oL tee /dev/tty) || handle_error "Failed to install Elasticsearch." "${LINENO}"
 elastic_password=$(echo "$elastic_install_log" | awk -F' : ' '/The generated password for the elastic built-in superuser/{print $2}') 
 elastic_password=$(echo -n "$elastic_password" | tr -cd '[:print:]')
 printf "\n\n\n*********Elastic password is $elastic_password\n\n"
@@ -290,7 +292,7 @@ printf "\n\n\n*********Sleeping 20 seconds to give dpkg time to clean up...\n\n"
 sleep 20s
 
 printf "\n\n\n*********Downloading and installing Kibana...\n\n"
-apt-get -qq update && apt-get -qq install kibana=8.13.4
+apt-get -qq update && apt-get -qq install kibana=$kibana_version
 
 printf "\n\n\n*********Configuring Kibana - set 0.0.0.0 as server.host\n\n"
 ## The default is 'localhost', which usually means remote machines will not be able to connect.
