@@ -153,11 +153,8 @@ ID_LOWER=$(echo "$ID" | tr '[:upper:]' '[:lower:]')
 if [[ "$ID_LOWER" == "ubuntu" ]]; then
     echo "Found Ubuntu"
     osversion="ubuntu"
-elif [[ "$ID_LOWER" == "debian" ]]; then
-    echo "Found Debian"
-    osversion="debian"
 else
-    echo "This script only supports Ubuntu or Debian" 1>&2
+    echo "This script only supports Ubuntu" 1>&2
     exit 1
 fi
 }
