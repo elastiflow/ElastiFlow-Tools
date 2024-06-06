@@ -723,7 +723,7 @@ monitor_fps() {
 # Function to perform health check
 perform_health_check() {
   # Flowcoll checks
-  print_message "\n\n********** flowcoll **********\n\n" "$GREEN"
+  print_message "\n\n********** Flowcoll **********\n" "$GREEN"
   # Check if flowcoll.service is running
   if sudo systemctl is-active --quiet flowcoll.service; then
     print_message "flowcoll.service is running." "$GREEN"
@@ -779,7 +779,7 @@ perform_health_check() {
   fi
 
   # Elasticsearch checks
-  print_message "\n\n********** elasticsearch **********\n\n" "$GREEN"
+  print_message "\n\n********** Elasticsearch **********\n" "$GREEN"
   # Check if Elasticsearch service is running
   if sudo systemctl is-active --quiet elasticsearch.service; then
     print_message "elasticsearch.service is running." "$GREEN"
@@ -812,7 +812,7 @@ perform_health_check() {
   fi
 
   # Kibana checks
-  print_message "\n\n********** kibana **********\n\n" "$GREEN"
+  print_message "\n\n********** Kibana **********\n" "$GREEN"
   # Check if Kibana service is running
   if sudo systemctl is-active --quiet kibana.service; then
     print_message "kibana.service is running." "$GREEN"
@@ -836,7 +836,7 @@ perform_health_check() {
   fi
 
   # General checks
-  print_message "\n\n********** general **********\n\n" "$GREEN"
+  print_message "\n\n********** General **********\n" "$GREEN"
   # Check disk space
   total_space=$(df -BG / | tail -1 | awk '{print $2}')
   free_space=$(df -BG / | tail -1 | awk '{print $4}')
