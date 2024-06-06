@@ -1081,7 +1081,7 @@ while true; do
         echo "7. Install/Uninstall flow generator (pmacct)"
         echo "8. Disable/Enable packet capture"
         echo "9. Reconfigure JVM memory usage"
-        echo "10. Enable/Disable monitor FPS"
+        echo "10. Enable FPS monitor"
         echo "11. Health check"
         echo "12. Daemon reload and restart flowcoll.service"
         echo "13. Daemon reload and restart flowcoll.service, elasticsearch.service, and kibana.service"
