@@ -275,7 +275,6 @@ configure_maxmind() {
     print_message "MaxMind GeoIP City database downloaded and extracted successfully." "$GREEN"
   else
     print_message "Failed to download MaxMind GeoIP City database. Returning to main menu." "$RED"
-    reload_and_restart_service "flowcoll.service"
     return 1
   fi
 
