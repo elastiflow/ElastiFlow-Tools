@@ -776,7 +776,42 @@ monitor_fps() {
 
 # Function to perform health check
 perform_health_check() {
-  # Flowcoll checks
+   # General checks
+  print_message "\n\n********** General **********\n" "$GREEN"
+  # Check disk space
+  total_space=$(df -BG / | tail -1 | awk '{print $2}')
+  free_space=$(df -BG / | tail -1 | awk '{print $4}')
+  print_message "Total disk space: $total_space" "$GREEN"
+  print_message "Free disk space: $free_space" "$GREEN"
+
+  # Check if there is at least 15% disk space left
+  disk_usage=$(df / | tail -1 | awk '{print $5}' | sed 's/%//')
+  if [ $disk_usage -lt 85 ]; then
+    print_message "At least 15% disk space is available." "$GREEN"
+  else
+    print_message "Less than 15% disk space is available." "$RED"
+  fi
+
+  # Check if default gateway can be pinged
+  default_gateway=$(ip route | grep default | awk '{print $3}')
+  if [ -n "$default_gateway" ]; then
+    if ping -c 1 $default_gateway &> /dev/null; then
+      print_message "Default gateway $default_gateway is reachable." "$GREEN"
+    else
+      print_message "Default gateway $default_gateway is not reachable." "$RED"
+    fi
+  else
+    print_message "Default gateway is not set." "$RED"
+  fi
+
+  # Check if there is an internet connection
+  if wget -q --spider http://google.com; then
+    print_message "Internet connection is available.\n" "$GREEN"
+  else
+    print_message "Internet connection is not available.\n" "$RED"
+  fi
+
+# Flowcoll checks
   print_message "\n\n********** Flowcoll **********\n" "$GREEN"
   # Check if flowcoll.service is running
   if sudo systemctl is-active --quiet flowcoll.service; then
@@ -792,37 +827,6 @@ perform_health_check() {
   else
     print_message "No errors found in flowcoll.service logs." "$GREEN"
   fi
-
-  # Check if MaxMind enrichment is active
-  if grep -q '^EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE: "true"' /etc/elastiflow/flowcoll.yml && grep -q '^EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE: "true"' /etc/elastiflow/flowcoll.yml; then
-    print_message "MaxMind enrichment is active." "$GREEN"
-  else
-    print_message "MaxMind enrichment is not active." "$RED"
-  fi
-
-  # Check if DNS enrichment is active
-  if grep -q '^EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE: "true"' /etc/elastiflow/flowcoll.yml; then
-    print_message "DNS enrichment is active." "$GREEN"
-  else
-    print_message "DNS enrichment is not active." "$RED"
-  fi
-
-  # Check if NetIntel enrichment is active
-  if grep -q '^EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE: "true"' /etc/elastiflow/flowcoll.yml; then
-    print_message "NetIntel enrichment is active." "$GREEN"
-  else
-    print_message "NetIntel enrichment is not active." "$RED"
-  fi
-
-  # Check if ports are open
-  for port in 2055 4739 6343 9995; do
-    if sudo netstat -tuln | grep -q ":$port"; then
-      print_message "Port $port is open." "$GREEN"
-    else
-      print_message "Port $port is not open." "$RED"
-    fi
-  done
-
   # Check http://localhost:8080/readyz
   print_message "Checking http://localhost:8080/readyz..." "$GREEN"
   response=$(curl -s http://localhost:8080/readyz)
@@ -843,6 +847,15 @@ perform_health_check() {
   fi
   echo
 
+# Check if ports are open
+  for port in 2055 4739 6343 9995; do
+    if sudo netstat -tuln | grep -q ":$port"; then
+      print_message "Port $port is open." "$GREEN"
+    else
+      print_message "Port $port is not open." "$RED"
+    fi
+  done
+
   # Check ElastiFlow account ID and flow license key
   ef_account_id=$(grep '^EF_ACCOUNT_ID: ' /etc/elastiflow/flowcoll.yml | awk '{print $2}' | tr -d '"')
   ef_flow_license_key=$(grep '^EF_FLOW_LICENSE_KEY: ' /etc/elastiflow/flowcoll.yml | awk '{print $2}' | tr -d '"')
@@ -854,6 +867,30 @@ perform_health_check() {
     print_message "EF_FLOW_LICENSE_KEY: $ef_flow_license_key" "$GREEN"
   else
     print_message "ElastiFlow account ID, flow license key, or license accepted is not correctly configured." "$RED"
+  fi
+
+
+  # Check if MaxMind enrichment is active
+  if grep -q '^EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE: "true"' /etc/elastiflow/flowcoll.yml && grep -q '^EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE: "true"' /etc/elastiflow/flowcoll.yml; then
+    print_message "MaxMind enrichment is active." "$GREEN"
+  else
+    print_message "MaxMind enrichment is not active." "$RED"
+  fi
+
+  printf "\n"
+
+  # Check if DNS enrichment is active
+  if grep -q '^EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE: "true"' /etc/elastiflow/flowcoll.yml; then
+    print_message "DNS enrichment is active." "$GREEN"
+  else
+    print_message "DNS enrichment is not active." "$RED"
+  fi
+
+  # Check if NetIntel enrichment is active
+  if grep -q '^EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE: "true"' /etc/elastiflow/flowcoll.yml; then
+    print_message "NetIntel enrichment is active." "$GREEN"
+  else
+    print_message "NetIntel enrichment is not active." "$RED"
   fi
 
   # Elasticsearch checks
@@ -913,40 +950,6 @@ perform_health_check() {
     print_message "Port 5601 is not open." "$RED"
   fi
 
-  # General checks
-  print_message "\n\n********** General **********\n" "$GREEN"
-  # Check disk space
-  total_space=$(df -BG / | tail -1 | awk '{print $2}')
-  free_space=$(df -BG / | tail -1 | awk '{print $4}')
-  print_message "Total disk space: $total_space" "$GREEN"
-  print_message "Free disk space: $free_space" "$GREEN"
-
-  # Check if there is at least 15% disk space left
-  disk_usage=$(df / | tail -1 | awk '{print $5}' | sed 's/%//')
-  if [ $disk_usage -lt 85 ]; then
-    print_message "At least 15% disk space is available." "$GREEN"
-  else
-    print_message "Less than 15% disk space is available." "$RED"
-  fi
-
-  # Check if default gateway can be pinged
-  default_gateway=$(ip route | grep default | awk '{print $3}')
-  if [ -n "$default_gateway" ]; then
-    if ping -c 1 $default_gateway &> /dev/null; then
-      print_message "Default gateway $default_gateway is reachable." "$GREEN"
-    else
-      print_message "Default gateway $default_gateway is not reachable." "$RED"
-    fi
-  else
-    print_message "Default gateway is not set." "$RED"
-  fi
-
-  # Check if there is an internet connection
-  if wget -q --spider http://google.com; then
-    print_message "Internet connection is available.\n" "$GREEN"
-  else
-    print_message "Internet connection is not available.\n" "$RED"
-  fi
 }
 
 # Battleship game
