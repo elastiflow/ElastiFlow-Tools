@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ElastiFlow PoC Configurator for installing ElastiFlow Trial and MaxMind enrichment
-# Version 1.9.5
+# Version 1.9.6
 # Author: O.J. Wolanyk
 
 # Define color codes
@@ -233,14 +233,8 @@ configure_maxmind() {
   # Define the file path
   FILE_PATH=/etc/elastiflow/flowcoll.yml
 
-  # Check if flowcoll.yml exists, if not, download it
-  if [ ! -f $FILE_PATH ]; then
-    print_message "$FILE_PATH not found. Downloading default configuration." "$RED"
-    download_default_conf
-  fi
-
   show_maxmind
-
+  
   # Check if MaxMind enrichment fields are already configured
   maxmind_asn_configured=$(grep -q '^EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE: ' $FILE_PATH && echo "yes" || echo "no")
   maxmind_geoip_configured=$(grep -q '^EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE: ' $FILE_PATH && echo "yes" || echo "no")
@@ -252,6 +246,8 @@ configure_maxmind() {
       return
     fi
   fi
+
+
 
   # Prompt for MaxMind license key
   read -p "Enter your MaxMind license key (or 'q' to quit): " maxmind_license_key
@@ -269,7 +265,6 @@ configure_maxmind() {
     print_message "MaxMind ASN database downloaded and extracted successfully." "$GREEN"
   else
     print_message "Failed to download MaxMind ASN database. Returning to main menu." "$RED"
-    restore_latest_backup
     reload_and_restart_service "flowcoll.service"
     return 1
   fi
@@ -280,7 +275,6 @@ configure_maxmind() {
     print_message "MaxMind GeoIP City database downloaded and extracted successfully." "$GREEN"
   else
     print_message "Failed to download MaxMind GeoIP City database. Returning to main menu." "$RED"
-    restore_latest_backup
     reload_and_restart_service "flowcoll.service"
     return 1
   fi
