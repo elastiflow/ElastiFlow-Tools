@@ -800,6 +800,20 @@ perform_health_check() {
     print_message "MaxMind enrichment is not active." "$RED"
   fi
 
+  # Check if DNS enrichment is active
+  if grep -q '^EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE: "true"' /etc/elastiflow/flowcoll.yml; then
+    print_message "DNS enrichment is active." "$GREEN"
+  else
+    print_message "DNS enrichment is not active." "$RED"
+  fi
+
+  # Check if NetIntel enrichment is active
+  if grep -q '^EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE: "true"' /etc/elastiflow/flowcoll.yml; then
+    print_message "NetIntel enrichment is active." "$GREEN"
+  else
+    print_message "NetIntel enrichment is not active." "$RED"
+  fi
+
   # Check if ports are open
   for port in 2055 4739 6343 9995; do
     if sudo netstat -tuln | grep -q ":$port"; then
@@ -829,11 +843,6 @@ perform_health_check() {
   fi
   echo
 
-  # Check ElastiFlow account ID and flow license key
-  ef_account_id=$(grep '^EF_ACCOUNT_ID: ' /etc/elastiflow/flowcoll.yml | awk '{print $2}')
-  ef_flow_license_key=$(grep '^EF_FLOW_LICENSE_KEY: ' /etc/elastiflow/flowcoll.yml | awk '{print $2}')
-  ef_license_accepted=$(grep '^EF_LICENSE_ACCEPTED: ' /etc/elastiflow/flowcoll.yml | awk '{print $2}')
-  
   # Check ElastiFlow account ID and flow license key
   ef_account_id=$(grep '^EF_ACCOUNT_ID: ' /etc/elastiflow/flowcoll.yml | awk '{print $2}' | tr -d '"')
   ef_flow_license_key=$(grep '^EF_FLOW_LICENSE_KEY: ' /etc/elastiflow/flowcoll.yml | awk '{print $2}' | tr -d '"')
