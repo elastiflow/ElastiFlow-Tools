@@ -46,6 +46,16 @@ comment_and_add_line() {
   fi
 }
 
+
+dns_enrichment() {
+  local file_path=/etc/elastiflow/flowcoll.yml
+
+  print_message "Enabling DNS enrichment..." "$GREEN"
+  comment_and_add_line "$file_path" "EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE" 'EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE: "true"'
+  print_message "DNS enrichment  enabled." "$GREEN"
+  reload_and_restart_service "flowcoll.service"
+}
+
 # Function to process an array of find and replace strings
 find_and_replace() {
   local FILE=$1
@@ -1115,8 +1125,9 @@ while true; do
         echo "13. Daemon reload and restart flowcoll.service, elasticsearch.service, and kibana.service"
         echo "14. Watch elasticsearch.service log"
         echo "15. Watch kibana.service log"
-        echo "16. Back"
-        read -p "Enter your choice (1-16): " utility_choice
+        echo "16. Enable DNS enrichment"
+        echo "17. Back"
+        read -p "Enter your choice (1-17): " utility_choice
         case $utility_choice in
           1)
             restore_latest_backup
@@ -1187,10 +1198,13 @@ while true; do
             sudo journalctl -u kibana.service -f
             ;;
           16)
+            enable_dns_enrichment
+            ;;
+          17)
             break
             ;;
           *)
-            print_message "Invalid choice. Please enter a number between 1 and 16." "$RED"
+            print_message "Invalid choice. Please enter a number between 1 and 17." "$RED"
             ;;
         esac
       done
@@ -1223,3 +1237,4 @@ while true; do
       ;;
   esac
 done
+
