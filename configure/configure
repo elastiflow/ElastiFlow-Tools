@@ -52,9 +52,19 @@ dns_enrichment() {
 
   print_message "Enabling DNS enrichment..." "$GREEN"
   comment_and_add_line "$file_path" "EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE" 'EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE: "true"'
-  print_message "DNS enrichment  enabled." "$GREEN"
+  print_message "DNS enrichment enabled." "$GREEN"
   reload_and_restart_service "flowcoll.service"
 }
+
+netintel_enrichment() {
+  local file_path=/etc/elastiflow/flowcoll.yml
+  print_message "Enabling NetIntel enrichment..." "$GREEN"
+  comment_and_add_line "$file_path" "EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE" 'EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE: "true"'
+  print_message "NetIntel enrichment enabled." "$GREEN"
+  reload_and_restart_service "flowcoll.service"
+}
+
+
 
 # Function to process an array of find and replace strings
 find_and_replace() {
@@ -1126,7 +1136,8 @@ while true; do
         echo "14. Watch elasticsearch.service log"
         echo "15. Watch kibana.service log"
         echo "16. Enable DNS enrichment"
-        echo "17. Back"
+        echo "17. Enable NetIntel enrichment"
+        echo "18. Back"
         read -p "Enter your choice (1-17): " utility_choice
         case $utility_choice in
           1)
@@ -1201,6 +1212,9 @@ while true; do
             dns_enrichment
             ;;
           17)
+            netintel_enrichment
+            ;;
+          18)
             break
             ;;
           *)
