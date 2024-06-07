@@ -1198,7 +1198,7 @@ while true; do
             sudo journalctl -u kibana.service -f
             ;;
           16)
-            enable_dns_enrichment
+            dns_enrichment
             ;;
           17)
             break
