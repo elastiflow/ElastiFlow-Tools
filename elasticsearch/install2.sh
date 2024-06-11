@@ -446,7 +446,7 @@ if [ -z "$INTERFACE" ]; then
     echo "No interface starting with 'enp' found."
 else
     # Get the IP address of the interface
-    IP_ADDRESS=$(ip -o -4 addr show $INTERFACE | awk '{print $4}' | cut -d/ -f1)
+    ip_address=$(ip -o -4 addr show $INTERFACE | awk '{print $4}' | cut -d/ -f1)
 
     if [ -z "$ip_address" ]; then
         echo "No IP address found for interface $INTERFACE."
