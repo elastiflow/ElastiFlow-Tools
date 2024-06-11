@@ -119,7 +119,7 @@ get_dashboard_url() {
   else
     # Construct the dashboard URL
     local dashboard_url="$kibana_url/app/kibana#/dashboard/$dashboard_id"
-    echo "Dashboard URL: $dashboard_url"
+    echo "$dashboard_url"
   fi
 }
 
@@ -472,6 +472,7 @@ printf "Operating System: $version\n"
 
 dashboard_url=$(get_dashboard_url "ElastiFlow (flow): Overview")
 
+# Use the dashboard_url variable
 printf "----------------------------------------------\n"
 printf "\e[5;37m\n\nGo to $dashboard_url ($elastic_username / $elastic_password2)\n\n\e[0m"
 printf "Use credentials: $elastic_username / $elastic_password2\n\n"
