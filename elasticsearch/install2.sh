@@ -461,10 +461,10 @@ version=$(/usr/share/kibana/bin/kibana --version --allow-root | jq -r '.config.s
 printf "Installed Kibana version: $version\n"
 
 version=$(/usr/share/elasticsearch/bin/elasticsearch --version | grep -oP 'Version: \K[\d.]+')
-printf "\n\nInstalled Elasticsearch version: $version\n" 
+printf "Installed Elasticsearch version: $version\n" 
 
 version=$(java -version 2>&1)
-printf "Installed Java version: $version\n\n"
+printf "Installed Java version: $version\n"
 
 version=$(lsb_release -d | awk -F'\t' '{print $2}')
 printf "Operating System: $version\n"
