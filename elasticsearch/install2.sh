@@ -82,19 +82,19 @@ comment_and_replace_line() {
 
 download_configure_script() {
   local url="https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/configure/configure"
-  local target_path="$HOME/configure.sh"
+  local target_path="$HOME/configure"
   
   # Download the file, overwriting any existing copy
   curl -o "$target_path" "$url"
   
   # Check if the download was successful
   if [ $? -eq 0 ]; then
-    echo "Downloaded configure.sh successfully."
+    echo "Downloaded configure script successfully."
     # Make the file executable
     chmod +x "$target_path"
-    echo "Made configure.sh executable."
+    echo "Made configure script executable."
   else
-    echo "Failed to download configure.sh."
+    echo "Failed to download configure script."
   fi
 }
 
