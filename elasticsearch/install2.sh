@@ -11,9 +11,11 @@ elastiflow_flow_license_key=""
 ########################################################
 
 elastiflow_version="7.0.0"
-elasticsearch_version="8.13.4"
-kibana_version="8.13.4"
+elasticsearch_version="8.14.0"
+kibana_version="8.14.0"
 flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
+elastic_username="elastic"
+elastic_password2="elastic"
 ########################################################
 
 STRINGS_TO_REPLACE=(
@@ -23,7 +25,7 @@ STRINGS_TO_REPLACE=(
 "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: \"true\""
 "EF_OUTPUT_ELASTICSEARCH_ADDRESSES" "EF_OUTPUT_ELASTICSEARCH_ADDRESSES: \"127.0.0.1:9200\""
 "EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE: \"true\""
-"EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: \"elastic\""
+"EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: "$elastic_password2"
 "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: \"true\""
 "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION" "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: \"true\""
 "EF_FLOW_SERVER_UDP_IP" "EF_FLOW_SERVER_UDP_IP: \"0.0.0.0\""
@@ -76,6 +78,40 @@ comment_and_replace_line() {
     fi
   fi
 }
+
+
+
+#!/bin/bash
+
+# Function to get Kibana dashboard URL
+get_dashboard_url() {
+  #local USERNAME="elastic"
+  #local PASSWORD="elastic"
+  local KIBANA_URL="http://localhost:5601"
+  local DASHBOARD_TITLE="ElastiFlow: (Flow) Overview"
+
+  # Encode the dashboard title for URL
+  local ENCODED_TITLE=$(echo "$DASHBOARD_TITLE" | sed 's/ /%20/g' | sed 's/:/%3A/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
+
+  # Perform the API request to find the dashboard
+  local RESPONSE=$(curl -s -u $USERNAME:$PASSWORD -X GET "$KIBANA_URL/api/saved_objects/_find?type=dashboard&search_fields=title&search=$ENCODED_TITLE" -H 'kbn-xsrf: true')
+
+  # Extract the dashboard ID from the response
+  local DASHBOARD_ID=$(echo $RESPONSE | jq -r '.saved_objects[] | select(.attributes.title=="'"$DASHBOARD_TITLE"'") | .id')
+
+  # Check if the dashboard ID is found
+  if [ -z "$DASHBOARD_ID" ]; then
+    echo "Dashboard not found"
+  else
+    # Construct the dashboard URL
+    local DASHBOARD_URL="$KIBANA_URL/app/kibana#/dashboard/$DASHBOARD_ID"
+    echo "Dashboard URL: $DASHBOARD_URL"
+  fi
+}
+
+
+
+
 
 # Function to process an array of find and replace strings
 find_and_replace() {
@@ -274,8 +310,8 @@ else
 fi
 
 printf "\n\n\n*********Checking if Elastic server is up...\n\n"
-#curl_result=$(curl -s --cacert /etc/elasticsearch/certs/http_ca.crt -u elastic:$elastic_password https://localhost:9200 | tee /dev/tty) 
-curl_result=$(curl -s -k -u elastic:$elastic_password https://localhost:9200 | tee /dev/tty) 
+#curl_result=$(curl -s --cacert /etc/elasticsearch/certs/http_ca.crt -u $elastic_username:$elastic_password https://localhost:9200 | tee /dev/tty) 
+curl_result=$(curl -s -k -u $elastic_username:$elastic_password https://localhost:9200 | tee /dev/tty) 
 
 search_text='cluster_name" : "elasticsearch'
 if echo "$curl_result" | grep -q "$search_text"; then
@@ -335,12 +371,12 @@ apt-get -qq install libpcap-dev
 apt-get -qq install ./flow-collector_"$elastiflow_version"_linux_amd64.deb
 
 printf "\n\n\n*********Changing Elastic password to \"elastic\"...\n\n"
-curl -k -X POST -u elastic:$elastic_password "https://localhost:9200/_security/user/elastic/_password" -H 'Content-Type: application/json' -d'
+curl -k -X POST -u $elastic_username:$elastic_password "https://localhost:9200/_security/user/elastic/_password" -H 'Content-Type: application/json' -d'
 {
-  "password" : "elastic"
+  "password" : "$elastic_password2"
 }'
 
-elastic_password="elastic"
+elastic_password=$elastic_password2"
 
 printf "\n\n\n*********Configuring ElastiFlow Flow Collector...\n\n" 
 find_and_replace "$flowcoll_config_path" "${STRINGS_TO_REPLACE[@]}"
@@ -362,7 +398,7 @@ sleep 20s
 
 printf "\n\n\n*********Downloading and installing ElastiFlow flow dashboards\n\n"
 git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
-response=$(curl --connect-timeout 10 -X POST -u elastic:$elastic_password "localhost:5601/api/saved_objects/_import?overwrite=true" -H "kbn-xsrf: true" --form file=@/etc/elastiflow_for_elasticsearch/kibana/flow/kibana-8.2.x-flow-ecs.ndjson -H 'kbn-xsrf: true')
+response=$(curl --connect-timeout 10 -X POST -u $elastic_username:$elastic_password "localhost:5601/api/saved_objects/_import?overwrite=true" -H "kbn-xsrf: true" --form file=@/etc/elastiflow_for_elasticsearch/kibana/flow/kibana-8.2.x-flow-ecs.ndjson -H 'kbn-xsrf: true')
 
 dashboards_success=$(echo "$response" | jq -r '.success')
 
@@ -376,7 +412,7 @@ fi
 #shutdown -h now
 
 #printf "\n\n\n*********Elastic trial license started\n\n"
-#curl -X POST -k 'https://localhost:9200/_license/start_trial?acknowledge=true' -u elastic:$elastic_password
+#curl -X POST -k 'https://localhost:9200/_license/start_trial?acknowledge=true' -u $elastic_username:$elastic_password
 
 # Loop through each service in the array
 
