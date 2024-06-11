@@ -127,22 +127,22 @@ download_configure_script() {
 get_dashboard_url() {
   local kibana_url="http://$ip_address:5601"
   local dashboard_title="$1"
-  printf "ip address: $ip_address\n"
-  printf "dashboad title: $dashboard_title\n"
-  printf "kibana url: $kibana_url"
-  printf "elastic username: $elastic_username"
-  printf "elastic password: $elastic_password2"
+  #printf "ip address: $ip_address\n"
+  #printf "dashboad title: $dashboard_title\n"
+  #printf "kibana url: $kibana_url"
+  #printf "elastic username: $elastic_username"
+  #printf "elastic password: $elastic_password2"
   
   # Encode the dashboard title for URL
   local encoded_title=$(echo "$dashboard_title" | sed 's/ /%20/g' | sed 's/:/%3A/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
 
   # Perform the API request to find the dashboard
   local response=$(curl -s -u "$elastic_username:$elastic_password2" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
-  printf "response: $response\n"
+  #printf "response: $response\n"
 
   # Extract the dashboard ID from the response
   local dashboard_id=$(echo "$response" | jq -r '.saved_objects[] | select(.attributes.title=="'"$dashboard_title"'") | .id')
-  printf "dashboard id: $dashboard_id"
+  #printf "dashboard id: $dashboard_id"
 
   # Check if the dashboard ID is found
   if [ -z "$dashboard_id" ]; then
@@ -444,12 +444,6 @@ if [ "$dashboards_success" == "true" ]; then
 else
     printf "Flow dashboards not installed successfully\n\n"
 fi
-
-#printf "\n\n\n*********Clean up - Shutting down machine\n\n"
-#shutdown -h now
-
-#printf "\n\n\n*********Elastic trial license started\n\n"
-#curl -X POST -k 'https://localhost:9200/_license/start_trial?acknowledge=true' -u $elastic_username:$elastic_password
 
 # Loop through each service in the array
 
