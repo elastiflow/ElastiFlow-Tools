@@ -101,33 +101,27 @@ download_configure_script() {
 
 # Function to get Kibana dashboard URL
 get_dashboard_url() {
-  #local USERNAME="elastic"
-  #local PASSWORD="elastic"
-  local KIBANA_URL="http://localhost:5601"
-  local DASHBOARD_TITLE="ElastiFlow: (Flow) Overview"
-
+  local kibana_url="http://$ip_address:5601"
+  local dashboard_title="$1"
+  
   # Encode the dashboard title for URL
-  local ENCODED_TITLE=$(echo "$DASHBOARD_TITLE" | sed 's/ /%20/g' | sed 's/:/%3A/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
+  local encoded_title=$(echo "$dashboard_title" | sed 's/ /%20/g' | sed 's/:/%3A/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
 
   # Perform the API request to find the dashboard
-  local RESPONSE=$(curl -s -u $USERNAME:$PASSWORD -X GET "$KIBANA_URL/api/saved_objects/_find?type=dashboard&search_fields=title&search=$ENCODED_TITLE" -H 'kbn-xsrf: true')
+  local response=$(curl -s -u "$elastic_username:$elastic_password2" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
 
   # Extract the dashboard ID from the response
-  local DASHBOARD_ID=$(echo $RESPONSE | jq -r '.saved_objects[] | select(.attributes.title=="'"$DASHBOARD_TITLE"'") | .id')
+  local dashboard_id=$(echo "$response" | jq -r '.saved_objects[] | select(.attributes.title=="'"$dashboard_title"'") | .id')
 
   # Check if the dashboard ID is found
-  if [ -z "$DASHBOARD_ID" ]; then
+  if [ -z "$dashboard_id" ]; then
     echo "Dashboard not found"
   else
     # Construct the dashboard URL
-    local DASHBOARD_URL="$KIBANA_URL/app/kibana#/dashboard/$DASHBOARD_ID"
-    echo "Dashboard URL: $DASHBOARD_URL"
+    local dashboard_url="$kibana_url/app/kibana#/dashboard/$dashboard_id"
+    echo "Dashboard URL: $dashboard_url"
   fi
 }
-
-
-
-
 
 # Function to process an array of find and replace strings
 find_and_replace() {
@@ -454,17 +448,19 @@ else
     # Get the IP address of the interface
     IP_ADDRESS=$(ip -o -4 addr show $INTERFACE | awk '{print $4}' | cut -d/ -f1)
 
-    if [ -z "$IP_ADDRESS" ]; then
+    if [ -z "$ip_address" ]; then
         echo "No IP address found for interface $INTERFACE."
     fi
 fi
+
+download_configure_script
 
 #Get installed versions
 version=$(/usr/share/elasticsearch/bin/elasticsearch --version | grep -oP 'Version: \K[\d.]+')
 printf "\n\nInstalled Elasticsearch version: $version\n" 
 
 version=$(/usr/share/kibana/bin/kibana --version --allow-root | jq -r '.config.serviceVersion.value' 2>/dev/null)
-printf "Installed Kibana version: $version\n" 
+printf "Installed Kibana version: $version\n"
 
 version=$(/usr/share/elastiflow/bin/flowcoll -version)
 printf "Installed ElastiFlow version: $version\n"
@@ -475,7 +471,9 @@ printf "Operating System: $version\n"
 version=$(java -version 2>&1)
 printf "Installed Java version: $version\n\n"
 
-printf "\e[5;37m\n\nGo to http://$IP_ADDRESS:5601/app/dashboards (elastic / elastic)\n\n\e[0m"
+get_dashboard_url "ElastiFlow: (Flow) Overview"
+
+printf "\e[5;37m\n\nGo to http://$ip_address:5601/app/dashboards (elastic / elastic)\n\n\e[0m"
 
 printf "Open ElastiFlow dashboard: “ElastiFlow (flow): Overview\"\n\n"
 
