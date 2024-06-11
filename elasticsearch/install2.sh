@@ -104,7 +104,7 @@ get_dashboard_url() {
   local kibana_url="http://$ip_address:5601"
   local dashboard_title="$1"
   printf "dashboad title: $dashboard_title\n"
-  printf "kibana url: $kibana_url
+  printf "kibana url: $kibana_url"
   printf "elastic username: $elastic_username"
   printf "elastic password: $elastic_password2"
   
