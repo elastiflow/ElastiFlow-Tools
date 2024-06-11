@@ -336,10 +336,6 @@ else
   echo -e "Something's wrong with Elastic...\n\n"
 fi
 
-printf "\n\n\n*********Generating Kibana enrollment token...\n\n"
-kibana_token=$(/usr/share/elasticsearch/bin/elasticsearch-create-enrollment-token -s kibana)
-printf "\n\n\nKibana enrollment token is:\n\n $kibana_token\n\n"
-
 printf "\n\n\n*********Sleeping 20 seconds to give dpkg time to clean up...\n\n"
 sleep 20s
 
@@ -350,9 +346,6 @@ printf "\n\n\n*********Configuring Kibana - set 0.0.0.0 as server.host\n\n"
 ## The default is 'localhost', which usually means remote machines will not be able to connect.
 kibana_config_path="/etc/kibana/kibana.yml"
 replace_text "$kibana_config_path" "#server.host: \"localhost\"" "server.host: \"0.0.0.0\"" "${LINENO}"
-
-printf "\n\n\n*********Enrolling Kibana with Elastic...\n\n"
-/usr/share/kibana/bin/kibana-setup --enrollment-token $kibana_token
 
 printf "\n\n\n*********Configuring Kibana - set elasticsearch.hosts to localhost instead of DHCP IP...\n\n"
 kibana_config_path="/etc/kibana/kibana.yml"
@@ -373,6 +366,13 @@ if [[ -n "$key_line" ]]; then
 else
     echo "No encryption key line found."
 fi
+
+printf "\n\n\n*********Generating Kibana enrollment token...\n\n"
+kibana_token=$(/usr/share/elasticsearch/bin/elasticsearch-create-enrollment-token -s kibana)
+printf "\n\n\nKibana enrollment token is:\n\n $kibana_token\n\n"
+
+printf "\n\n\n*********Enrolling Kibana with Elastic...\n\n"
+/usr/share/kibana/bin/kibana-setup --enrollment-token $kibana_token
 
 printf "\n\n\n*********Enabling and starting Kibana service...\n\n"
 systemctl daemon-reload && systemctl enable kibana.service && systemctl start kibana.service
