@@ -93,7 +93,7 @@ get_host_ip() {
 
 download_configure_script() {
   local url="https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/configure/configure"
-  local target_path="$HOME/configure"
+  local target_path="/home/user/configure"
   curl -o "$target_path" "$url"
   if [ $? -eq 0 ]; then
     chmod +x "$target_path"
