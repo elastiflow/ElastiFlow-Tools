@@ -1,3 +1,6 @@
+#!/bin/bash
+
+
 get_network_interface_ip() {
     # Get the first network interface starting with en
     INTERFACE=$(ip -o link show | grep -o 'en[^:]*' | head -n 1)
