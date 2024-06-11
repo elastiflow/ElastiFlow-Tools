@@ -91,27 +91,16 @@ get_host_ip() {
   fi
 }
 
-download_configure_script() {
-  local url="https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/configure/configure"
-  local target_path="/home/user/configure"
-  curl -o "$target_path" "$url"
-  if [ $? -eq 0 ]; then
-    chmod +x "$target_path"
-    echo "Downloaded and made configure script executable.\n\n"
-  else
-    echo "Failed to download configure script.\n\n"
-  fi
-}
 
-download_support_pack_script() {
-  local url="https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/support_pack/elastiflow_elasticsearch_opensearch_support_pack"
-  local target_path="/home/user/support"
+download_file() {
+  local url=$1
+  local target_path=$2
   curl -o "$target_path" "$url"
   if [ $? -eq 0 ]; then
     chmod +x "$target_path"
-    echo "Downloaded and made support script executable.\n\n"
+    echo "Downloaded and made $target_path executable.\n\n"
   else
-    echo "Failed to download support script.\n\n"
+    echo "Failed to download $target_path.\n\n"
   fi
 }
 
@@ -254,7 +243,7 @@ configure_jvm_memory() {
 start_elasticsearch() {
   printf "\n\n\n*********Enabling and starting ElasticSearch service...\n\n"
   systemctl daemon-reload && systemctl enable elasticsearch.service && systemctl start elasticsearch.service
-  sleep_message "Giving ElasticSearch service time to stabilize" 20
+  sleep_message "Giving ElasticSearch service time to stabilize" 10
   if systemctl is-active --quiet elasticsearch.service; then
     printf "\n\n\n*********\e[32mElasticsearch service is up\e[0m\n\n"
   else
@@ -296,7 +285,7 @@ configure_kibana() {
   /usr/share/kibana/bin/kibana-setup --enrollment-token $kibana_token
   printf "\n\n\n*********Enabling and starting Kibana service...\n\n"
   systemctl daemon-reload && systemctl enable kibana.service && systemctl start kibana.service
-  sleep_message "Giving Kibana service time to stabilize" 20
+  sleep_message "Giving Kibana service time to stabilize" 10
 }
 
 change_elasticsearch_password() {
@@ -318,7 +307,7 @@ install_elastiflow() {
   replace_text "/etc/systemd/system/flowcoll.service" "TimeoutStopSec=infinity" "TimeoutStopSec=60" "N/A"
   printf "\n\n\n*********Enabling and starting ElastiFlow service...\n\n"
   systemctl daemon-reload && systemctl enable flowcoll.service && systemctl start flowcoll.service
-  sleep_message "Giving ElastiFlow service time to stabilize" 20
+  sleep_message "Giving ElastiFlow service time to stabilize" 10
 }
 
 install_dashboards() {
@@ -391,19 +380,19 @@ main() {
   remove_update_service
   install_prerequisites
   tune_system
-  sleep_message "Giving dpkg time to clean up" 20
+  sleep_message "Giving dpkg time to clean up" 10
   install_elasticsearch
   configure_jvm_memory
   start_elasticsearch
-  sleep_message "Giving dpkg time to clean up" 20
+  sleep_message "Giving dpkg time to clean up" 10
   install_kibana
   configure_kibana
   install_elastiflow
   install_dashboards
   check_all_services
   check_dashboards_status
-  download_configure_script
-  download_support_pack_script
+  download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/configure/configure" "/home/user/configure"
+  download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/support_pack/elastiflow_elasticsearch_opensearch_support_pack" "/home/user/support"
   display_versions
   display_dashboard_url
   printf "\n\nDone\n"
