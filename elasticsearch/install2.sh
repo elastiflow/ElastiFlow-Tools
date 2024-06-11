@@ -1,7 +1,5 @@
 #!/bin/bash
 
-osversion=""
-
 ########################################################
 # If you do not have an ElastiFlow Account ID and ElastiFlow Flow License Key, 
 # please go here: https://elastiflow.com/get-started
@@ -17,6 +15,12 @@ flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
 elastic_username="elastic"
 elastic_password2="elastic"
 ########################################################
+
+#leave blank
+osversion=""
+#leave blank
+ip_address=""
+
 
 STRINGS_TO_REPLACE=(
 "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: \"true\""
@@ -78,6 +82,29 @@ comment_and_replace_line() {
     fi
   fi
 }
+
+
+get_network_interface_ip() {
+    # Get the first network interface starting with en
+    INTERFACE=$(ip -o link show | grep -o 'en[^:]*' | head -n 1)
+
+    if [ -z "$INTERFACE" ]; then
+        echo ""
+        return 1
+    else
+        # Get the IP address of the interface
+        ip_address=$(ip -o -4 addr show $INTERFACE | awk '{print $4}' | cut -d/ -f1)
+
+        if [ -z "$ip_address" ]; then
+            echo ""
+            return 1
+        else
+            echo "$ip_address"
+            return 0
+        fi
+    fi
+}
+
 
 
 download_configure_script() {
@@ -443,19 +470,7 @@ else
      echo -e "\e[31mDashboards are not installed X\e[0m"
 fi
 
-# Get the first network interface starting with en
-INTERFACE=$(ip -o link show | grep -o 'en[^:]*' | head -n 1)
 
-if [ -z "$INTERFACE" ]; then
-    echo "No interface starting with 'en' found."
-else
-    # Get the IP address of the interface
-    ip_address=$(ip -o -4 addr show $INTERFACE | awk '{print $4}' | cut -d/ -f1)
-
-    if [ -z "$ip_address" ]; then
-        echo "No IP address found for interface $INTERFACE."
-    fi
-fi
 
 download_configure_script
 
