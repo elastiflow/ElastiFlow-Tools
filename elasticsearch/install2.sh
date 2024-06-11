@@ -82,19 +82,19 @@ comment_and_replace_line() {
 }
 
 
-get_network_interface_ip() {
-    # Get the first network interface starting with en
-    INTERFACE=$(ip -o link show | grep -oP 'en[^:]*' | head -n 1)
+get_host_ip() {
+    # List all network interfaces except docker and lo
+    INTERFACE=$(ip -o link show | awk -F': ' '{print $2}' | grep -vE '^(docker|lo)' | head -n 1)
 
     if [ -z "$INTERFACE" ]; then
-        echo ""
+        echo "No suitable network interface found."
         return 1
     else
         # Get the IP address of the interface
         ip_address=$(ip -o -4 addr show dev $INTERFACE | awk '{print $4}' | cut -d/ -f1)
 
         if [ -z "$ip_address" ]; then
-            echo ""
+            echo "No IP address found for interface $INTERFACE."
             return 1
         else
             echo "$ip_address"
