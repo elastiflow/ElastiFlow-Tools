@@ -1,19 +1,16 @@
-#!/bin/bash
-
-
-get_network_interface_ip() {
-    # Get the first network interface starting with en
-    INTERFACE=$(ip -o link show | grep -o 'en[^:]*' | head -n 1)
+get_host_ip() {
+    # List all network interfaces except docker and lo
+    INTERFACE=$(ip -o link show | awk -F': ' '{print $2}' | grep -vE '^(docker|lo)' | head -n 1)
 
     if [ -z "$INTERFACE" ]; then
-        echo ""
+        echo "No suitable network interface found."
         return 1
     else
         # Get the IP address of the interface
-        ip_address=$(ip -o -4 addr show $INTERFACE | awk '{print $4}' | cut -d/ -f1)
+        ip_address=$(ip -o -4 addr show dev $INTERFACE | awk '{print $4}' | cut -d/ -f1)
 
         if [ -z "$ip_address" ]; then
-            echo ""
+            echo "No IP address found for interface $INTERFACE."
             return 1
         else
             echo "$ip_address"
@@ -21,3 +18,14 @@ get_network_interface_ip() {
         fi
     fi
 }
+
+# Call the function and store the result in a variable
+ip_address=$(get_host_ip)
+printf "ip address: $ip_address"
+
+# Check if an IP address was returned
+if [ -z "$ip_address" ]; then
+    echo "No IP address found for any suitable interface."
+else
+    echo "IP address of the interface: $ip_address"
+fi
