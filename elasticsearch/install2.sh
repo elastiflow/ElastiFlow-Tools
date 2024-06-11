@@ -471,7 +471,7 @@ printf "Operating System: $version\n"
 version=$(java -version 2>&1)
 printf "Installed Java version: $version\n\n"
 
-get_dashboard_url "ElastiFlow: (Flow) Overview"
+get_dashboard_url "ElastiFlow (flow): Overview"
 
 printf "\e[5;37m\n\nGo to http://$ip_address:5601/app/dashboards (elastic / elastic)\n\n\e[0m"
 
