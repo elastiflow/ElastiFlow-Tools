@@ -248,7 +248,7 @@ printf "*********\n"
 printf "*********\n"
 
 ip_address=$(get_network_interface_ip)
-
+printf "ip address: $ip_address\n"
 
 printf "\n\n\n*********Removing Ubuntu update service...\n\n"
 #systemctl stop unattended-upgrades.service 
