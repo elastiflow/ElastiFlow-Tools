@@ -2,6 +2,7 @@
 
 elastic_username="elastic"
 elastic_password2="elastic"
+ip_address="192.168.2.72"
 
 # Function to get Kibana dashboard URL
 get_dashboard_url() {
