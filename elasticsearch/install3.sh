@@ -366,13 +366,17 @@ display_dashboard_url() {
   printf "*********************************************\n"
 }
 
+remove_update_service(){
+  printf "\n\n\n*********Removing Ubuntu update service...\n\n"
+  apt remove -y unattended-upgrades
+}
+
 main() {
   check_for_root
   check_compatibility
   print_startup_message
   ip_address=$(get_host_ip)
-  printf "\n\n\n*********Removing Ubuntu update service...\n\n"
-  apt remove -y unattended-upgrades
+  remove_update_service
   install_prerequisites
   tune_system
   sleep_message "Giving dpkg time to clean up" 20
