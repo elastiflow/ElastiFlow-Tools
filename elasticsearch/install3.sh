@@ -104,7 +104,7 @@ download_configure_script() {
 }
 
 download_support_pack_script() {
-  local url="https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/configure/configure"
+  local url="https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/support_pack/elastiflow_elasticsearch_opensearch_support_pack"
   local target_path="/home/user/support"
   curl -o "$target_path" "$url"
   if [ $? -eq 0 ]; then
@@ -403,6 +403,7 @@ main() {
   check_all_services
   check_dashboards_status
   download_configure_script
+  download_support_pack_script
   display_versions
   display_dashboard_url
   printf "\n\nDone\n"
