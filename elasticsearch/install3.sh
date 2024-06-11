@@ -97,9 +97,9 @@ download_configure_script() {
   curl -o "$target_path" "$url"
   if [ $? -eq 0 ]; then
     chmod +x "$target_path"
-    echo "Downloaded and made configure script executable."
+    echo "Downloaded and made configure script executable.\n\n"
   else
-    echo "Failed to download configure script."
+    echo "Failed to download configure script.\n\n"
   fi
 }
 
