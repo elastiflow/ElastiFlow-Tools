@@ -371,12 +371,12 @@ apt-get -qq install libpcap-dev
 apt-get -qq install ./flow-collector_"$elastiflow_version"_linux_amd64.deb
 
 printf "\n\n\n*********Changing Elastic password to \"elastic\"...\n\n"
-curl -k -X POST -u $elastic_username:$elastic_password "https://localhost:9200/_security/user/elastic/_password" -H 'Content-Type: application/json' -d'
+curl -k -X POST -u "$elastic_username:$elastic_password" "https://localhost:9200/_security/user/elastic/_password" -H 'Content-Type: application/json' -d"
 {
-  "password" : "$elastic_password2"
-}'
+  \"password\": \"$elastic_password2\"
+}"
 
-elastic_password=$elastic_password2"
+elastic_password=$elastic_password2
 
 printf "\n\n\n*********Configuring ElastiFlow Flow Collector...\n\n" 
 find_and_replace "$flowcoll_config_path" "${STRINGS_TO_REPLACE[@]}"
