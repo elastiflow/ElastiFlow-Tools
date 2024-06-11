@@ -11,8 +11,8 @@ elastiflow_flow_license_key=""
 ########################################################
 
 elastiflow_version="7.0.0"
-elasticsearch_version="8.13.4"
-kibana_version="8.13.4"
+elasticsearch_version="8.14.0"
+kibana_version="8.14.0"
 flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
 elastic_username="elastic"
 elastic_password2="elastic"
@@ -220,7 +220,7 @@ printf "\n\n\n*********Removing Ubuntu update service...\n\n"
 apt remove -y unattended-upgrades
 
 printf "\n\n\n*********Installing prereqs...\n\n"
-apt-get -qq update && apt-get -qq install jq net-tools git bc gpg default-jre curl wget unzip apt-transport-https isc-dhcp-client
+apt-get -qq update && apt-get -qq install jq net-tools git bc gpg default-jre curl wget unzip apt-transport-https isc-dhcp-client libpcap-dev
 
 printf "\n\n\n*********Stopping Ubuntu pop-up "Daemons using outdated libraries" when using apt to install or update packages...\n\n"
 needrestart_conf_path="/etc/needrestart/needrestart.conf"
@@ -377,8 +377,7 @@ sleep 20s
 printf "\n\n\n*********Downloading and installing ElastiFlow Flow Collector...\n\n" 
 #Install Elastiflow flow collector
 wget -O flow-collector_"$elastiflow_version"_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_"$elastiflow_version"_linux_amd64.deb
-apt-get -qq install libpcap-dev
-apt-get -qq install ./flow-collector_"$elastiflow_version"_linux_amd64.deb
+apt-get -q install ./flow-collector_"$elastiflow_version"_linux_amd64.deb
 
 printf "\n\n\n*********Changing Elastic password to \"elastic\"...\n\n"
 curl -k -X POST -u "$elastic_username:$elastic_password" "https://localhost:9200/_security/user/elastic/_password" -H 'Content-Type: application/json' -d"
@@ -439,11 +438,11 @@ else
      echo -e "\e[31mDashboards are not installed X\e[0m"
 fi
 
-# Get the first network interface starting with enp
-INTERFACE=$(ip -o link show | grep -o 'enp[^:]*' | head -n 1)
+# Get the first network interface starting with en
+INTERFACE=$(ip -o link show | grep -o 'en[^:]*' | head -n 1)
 
 if [ -z "$INTERFACE" ]; then
-    echo "No interface starting with 'enp' found."
+    echo "No interface starting with 'en' found."
 else
     # Get the IP address of the interface
     ip_address=$(ip -o -4 addr show $INTERFACE | awk '{print $4}' | cut -d/ -f1)
@@ -456,25 +455,25 @@ fi
 download_configure_script
 
 #Get installed versions
-version=$(/usr/share/elasticsearch/bin/elasticsearch --version | grep -oP 'Version: \K[\d.]+')
-printf "\n\nInstalled Elasticsearch version: $version\n" 
+version=$(/usr/share/elastiflow/bin/flowcoll -version)
+printf "Installed ElastiFlow version: $version\n"
 
 version=$(/usr/share/kibana/bin/kibana --version --allow-root | jq -r '.config.serviceVersion.value' 2>/dev/null)
 printf "Installed Kibana version: $version\n"
 
-version=$(/usr/share/elastiflow/bin/flowcoll -version)
-printf "Installed ElastiFlow version: $version\n"
-
-version=$(lsb_release -d | awk -F'\t' '{print $2}')
-printf "Operating System: $version\n"
+version=$(/usr/share/elasticsearch/bin/elasticsearch --version | grep -oP 'Version: \K[\d.]+')
+printf "\n\nInstalled Elasticsearch version: $version\n" 
 
 version=$(java -version 2>&1)
 printf "Installed Java version: $version\n\n"
 
-get_dashboard_url "ElastiFlow (flow): Overview"
+version=$(lsb_release -d | awk -F'\t' '{print $2}')
+printf "Operating System: $version\n"
 
-printf "\e[5;37m\n\nGo to http://$ip_address:5601/app/dashboards (elastic / elastic)\n\n\e[0m"
+dashboard_url=$(get_dashboard_url "ElastiFlow (flow): Overview")
 
-printf "Open ElastiFlow dashboard: “ElastiFlow (flow): Overview\"\n\n"
+printf "\e[5;37m\n\nGo to $dashboard_url ($elastic_username / $elastic_password2)\n\n\e[0m"
+printf "Use credentials: $elastic_username / $elastic_password2\n\n"
+printf "For further configuration options, run sudo ./configure\n\n"
 
 printf "\n\nDone\n"
