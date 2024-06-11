@@ -232,7 +232,6 @@ else
 fi
 
 printf "\n\n\n*********System tuning starting...\n\n"
-#!/bin/bash
 
 # Define kernel parameters as a block of text
 kernel_tuning=$(cat <<EOF
