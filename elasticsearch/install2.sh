@@ -18,8 +18,6 @@ elastic_password2="elastic"
 
 #leave blank
 osversion=""
-#leave blank
-ip_address=""
 
 
 STRINGS_TO_REPLACE=(
@@ -130,6 +128,7 @@ download_configure_script() {
 get_dashboard_url() {
   local kibana_url="http://$ip_address:5601"
   local dashboard_title="$1"
+  printf "ip address: $ip_address\n"
   printf "dashboad title: $dashboard_title\n"
   printf "kibana url: $kibana_url"
   printf "elastic username: $elastic_username"
@@ -247,6 +246,9 @@ printf "*********\n"
 printf "*********Setting up ElastiFlow environment...*********\n"
 printf "*********\n"
 printf "*********\n"
+
+ip_address=$(get_network_interface_ip)
+
 
 printf "\n\n\n*********Removing Ubuntu update service...\n\n"
 #systemctl stop unattended-upgrades.service 
