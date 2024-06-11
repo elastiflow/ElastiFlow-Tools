@@ -475,7 +475,6 @@ dashboard_url=$(get_dashboard_url "ElastiFlow (flow): Overview")
 # Use the dashboard_url variable
 printf "----------------------------------------------\n"
 printf "\e[5;37m\n\nGo to $dashboard_url ($elastic_username / $elastic_password2)\n\n\e[0m"
-printf "Use credentials: $elastic_username / $elastic_password2\n\n"
 printf "For further configuration options, run sudo ./configure\n\n"
 printf "----------------------------------------------\n"
 
