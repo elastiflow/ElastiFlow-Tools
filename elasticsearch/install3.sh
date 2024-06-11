@@ -103,6 +103,18 @@ download_configure_script() {
   fi
 }
 
+download_support_pack_script() {
+  local url="https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/configure/configure"
+  local target_path="/home/user/support"
+  curl -o "$target_path" "$url"
+  if [ $? -eq 0 ]; then
+    chmod +x "$target_path"
+    echo "Downloaded and made support script executable.\n\n"
+  else
+    echo "Failed to download support script.\n\n"
+  fi
+}
+
 get_dashboard_url() {
   local kibana_url="http://$ip_address:5601"
   local dashboard_title="$1"
