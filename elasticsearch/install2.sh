@@ -473,7 +473,7 @@ printf "Operating System: $version\n"
 dashboard_url=$(get_dashboard_url "ElastiFlow (flow): Overview")
 
 printf "----------------------------------------------\n"
-printf "\e[5;37m\n\nGo to $dashboard_url ($elastic_username / $elastic_password2)\n\n\e[0m"
+printf "\033[5;37m\n\nGo to %s (%s / %s)\n\n\033[0m" "$dashboard_url" "$elastic_username" "$elastic_password2"
 printf "For further configuration options, run sudo ./configure\n\n"
 printf "----------------------------------------------\n"
 
