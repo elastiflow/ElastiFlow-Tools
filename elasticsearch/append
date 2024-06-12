@@ -11,7 +11,7 @@ append_to_bashrc() {
     echo "The script has been added to .bashrc."
 
     # Reload the .bashrc file
-    bash source ~/.bashrc
+    bash source /home/user/.bashrc
     echo ".bashrc has been reloaded."
 }
 
