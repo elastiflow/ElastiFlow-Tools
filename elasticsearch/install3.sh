@@ -346,6 +346,19 @@ check_dashboards_status() {
   fi
 }
 
+set_first_boot(){
+variable="elastiflow_first_boot=1"
+
+# Check if the variable is already set in .bashrc
+if grep -q "^export $variable" ~/.bashrc; then
+    echo "The variable is already set in .bashrc."
+else
+    # Append the variable to .bashrc
+    echo "export $variable" >> ~/.bashrc
+    echo "The variable has been added to .bashrc."
+fi
+}
+
 display_versions() {
   version=$(/usr/share/elastiflow/bin/flowcoll -version)
   printf "Installed ElastiFlow version: $version\n"
@@ -395,7 +408,9 @@ main() {
   download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/support_pack/elastiflow_elasticsearch_opensearch_support_pack" "/home/user/support"
   display_versions
   display_dashboard_url
+  set_first_boot
   printf "\n\nDone\n"
+
 }
 
 main
