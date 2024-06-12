@@ -2,19 +2,30 @@
 
 
 
+append_to_bashrc() {
+    local text="$1"
+    # Append the text to .bashrc
+    echo "$text" >> ~/.bashrc
+    echo "The script has been added to .bashrc."
 
+    # Reload the .bashrc file
+    source ~/.bashrc
+    echo ".bashrc has been reloaded."
+}
+
+
+script_text='
+ if [ "$ELASTIFLOW_FIRST_BOOT" -eq 1 ]; then
+     sudo /home/user/configure
+     export ELASTIFLOW_FIRST_BOOT=0
+ fi
+ '
+ append_to_bashrc "$script_text"
+   
+ 
  script_text='
-  if [ "$ELASTIFLOW_FIRST_BOOT" -eq 1 ]; then
-      sudo /home/user/configure
-      export ELASTIFLOW_FIRST_BOOT=0
-  fi
-  '
-  append_to_bashrc "$script_text"
-    
-  
-  script_text='
-  '"EXPORT_ELASTIFLOW_FIRST_BOOT=1"'
-  '
-  append_to_bashrc "$script_text"
-  
-  printf "\n\nDone\n"
+ '"EXPORT_ELASTIFLOW_FIRST_BOOT=1"'
+ '
+ append_to_bashrc "$script_text"
+ 
+ printf "\n\nDone\n"
