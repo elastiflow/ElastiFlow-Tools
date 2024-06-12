@@ -347,7 +347,7 @@ check_dashboards_status() {
 }
 
 set_first_boot(){
-variable="elastiflow_first_boot=1"
+variable="ELASTIFLOW_FIRST_BOOT=1"
 
 # Check if the variable is already set in .bashrc
 if grep -q "^export $variable" ~/.bashrc; then
