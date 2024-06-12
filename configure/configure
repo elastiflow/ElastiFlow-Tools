@@ -812,30 +812,41 @@ perform_health_check() {
   fi
 
 # Flowcoll checks
-  print_message "\n\n********** Flowcoll **********\n" "$GREEN"
-  # Check if flowcoll.service is running
-  if sudo systemctl is-active --quiet flowcoll.service; then
-    print_message "flowcoll.service is running." "$GREEN"
-  else
-    print_message "flowcoll.service is not running." "$RED"
-  fi
+print_message "\n\n********** Flowcoll **********\n" "$GREEN"
 
-  # Check flowcoll.service logs for errors
-  if sudo journalctl -u flowcoll.service | grep -q "level=error"; then
-    print_message "Errors found in flowcoll.service logs:" "$RED"
-    sudo journalctl -u flowcoll.service | grep "level=error"
-  else
-    print_message "No errors found in flowcoll.service logs." "$GREEN"
-  fi
-  # Check http://localhost:8080/readyz
-  print_message "Checking http://localhost:8080/readyz..." "$GREEN"
-  response=$(curl -s http://localhost:8080/readyz)
-  if echo "$response" | grep -q "200"; then
-    print_message "$response" "$GREEN"
-  else
-    print_message "$response" "$RED"
-  fi
-  echo
+# Check if flowcoll.service is running
+if sudo systemctl is-active --quiet flowcoll.service; then
+  print_message "flowcoll.service is running." "$GREEN"
+else
+  print_message "flowcoll.service is not running." "$RED"
+fi
+
+# Check flowcoll.service logs for errors
+if sudo journalctl -u flowcoll.service | grep -q "level=error"; then
+  print_message "Errors found in flowcoll.service logs:" "$RED"
+  sudo journalctl -u flowcoll.service | grep "level=error"
+else
+  print_message "No errors found in flowcoll.service logs." "$GREEN"
+fi
+
+# Check flowcoll.service logs for the last instance of the "90% full" message
+last_instance=$(sudo journalctl -u flowcoll.service | grep "90% full" | tail -n 1)
+if [ -n "$last_instance" ]; then
+  print_message "Last instance of '90% full' message found in flowcoll.service logs:" "$RED"
+  echo "$last_instance"
+else
+  print_message "No '90% full' message found in flowcoll.service logs." "$GREEN"
+fi
+
+# Check http://localhost:8080/readyz
+print_message "Checking http://localhost:8080/readyz..." "$GREEN"
+response=$(curl -s http://localhost:8080/readyz)
+if echo "$response" | grep -q "200"; then
+  print_message "$response" "$GREEN"
+else
+  print_message "$response" "$RED"
+fi
+echo
   
   # Check http://localhost:8080/livez
   print_message "Checking http://localhost:8080/livez..." "$GREEN"
