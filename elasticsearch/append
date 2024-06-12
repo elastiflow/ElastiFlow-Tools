@@ -16,7 +16,7 @@ append_to_bashrc() {
 }
 
  script_text='
- EXPORT ELASTIFLOW_FIRST_BOOT=1
+ ELASTIFLOW_FIRST_BOOT=1
  '
  append_to_bashrc "$script_text"
 
