@@ -1,1 +1,1265 @@
+#!/bin/bash
 
+# ElastiFlow PoC Configurator for installing ElastiFlow Trial and MaxMind enrichment
+# Version 1.9.7
+# Author: O.J. Wolanyk
+
+# Define color codes
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+elastiflow_version="7.0.0"
+
+# Helper function to print messages with color
+print_message() {
+  local message=$1
+  local color=$2
+  echo -e "${color}${message}${NC}"
+}
+
+comment_and_add_line() {
+  local FILE=$1
+  local FIND=$2
+  local REPLACE=$3
+
+  # Escape special characters for use in sed
+  FIND_ESCAPED=$(echo "$FIND" | sed 's/[.[\*^$]/\\&/g')
+  REPLACE_ESCAPED=$(echo "$REPLACE" | sed 's/[&/\]/\\&/g')
+
+  # Check if the line exists (commented out or not) and replace it
+  if grep -q "^#\?$FIND_ESCAPED" "$FILE"; then
+    existing_line=$(grep "^#\?$FIND_ESCAPED" "$FILE")
+    sed -i.bak "/^#\?$FIND_ESCAPED/c\\$REPLACE" "$FILE"
+    print_message "Replaced existing line '$existing_line' with '$REPLACE'." "$GREEN"
+  else
+    # Add the line under the heading #ElastiFlow PoC Configurator
+    if grep -q "^#ElastiFlow PoC Configurator" "$FILE"; then
+      sed -i.bak "/^#ElastiFlow PoC Configurator/a $REPLACE" "$FILE"
+      print_message "Added '$REPLACE' under the heading '#ElastiFlow PoC Configurator'." "$GREEN"
+    else
+      print_message "Heading '#ElastiFlow PoC Configurator' not found in the file. Adding the heading to the file." "$RED"
+      echo -e "\n#ElastiFlow PoC Configurator" | sudo tee -a "$FILE" > /dev/null
+      sed -i.bak "/^#ElastiFlow PoC Configurator/a $REPLACE" "$FILE"
+      print_message "Added '$REPLACE' under the newly added heading '#ElastiFlow PoC Configurator'." "$GREEN"
+    fi
+  fi
+}
+
+
+dns_enrichment() {
+  local file_path=/etc/elastiflow/flowcoll.yml
+
+  print_message "Enabling DNS enrichment..." "$GREEN"
+  comment_and_add_line "$file_path" "EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE" 'EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE: "true"'
+  print_message "DNS enrichment enabled." "$GREEN"
+  reload_and_restart_service "flowcoll.service"
+}
+
+netintel_enrichment() {
+  local file_path=/etc/elastiflow/flowcoll.yml
+  print_message "Enabling NetIntel enrichment..." "$GREEN"
+  comment_and_add_line "$file_path" "EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE" 'EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE: "true"'
+  print_message "NetIntel enrichment enabled." "$GREEN"
+  reload_and_restart_service "flowcoll.service"
+}
+
+
+
+# Function to process an array of find and replace strings
+find_and_replace() {
+  local FILE=$1
+  shift
+  local PAIRS=("$@")
+
+  # Check if the file exists
+  if [ ! -f "$FILE" ]; then
+    print_message "File not found!" "$RED"
+    exit 1
+  fi
+
+  # Loop through the pairs of find and replace strings
+  for ((i = 0; i < ${#PAIRS[@]}; i+=2)); do
+    local FIND=${PAIRS[i]}
+    local REPLACE=${PAIRS[i+1]}
+    comment_and_add_line "$FILE" "$FIND" "$REPLACE"
+  done
+
+  # Verify if the operation was successful
+  for ((i = 0; i < ${#PAIRS[@]}; i+=2)); do
+    local REPLACE=${PAIRS[i+1]}
+    if grep -qF "$REPLACE" "$FILE"; then
+      print_message "Verified: '$REPLACE' is in the file." "$GREEN"
+    else
+      print_message "Verification failed: '$REPLACE' is not in the file." "$RED"
+    fi
+  done
+}
+
+# Function to reload systemd daemon and restart services
+reload_and_restart_service() {
+  local service=$1
+  printf "Performing daemon-reload\n"
+  sudo systemctl daemon-reload
+  printf "Restarting service $service\n"
+  sudo systemctl restart "$service"
+}
+
+# Function to reload systemd daemon and restart multiple services
+reload_and_restart_services() {
+  local services=("$@")
+  sudo systemctl daemon-reload
+  for service in "${services[@]}"; do
+    sudo systemctl restart "$service"
+  done
+}
+
+# Function to check the health of flowcoll.service and rerun the configuration if necessary
+check_service_health() {
+  print_message "Checking if flowcoll.service stays running for at least 10 seconds..." "$GREEN"
+  sleep 10
+
+  if ! sudo systemctl is-active --quiet flowcoll.service; then
+    print_message "flowcoll.service did not stay started." "$RED"
+    
+    # Check logs for "license error"
+    if sudo journalctl -u flowcoll.service | grep -q "license error"; then
+      print_message "License error found in logs. Exiting to main menu." "$RED"
+      restore_latest_backup
+      reload_and_restart_service "flowcoll.service"
+    else
+      restore_latest_backup
+      reload_and_restart_service "flowcoll.service"
+      print_message "Rerunning the configuration routine." "$GREEN"
+    fi
+    
+    return 1
+  else
+    print_message "flowcoll.service restarted successfully and stayed running for at least 10 seconds." "$GREEN"
+    return 0
+  fi
+}
+
+# Function to backup the existing flowcoll.yml
+backup_existing_flowcoll() {
+  FILE_PATH=/etc/elastiflow/flowcoll.yml
+  TIMESTAMP=$(date +%Y%m%d%H%M%S)
+
+  # Backup the existing configuration file if it exists
+  if [ -f $FILE_PATH ]; then
+    sudo cp -f $FILE_PATH ${FILE_PATH}.bak.$TIMESTAMP
+    print_message "Backed up the existing $FILE_PATH to ${FILE_PATH}.bak.$TIMESTAMP." "$GREEN"
+  fi
+}
+
+# Function to restore the latest backup of flowcoll.yml
+restore_latest_backup() {
+  FILE_PATH=/etc/elastiflow/flowcoll.yml
+
+  # Restore the latest backup
+  LATEST_BACKUP=$(ls -t ${FILE_PATH}.bak.* 2>/dev/null | head -1)
+  if [ -f $LATEST_BACKUP ]; then
+    sudo cp -f $LATEST_BACKUP $FILE_PATH
+    print_message "Restored $FILE_PATH from the latest backup: $LATEST_BACKUP." "$GREEN"
+  else
+    print_message "No backup found." "$RED"
+  fi
+}
+
+# Function to download default flowcoll.yml file from deb file
+download_default_conf() {
+  wget -O flow-collector_"$elastiflow_version"_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_"$elastiflow_version"_linux_amd64.deb
+  dpkg-deb -xv flow-collector_"$elastiflow_version"_linux_amd64.deb /tmp/elastiflow > /dev/null
+  sudo mkdir -p /etc/elastiflow/
+  sudo cp /tmp/elastiflow/etc/elastiflow/flowcoll.yml /etc/elastiflow/
+  sudo rm -rf /tmp/elastiflow
+  print_message "Default flowcoll.yml downloaded and copied." "$GREEN"
+}
+
+# Function to configure ElastiFlow fully featured trial
+configure_trial() {
+  # Define the file path
+  FILE_PATH=/etc/elastiflow/flowcoll.yml
+
+  # Check if flowcoll.yml exists, if not, download it
+  if [ ! -f $FILE_PATH ]; then
+    print_message "$FILE_PATH not found. Downloading default configuration." "$RED"
+    download_default_conf
+  fi
+    
+  show_trial
+
+  # Check if ElastiFlow account ID and flow license key are already configured
+ef_account_id=$(grep '^EF_ACCOUNT_ID: ' $FILE_PATH | awk '{print $2}' | tr -d '"')
+ef_flow_license_key=$(grep '^EF_FLOW_LICENSE_KEY: ' $FILE_PATH | awk '{print $2}' | tr -d '"')
+
+if [[ -n "$ef_account_id" && "$ef_account_id" != "" ]] && [[ -n "$ef_flow_license_key" && "$ef_flow_license_key" != "" ]]; then
+  print_message "ElastiFlow account ID and flow license key are already configured." "$RED"
+  read -p "Do you want to overwrite the existing values? (y/n): " overwrite_choice
+  if [[ $overwrite_choice != "y" ]]; then
+    return
+  fi
+fi
+
+  # Prompt for ElastiFlow account ID and flow license key
+  while true; do
+    read -p "Enter your ElastiFlow account ID (or 'q' to quit): " elastiflow_account_id
+    if [[ $elastiflow_account_id == "q" ]]; then
+      echo "Exiting."
+      exit 0
+    elif [[ -z $elastiflow_account_id ]]; then
+      print_message "ElastiFlow account ID cannot be empty. Please enter a valid ID." "$RED"
+    else
+      break
+    fi
+  done
+
+  while true; do
+    read -p "Enter your ElastiFlow flow license key (or 'q' to quit): " elastiflow_flow_license_key
+    if [[ $elastiflow_flow_license_key == "q" ]]; then
+      echo "Exiting."
+      exit 0
+    elif [[ -z $elastiflow_flow_license_key ]]; then
+      print_message "ElastiFlow flow license key cannot be empty. Please enter a valid key." "$RED"
+    else
+      break
+    fi
+  done
+
+  STRINGS_TO_REPLACE=(
+    "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: \"true\""
+    "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: \"${elastiflow_account_id}\""
+    "EF_FLOW_LICENSE_KEY" "EF_FLOW_LICENSE_KEY: \"${elastiflow_flow_license_key}\""
+  )
+    
+  # Backup the existing configuration file with timestamp
+  backup_existing_flowcoll
+
+  find_and_replace "$FILE_PATH" "${STRINGS_TO_REPLACE[@]}"
+
+  # Reload and restart flowcoll service
+  reload_and_restart_service "flowcoll.service"
+
+  # Check if flowcoll.service is active
+  if check_service_health configure_trial; then
+    print_message "Fully featured trial enabled with the provided ElastiFlow account ID and flow license key." "$GREEN"
+  else
+    print_message "Failed to enable fully featured trial. Changes reverted. Returning to main menu." "$RED"
+  fi
+}
+
+# Function to configure MaxMind ASN and Geo enrichment
+configure_maxmind() {
+  # Define the file path
+  FILE_PATH=/etc/elastiflow/flowcoll.yml
+
+  show_maxmind
+  
+  # Check if MaxMind enrichment fields are already configured
+  maxmind_asn_configured=$(grep -q '^EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE: ' $FILE_PATH && echo "yes" || echo "no")
+  maxmind_geoip_configured=$(grep -q '^EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE: ' $FILE_PATH && echo "yes" || echo "no")
+
+  if [ "$maxmind_asn_configured" == "yes" ] || [ "$maxmind_geoip_configured" == "yes" ]; then
+    print_message "MaxMind ASN and/or GeoIP enrichment fields are already configured." "$RED"
+    read -p "Do you want to overwrite the existing values? (y/n): " overwrite_choice
+    if [[ $overwrite_choice != "y" ]]; then
+      return
+    fi
+  fi
+
+
+
+  # Prompt for MaxMind license key
+  read -p "Enter your MaxMind license key (or 'q' to quit): " maxmind_license_key
+  if [[ $maxmind_license_key == "q" ]]; then
+    echo "Exiting."
+    exit 0
+  fi
+
+  # Download and extract MaxMind databases
+  sudo mkdir -p /etc/elastiflow/maxmind/
+    
+  if sudo wget -O ./Geolite2-ASN.tar.gz "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-ASN&license_key=$maxmind_license_key&suffix=tar.gz"; then
+    sudo tar -xvzf Geolite2-ASN.tar.gz --strip-components 1 -C /etc/elastiflow/maxmind/
+    sudo rm -f ./Geolite2-ASN.tar.gz
+    print_message "MaxMind ASN database downloaded and extracted successfully." "$GREEN"
+  else
+    print_message "Failed to download MaxMind ASN database. Returning to main menu." "$RED"
+    reload_and_restart_service "flowcoll.service"
+    return 1
+  fi
+
+  if sudo wget -O ./Geolite2-City.tar.gz "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=$maxmind_license_key&suffix=tar.gz"; then
+    sudo tar -xvzf Geolite2-City.tar.gz --strip-components 1 -C /etc/elastiflow/maxmind/
+    sudo rm -f ./Geolite2-City.tar.gz
+    print_message "MaxMind GeoIP City database downloaded and extracted successfully." "$GREEN"
+  else
+    print_message "Failed to download MaxMind GeoIP City database. Returning to main menu." "$RED"
+    return 1
+  fi
+
+  STRINGS_TO_REPLACE=(
+    "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE: \"true\""
+    "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_PATH" "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_PATH: \"/etc/elastiflow/maxmind/GeoLite2-ASN.mmdb\""
+    "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE: \"true\""
+    "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_PATH" "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_PATH: \"/etc/elastiflow/maxmind/GeoLite2-City.mmdb\""
+    "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_VALUES" "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_VALUES: city,country,country_code,location,timezone"
+  )
+
+  # Backup the existing configuration file with timestamp
+  backup_existing_flowcoll
+
+  find_and_replace "$FILE_PATH" "${STRINGS_TO_REPLACE[@]}"
+ 
+  # Reload and restart flowcoll service
+  reload_and_restart_service "flowcoll.service"
+
+  # Check if flowcoll.service is active
+  if check_service_health configure_maxmind; then
+    print_message "MaxMind ASN and Geo enrichment enabled with the provided license key." "$GREEN"
+  else
+    print_message "Failed to enable MaxMind ASN and Geo enrichment. Changes reverted. Returning to main menu." "$RED"
+  fi
+}
+
+# Function to validate IP address in CIDR format
+validate_cidr() {
+  local cidr=$1
+  local valid=1
+
+  if [[ $cidr =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}\/([0-9]{1,2})$ ]]; then
+    local IFS=.
+    ip=(${cidr%%/*})
+    prefix=${cidr##*/}
+    for i in {0..3}; do
+      if [[ ${ip[$i]} -gt 255 ]]; then
+        valid=0
+      fi
+    done
+    if [[ $prefix -gt 32 ]]; then
+      valid=0
+    fi
+  else
+    valid=0
+  fi
+
+  echo $valid
+}
+
+# Function to validate IP address format
+validate_ip() {
+  local ip=$1
+  local valid=1
+
+  if [[ $ip =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+    local IFS=.
+    ip=($ip)
+    for i in {0..3}; do
+      if [[ ${ip[$i]} -gt 255 ]]; then
+        valid=0
+      fi
+    done
+  else
+    valid=0
+  fi
+
+  echo $valid
+}
+
+# Function to configure static IP address using netplan
+configure_static_ip() {
+  # List available network interfaces excluding Docker interfaces
+  echo "Available network interfaces:"
+  interfaces=($(ip link show | awk -F: '$1 ~ /^[0-9]+$/ && $2 !~ /^ lo|^ docker/ {print $2}' | sed 's/ //g'))
+  for i in "${!interfaces[@]}"; do
+    echo "$((i+1)). ${interfaces[$i]}"
+  done
+  
+  # Prompt for network interface
+  while true; do
+    read -p "Enter the number corresponding to the interface you want to configure (or 'q' to quit): " interface_number
+    if [[ $interface_number == "q" ]]; then
+      echo "Exiting."
+      return
+    fi
+    if [[ $interface_number -ge 1 && $interface_number -le ${#interfaces[@]} ]]; then
+      interface=${interfaces[$((interface_number-1))]}
+      break
+    else
+      print_message "Invalid selection. Please choose a valid interface number." "$RED"
+    fi
+  done
+  
+  # Set the interface to up status
+  sudo ip link set $interface up
+
+  # Prompt for IP address, default gateway, and DNS servers
+  while true; do
+    read -p "Enter IP address (CIDR format, e.g., 192.168.1.100/24) (or 'q' to quit): " ip_address
+    if [[ $ip_address == "q" ]]; then
+      echo "Exiting."
+      return
+    fi
+    if [[ $(validate_cidr $ip_address) -eq 1 ]]; then
+      break
+    else
+      print_message "Invalid IP address format. Please enter a valid IP address in CIDR format." "$RED"
+    fi
+  done
+
+  read -p "Enter default gateway (optional, or 'q' to quit): " default_gateway
+  if [[ $default_gateway == "q" ]]; then
+    echo "Exiting."
+    return
+  fi
+  if [[ -n "$default_gateway" && $(validate_ip $default_gateway) -eq 0 ]]; then
+    print_message "Invalid gateway address format. Please enter a valid IP address." "$RED"
+    return
+  fi
+
+  read -p "Enter DNS servers (comma separated, optional, or 'q' to quit): " dns_servers
+  if [[ $dns_servers == "q" ]]; then
+    echo "Exiting."
+    return
+  fi
+  if [[ -n "$dns_servers" ]]; then
+    IFS=',' read -r -a dns_array <<< "$dns_servers"
+    for dns in "${dns_array[@]}"; do
+      if [[ $(validate_ip $dns) -eq 0 ]]; then
+        print_message "Invalid DNS server address format. Please enter valid IP addresses." "$RED"
+        return
+      fi
+    done
+  fi
+
+  # Confirm configuration
+  print_message "Configuration:" "$GREEN"
+  echo "Interface: $interface"
+  echo "IP address: $ip_address"
+  echo "Default gateway: ${default_gateway:-None}"
+  echo "DNS servers: ${dns_servers:-None}"
+  read -p "Do you want to apply these settings? (y/n): " confirm
+  if [[ $confirm != "y" ]]; then
+    echo "Discarding changes."
+    return
+  fi
+
+  # Find the current netplan configuration file
+  netplan_file=$(find /etc/netplan -name "*.yaml" | head -n 1)
+  
+  # Backup the current netplan configuration file
+  sudo cp $netplan_file ${netplan_file}.bak.$(date +%Y%m%d%H%M%S)
+
+  # Update netplan configuration
+  sudo tee $netplan_file > /dev/null <<EOL
+network:
+  version: 2
+  ethernets:
+    $interface:
+      addresses:
+        - $ip_address
+EOL
+
+  if [ -n "$default_gateway" ]; then
+    sudo tee -a $netplan_file > /dev/null <<EOL
+      routes:
+        - to: default
+          via: $default_gateway
+EOL
+  fi
+
+  if [ -n "$dns_servers" ]; then
+    sudo tee -a $netplan_file > /dev/null <<EOL
+      nameservers:
+        addresses: [$dns_servers]
+EOL
+  fi
+
+  # Apply netplan configuration
+  sudo netplan apply
+
+  print_message "Static IP address configuration applied successfully." "$GREEN"
+}
+
+# Function to revert network interface changes
+revert_network_changes() {
+  # List available backups
+  backups=($(ls /etc/netplan/*.bak.* 2>/dev/null))
+  if [ ${#backups[@]} -eq 0 ]; then
+    print_message "No network configuration backups found." "$RED"
+    return
+  fi
+
+  echo "Available backups:"
+  for i in "${!backups[@]}"; do
+    echo "$((i+1)). ${backups[$i]}"
+  done
+  
+  # Prompt for backup to restore
+  while true; do
+    read -p "Enter the number corresponding to the backup you want to restore: " backup_number
+    if [[ $backup_number -ge 1 && $backup_number -le ${#backups[@]} ]]; then
+      backup=${backups[$((backup_number-1))]}
+      break
+    else
+      print_message "Invalid selection. Please choose a valid backup number." "$RED"
+    fi
+  done
+  
+  # Restore the selected backup
+  sudo cp $backup /etc/netplan/$(basename $backup | sed 's/.bak.*//')
+  sudo netplan apply
+
+  print_message "Network configuration reverted successfully." "$GREEN"
+}
+
+# Function to capture packets using tcpdump
+capture_packets() {
+  if pgrep tcpdump > /dev/null; then
+    print_message "Packet capture is currently running." "$RED"
+    read -p "Do you want to terminate the packet capture? (y/n): " terminate_choice
+    if [[ $terminate_choice == "y" ]]; then
+      sudo pkill tcpdump
+      print_message "Packet capture terminated." "$GREEN"
+    fi
+    return
+  fi
+
+  # Install tcpdump if it is not installed
+  if ! command -v tcpdump &> /dev/null; then
+    sudo apt-get update
+    sudo apt-get install -y tcpdump
+  fi
+
+  # List available network interfaces excluding Docker and lo interfaces
+  echo "Available network interfaces:"
+  interfaces=($(ip link show | awk -F: '$1 ~ /^[0-9]+$/ && $2 !~ /^ lo|^ docker/ {print $2}' | sed 's/ //g'))
+  for i in "${!interfaces[@]}"; do
+    echo "$((i+1)). ${interfaces[$i]}"
+  done
+  
+  # Prompt for network interface
+  while true; do
+    read -p "Enter the number corresponding to the interface you want to monitor (or 'q' to quit): " interface_number
+    if [[ $interface_number == "q" ]]; then
+      echo "Exiting."
+      return
+    fi
+    if [[ $interface_number -ge 1 && $interface_number -le ${#interfaces[@]} ]]; then
+      interface=${interfaces[$((interface_number-1))]}
+      break
+    else
+      print_message "Invalid selection. Please choose a valid interface number." "$RED"
+    fi
+  done
+
+  # Prompt for capture duration or packet count and destination port filter
+  while true; do
+    read -p "Do you want to capture by duration (d) or by packet count (p)? (or 'q' to quit): " capture_choice
+    if [[ $capture_choice == "q" ]]; then
+      echo "Exiting."
+      return
+    elif [[ $capture_choice == "d" ]]; then
+      while true; do
+        read -p "Enter the duration for packet capture in seconds (or 'q' to quit): " duration
+        if [[ $duration == "q" ]]; then
+          echo "Exiting."
+          return
+        elif [[ ! $duration =~ ^[0-9]+$ ]]; then
+          print_message "Invalid duration. Please enter a valid number of seconds." "$RED"
+        else
+          break
+        fi
+      done
+      break
+    elif [[ $capture_choice == "p" ]]; then
+      while true; do
+        read -p "Enter the number of packets to capture (or 'q' to quit): " packet_count
+        if [[ $packet_count == "q" ]]; then
+          echo "Exiting."
+          return
+        elif [[ ! $packet_count =~ ^[0-9]+$ ]]; then
+          print_message "Invalid packet count. Please enter a valid number of packets." "$RED"
+        else
+          break
+        fi
+      done
+      break
+    else
+      print_message "Invalid choice. Please enter 'd' for duration or 'p' for packet count." "$RED"
+    fi
+  done
+
+  # Prompt for destination port with default option
+  while true; do
+    read -p "Enter the destination port to filter for (default is 9995, enter 'A' for all ports, or 'q' to quit): " port
+    if [[ $port == "q" ]]; then
+      echo "Exiting."
+      return
+    elif [[ -z "$port" ]]; then
+      port=9995
+      break
+    elif [[ $port == "A" || $port =~ ^[0-9]+$ ]]; then
+      break
+    else
+      print_message "Invalid port. Please enter a valid port number, 'A' for all ports, or leave blank for default port 9995." "$RED"
+    fi
+  done
+
+  # Capture packets
+  timestamp=$(date +%Y%m%d%H%M%S)
+  capture_file="capture_$timestamp.pcap"
+  capture_path="$(pwd)/$capture_file"
+
+  if [[ $capture_choice == "d" ]]; then
+    if [[ $port == "A" ]]; then
+      sudo tcpdump -i $interface -w "$capture_path" -G $duration -W 1
+    else
+      sudo tcpdump -i $interface dst port $port -w "$capture_path" -G $duration -W 1
+    fi
+  elif [[ $capture_choice == "p" ]]; then
+    if [[ $port == "A" ]]; then
+      sudo tcpdump -i $interface -w "$capture_path" -c $packet_count
+    else
+      sudo tcpdump -i $interface dst port $port -w "$capture_path" -c $packet_count
+    fi
+  fi
+
+  print_message "Packet capture completed. File saved as $capture_path." "$GREEN"
+}
+
+
+# Function to install and configure pmacct for flow generation
+install_flow_generator() {
+  if command -v pmacctd &> /dev/null; then
+    print_message "pmacct is already installed." "$GREEN"
+    if pgrep pmacctd > /dev/null; then
+      print_message "pmacct is currently running." "$RED"
+      read -p "Do you want to terminate pmacct? (y/n): " terminate_choice
+      if [[ $terminate_choice == "y" ]]; then
+        sudo pkill pmacctd
+        print_message "pmacct terminated." "$GREEN"
+      else
+        return
+      fi
+    else
+      print_message "pmacct is not running." "$RED"
+      read -p "Do you want to start pmacct? (y/n): " start_choice
+      if [[ $start_choice == "y" ]]; then
+        sudo pmacctd -f /etc/pmacct/pmacctd.conf
+        print_message "pmacct started." "$GREEN"
+        return
+      else
+        return
+      fi
+    fi
+  else
+    sudo apt-get update
+    sudo apt-get install -y pmacct
+    if command -v pmacctd &> /dev/null; then
+      print_message "pmacct installed successfully." "$GREEN"
+    else
+      print_message "pmacct installation failed." "$RED"
+      return
+    fi
+  fi
+
+  # List available network interfaces excluding Docker and lo interfaces
+  echo "Available network interfaces:"
+  interfaces=($(ip link show | awk -F: '$1 ~ /^[0-9]+$/ && $2 !~ /^ lo|^ docker/ {print $2}' | sed 's/ //g'))
+  for i in "${!interfaces[@]}"; do
+    echo "$((i+1)). ${interfaces[$i]}"
+  done
+  
+  # Prompt for network interface
+  while true; do
+    read -p "Enter the number corresponding to the interface you want to monitor: " interface_number
+    if [[ $interface_number == "q" ]]; then
+      echo "Exiting."
+      return
+    fi
+    if [[ $interface_number -ge 1 && $interface_number -le ${#interfaces[@]} ]]; then
+      interface=${interfaces[$((interface_number-1))]}
+      break
+    else
+      print_message "Invalid selection. Please choose a valid interface number." "$RED"
+    fi
+  done
+
+  # Create or overwrite the pmacctd.conf file
+  sudo tee /etc/pmacct/pmacctd.conf > /dev/null <<EOL
+daemonize: false
+pcap_interface: $interface
+aggregate: src_mac, dst_mac, src_host, dst_host, src_port, dst_port, proto, tos
+plugins: nfprobe, print
+nfprobe_receiver: 127.0.0.1:9995
+! nfprobe_receiver: [FD00::2]:2100
+nfprobe_version: 9
+! nfprobe_engine: 1:1
+nfprobe_timeouts: tcp=15:maxlife=1800
+!
+! networks_file: /path/to/networks.lst
+!...
+EOL
+
+  # Run pmacctd with the configuration
+  sudo pmacctd -f /etc/pmacct/pmacctd.conf
+  print_message "Flow generator installed and running." "$GREEN"
+}
+
+# Function to monitor FPS
+monitor_fps() {
+  local file_path=/etc/elastiflow/flowcoll.yml
+
+  if grep -q '^EF_OUTPUT_MONITOR_ENABLE: "true"' "$file_path"; then
+    print_message "Disabling FPS monitoring..." "$GREEN"
+    sed -i '/^EF_OUTPUT_MONITOR_ENABLE: "true"/c\EF_OUTPUT_MONITOR_ENABLE: "false"' "$file_path"
+    print_message "FPS monitoring disabled." "$GREEN"
+    reload_and_restart_service "flowcoll.service"
+    return
+  else
+    # Prompt user for bytes per record with default value
+    while true; do
+      read -p "Enter bytes per record (default is 250): " bytes_per_document
+      if [[ -z "$bytes_per_document" || "$bytes_per_document" =~ ^[0-9]+$ ]]; then
+        bytes_per_document=${bytes_per_document:-250}
+        break
+      else
+        echo "Invalid input. Please enter a number."
+      fi
+    done
+
+    # Prompt user for monitoring interval with default value
+    while true; do
+      read -p "Enter monitoring interval in seconds (default is 300): " EF_OUTPUT_MONITOR_INTERVAL
+      if [[ -z "$EF_OUTPUT_MONITOR_INTERVAL" || "$EF_OUTPUT_MONITOR_INTERVAL" =~ ^[0-9]+$ ]]; then
+        EF_OUTPUT_MONITOR_INTERVAL=${EF_OUTPUT_MONITOR_INTERVAL:-300}
+        break
+      else
+        echo "Invalid input. Please enter a number."
+      fi
+    done
+
+    print_message "Enabling FPS monitoring..." "$GREEN"
+    comment_and_add_line "$file_path" "EF_OUTPUT_MONITOR_ENABLE" 'EF_OUTPUT_MONITOR_ENABLE: "true"'
+    comment_and_add_line "$file_path" "EF_OUTPUT_MONITOR_INTERVAL" "EF_OUTPUT_MONITOR_INTERVAL: $EF_OUTPUT_MONITOR_INTERVAL"
+    print_message "FPS monitoring enabled." "$GREEN"
+    reload_and_restart_service "flowcoll.service"
+  fi
+
+  print_message "Monitoring FPS..." "$GREEN"
+  print_message "Assumptions: $bytes_per_document bytes per record." "$GREEN"
+  print_message "Monitoring interval: $EF_OUTPUT_MONITOR_INTERVAL seconds ($((EF_OUTPUT_MONITOR_INTERVAL / 60)) minutes)." "$GREEN"
+  
+  while true; do
+    sudo journalctl -u flowcoll.service -f | grep --line-buffered "Monitor Output: decoding rate:" | while read -r line; do
+      raw_timestamp=$(echo "$line" | grep -oP '(?<=ts":")[^"]+')
+      local_time=$(date '+%Y-%m-%d %H:%M:%S')
+      records_per_second=$(echo "$line" | grep -oP '(?<=decoding rate: )\d+')
+      if [ -n "$records_per_second" ] && [ "$records_per_second" -ne 0 ]; then
+        storage_capacity_gb=500
+        documents_per_day=$((records_per_second * 60 * 60 * 24))
+        storage_capacity_bytes=$((storage_capacity_gb * 1024 * 1024 * 1024))
+        days_of_storage=$(echo "$storage_capacity_bytes / ($documents_per_day * $bytes_per_document)" | bc)
+        echo "[$local_time] [$raw_timestamp] Records per second: $records_per_second, Days of storage in 500 GB: $days_of_storage"
+      else
+        echo "[$local_time] [$raw_timestamp] Records per second: $records_per_second, Unable to calculate days of storage due to zero records per second."
+      fi
+    done
+    read -t 1 -n 1 key
+    if [[ $key == "q" ]]; then
+      break
+    fi
+  done
+}
+
+
+# Function to perform health check
+perform_health_check() {
+   # General checks
+  print_message "\n\n********** General **********\n" "$GREEN"
+  # Check disk space
+  total_space=$(df -BG / | tail -1 | awk '{print $2}')
+  free_space=$(df -BG / | tail -1 | awk '{print $4}')
+  print_message "Total disk space: $total_space" "$GREEN"
+  print_message "Free disk space: $free_space" "$GREEN"
+
+  # Check if there is at least 15% disk space left
+  disk_usage=$(df / | tail -1 | awk '{print $5}' | sed 's/%//')
+  if [ $disk_usage -lt 85 ]; then
+    print_message "At least 15% disk space is available." "$GREEN"
+  else
+    print_message "Less than 15% disk space is available." "$RED"
+  fi
+
+  # Check if default gateway can be pinged
+  default_gateway=$(ip route | grep default | awk '{print $3}')
+  if [ -n "$default_gateway" ]; then
+    if ping -c 1 $default_gateway &> /dev/null; then
+      print_message "Default gateway $default_gateway is reachable." "$GREEN"
+    else
+      print_message "Default gateway $default_gateway is not reachable." "$RED"
+    fi
+  else
+    print_message "Default gateway is not set." "$RED"
+  fi
+
+  # Check if there is an internet connection
+  if wget -q --spider http://google.com; then
+    print_message "Internet connection is available.\n" "$GREEN"
+  else
+    print_message "Internet connection is not available.\n" "$RED"
+  fi
+
+# Flowcoll checks
+  print_message "\n\n********** Flowcoll **********\n" "$GREEN"
+  # Check if flowcoll.service is running
+  if sudo systemctl is-active --quiet flowcoll.service; then
+    print_message "flowcoll.service is running." "$GREEN"
+  else
+    print_message "flowcoll.service is not running." "$RED"
+  fi
+
+  # Check flowcoll.service logs for errors
+  if sudo journalctl -u flowcoll.service | grep -q "level=error"; then
+    print_message "Errors found in flowcoll.service logs:" "$RED"
+    sudo journalctl -u flowcoll.service | grep "level=error"
+  else
+    print_message "No errors found in flowcoll.service logs." "$GREEN"
+  fi
+  # Check http://localhost:8080/readyz
+  print_message "Checking http://localhost:8080/readyz..." "$GREEN"
+  response=$(curl -s http://localhost:8080/readyz)
+  if echo "$response" | grep -q "200"; then
+    print_message "$response" "$GREEN"
+  else
+    print_message "$response" "$RED"
+  fi
+  echo
+  
+  # Check http://localhost:8080/livez
+  print_message "Checking http://localhost:8080/livez..." "$GREEN"
+  response=$(curl -s http://localhost:8080/livez)
+  if echo "$response" | grep -q "200"; then
+    print_message "$response" "$GREEN"
+  else
+    print_message "$response" "$RED"
+  fi
+  echo
+
+# Check if ports are open
+  for port in 2055 4739 6343 9995; do
+    if sudo netstat -tuln | grep -q ":$port"; then
+      print_message "Port $port is open." "$GREEN"
+    else
+      print_message "Port $port is not open." "$RED"
+    fi
+  done
+
+  # Check ElastiFlow account ID and flow license key
+  ef_account_id=$(grep '^EF_ACCOUNT_ID: ' /etc/elastiflow/flowcoll.yml | awk '{print $2}' | tr -d '"')
+  ef_flow_license_key=$(grep '^EF_FLOW_LICENSE_KEY: ' /etc/elastiflow/flowcoll.yml | awk '{print $2}' | tr -d '"')
+  ef_license_accepted=$(grep '^EF_LICENSE_ACCEPTED: ' /etc/elastiflow/flowcoll.yml | awk '{print $2}' | tr -d '"')
+
+  if [ -n "$ef_account_id" ] && [ -n "$ef_flow_license_key" ] && [ "$ef_license_accepted" == "true" ]; then
+    print_message "EF_LICENSE_ACCEPTED: $ef_license_accepted" "$GREEN"
+    print_message "EF_ACCOUNT_ID: $ef_account_id" "$GREEN"
+    print_message "EF_FLOW_LICENSE_KEY: $ef_flow_license_key" "$GREEN"
+  else
+    print_message "ElastiFlow account ID, flow license key, or license accepted is not correctly configured." "$RED"
+  fi
+
+
+  # Check if MaxMind enrichment is active
+  if grep -q '^EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE: "true"' /etc/elastiflow/flowcoll.yml && grep -q '^EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE: "true"' /etc/elastiflow/flowcoll.yml; then
+    print_message "MaxMind enrichment is active." "$GREEN"
+  else
+    print_message "MaxMind enrichment is not active." "$RED"
+  fi
+
+  printf "\n"
+
+  # Check if DNS enrichment is active
+  if grep -q '^EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE: "true"' /etc/elastiflow/flowcoll.yml; then
+    print_message "DNS enrichment is active." "$GREEN"
+  else
+    print_message "DNS enrichment is not active." "$RED"
+  fi
+
+  # Check if NetIntel enrichment is active
+  if grep -q '^EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE: "true"' /etc/elastiflow/flowcoll.yml; then
+    print_message "NetIntel enrichment is active." "$GREEN"
+  else
+    print_message "NetIntel enrichment is not active." "$RED"
+  fi
+
+  # Elasticsearch checks
+  print_message "\n\n********** Elasticsearch **********\n" "$GREEN"
+  # Check if Elasticsearch service is running
+  if sudo systemctl is-active --quiet elasticsearch.service; then
+    print_message "elasticsearch.service is running." "$GREEN"
+  else
+    print_message "elasticsearch.service is not running." "$RED"
+  fi
+
+  # Check for error logs in Elasticsearch
+  if sudo journalctl -u elasticsearch.service | grep -q "level=error"; then
+    print_message "Errors found in elasticsearch.service logs:" "$RED"
+    sudo journalctl -u elasticsearch.service | grep "level=error"
+  else
+    print_message "No errors found in elasticsearch.service logs." "$GREEN"
+  fi
+
+  # Check if port 9200 is open
+  if sudo netstat -tuln | grep -q ":9200"; then
+    print_message "Port 9200 is open." "$GREEN"
+  else
+    print_message "Port 9200 is not open." "$RED"
+  fi
+
+  # Check Elasticsearch health
+  curl_result=$(curl -s -k -u elastic:elastic https://localhost:9200)
+  search_text='cluster_name" : "elasticsearch'
+  if echo "$curl_result" | grep -q "$search_text"; then
+    print_message "Elastic is up!" "$GREEN"
+  else
+    print_message "Something's wrong with Elastic..." "$RED"
+  fi
+
+  # Kibana checks
+  print_message "\n\n********** Kibana **********\n" "$GREEN"
+  # Check if Kibana service is running
+  if sudo systemctl is-active --quiet kibana.service; then
+    print_message "kibana.service is running." "$GREEN"
+  else
+    print_message "kibana.service is not running." "$RED"
+  fi
+
+  # Check for error logs in Kibana
+  if sudo journalctl -u kibana.service | grep -q "level=error"; then
+    print_message "Errors found in kibana.service logs:" "$RED"
+    sudo journalctl -u kibana.service | grep "level=error"
+  else
+    print_message "No errors found in kibana.service logs." "$GREEN"
+  fi
+
+  # Check if port 5601 is open
+  if sudo netstat -tuln | grep -q ":5601"; then
+    print_message "Port 5601 is open." "$GREEN"
+  else
+    print_message "Port 5601 is not open." "$RED"
+  fi
+
+}
+
+# Battleship game
+play_battleship() {
+  # Initialize variables
+  declare -A board
+  ships=("Aircraft Carrier" "Battleship" "Submarine" "Destroyer" "Patrol Boat")
+  ship_sizes=(5 4 3 3 2)
+  board_size=10
+
+  # Initialize the board
+  for ((i = 0; i < board_size; i++)); do
+    for ((j = 0; j < board_size; j++)); do
+      board[$i,$j]="~"
+    done
+  done
+
+  # Function to display the board
+  display_board() {
+    echo "  0 1 2 3 4 5 6 7 8 9"
+    for ((i = 0; i < board_size; i++)); do
+      echo -n "$i "
+      for ((j = 0; j < board_size; j++)); do
+        echo -n "${board[$i,$j]} "
+      done
+      echo
+    done
+  }
+
+  # Function to place ships on the board
+  place_ships() {
+    for ((s = 0; s < ${#ships[@]}; s++)); do
+      local size=${ship_sizes[$s]}
+      local placed=0
+
+      while [[ $placed -eq 0 ]]; do
+        local orientation=$((RANDOM % 2))
+        local row=$((RANDOM % board_size))
+        local col=$((RANDOM % board_size))
+        local fits=1
+
+        if [[ $orientation -eq 0 ]]; then
+          # Horizontal placement
+          if ((col + size <= board_size)); then
+            for ((i = 0; i < size; i++)); do
+              if [[ ${board[$row,$((col + i))]} != "~" ]]; then
+                fits=0
+                break
+              fi
+            done
+            if [[ $fits -eq 1 ]]; then
+              for ((i = 0; i < size; i++)); do
+                board[$row,$((col + i))]="${ships[$s]:0:1}"
+              done
+              placed=1
+            fi
+          fi
+        else
+          # Vertical placement
+          if ((row + size <= board_size)); then
+            for ((i = 0; i < size; i++)); do
+              if [[ ${board[$((row + i)),$col]} != "~" ]]; then
+                fits=0
+                break
+              fi
+            done
+            if [[ $fits -eq 1 ]]; then
+              for ((i = 0; i < size; i++)); do
+                board[$((row + i)),$col]="${ships[$s]:0:1}"
+              done
+              placed=1
+            fi
+          fi
+        fi
+      done
+    done
+  }
+
+  # Function to check for a hit
+  check_hit() {
+    local row=$1
+    local col=$2
+    if [[ ${board[$row,$col]} =~ [ABS] ]]; then
+      board[$row,$col]="X"
+      echo "Hit!"
+    else
+      board[$row,$col]="O"
+      echo "Miss!"
+    fi
+  }
+
+  # Place ships on the board
+  place_ships
+
+  # Game loop
+  while true; do
+    display_board
+    echo "Enter your move (row and column) or 'q' to quit: "
+    read row col
+    if [[ $row == "q" || $col == "q" ]]; then
+      break
+    elif [[ $row =~ ^[0-9]$ && $col =~ ^[0-9]$ ]]; then
+      check_hit $row $col
+    else
+      echo "Invalid move. Please enter a valid row and column."
+    fi
+  done
+
+  echo "Game over!"
+}
+
+# Function to reconfigure JVM memory usage
+reconfigure_jvm_memory() {
+  print_message "Configuring JVM memory usage..." "$GREEN"
+  # Get the total installed memory from /proc/meminfo in kB
+  total_mem_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+
+  # Convert the memory from kB to GB and divide by 3 to get 1/3, using bc for floating point support
+  one_third_mem_gb=$(echo "$total_mem_kb / 1024 / 1024 / 3" | bc -l)
+
+  # Use printf to round the floating point number to an integer
+  rounded_mem_gb=$(printf "%.0f" $one_third_mem_gb)
+
+  # Ensure the value does not exceed 31GB
+  if [ $rounded_mem_gb -gt 31 ]; then
+      jvm_mem_gb=31
+  else
+      jvm_mem_gb=$rounded_mem_gb
+  fi
+
+  # Prepare the JVM options string with the calculated memory size
+  jvm_options="-Xms${jvm_mem_gb}g\n-Xmx${jvm_mem_gb}g"
+
+  # Echo the options and use tee to write to the file
+  echo -e $jvm_options | sudo tee /etc/elasticsearch/jvm.options.d/heap.options > /dev/null
+
+  print_message "Elasticsearch JVM options set to use $jvm_mem_gb GB for both -Xms and -Xmx." "$GREEN"
+}
+
+# Show introductory message
+show_intro() {
+  print_message "**********************************" "$GREEN"
+  print_message "*** ElastiFlow PoC Configurator ***" "$GREEN"
+  print_message "**********************************" "$GREEN"
+}
+
+# Function to show instructions for requesting an account ID and license key
+show_trial() {
+  print_message "********** Configure Trial********" "$GREEN"
+  print_message "Obtain ElastiFlow trial credentials from: https://elastiflow.com/get-started" "$GREEN"
+  print_message "**********************************" "$GREEN"
+}
+
+# Function to show instructions for obtaining maxmind license key
+show_maxmind() {
+  print_message "** Configure MaxMind Enrichment **" "$GREEN"
+  print_message "Obtain Maxmind license key from: https://www.maxmind.com/en/geolite2/signup" "$GREEN"
+  print_message "Log in to Maxmind.com, click 'My Account', and then 'Manage License Keys'" "$GREEN"
+  print_message "**********************************" "$GREEN"
+}
+
+# Main script execution
+
+while true; do
+  show_intro
+  echo "Choose an option:"
+  echo "1. Configure fully featured trial"
+  echo "2. Enable MaxMind enrichment"
+  echo "3. Utilities"
+  echo "4. Games"
+  echo "5. Quit"
+  read -p "Enter your choice (1-5): " choice
+  case $choice in
+    1)
+      configure_trial
+      ;;
+    2)
+      configure_maxmind
+      ;;
+    3)
+      while true; do
+        echo "Utilities:"
+        echo "1. Restore flowcoll.yml from latest backup"
+        echo "2. Restore flowcoll.yml from Internet"
+        echo "3. Configure static IP address"
+        echo "4. Revert network interface changes"
+        echo "5. Edit flowcoll.yml using nano"
+        echo "6. Watch flowcoll.service log"
+        echo "7. Install/Uninstall flow generator (pmacct)"
+        echo "8. Disable/Enable packet capture"
+        echo "9. Reconfigure JVM memory usage"
+        echo "10. Enable FPS monitor"
+        echo "11. Health check"
+        echo "12. Daemon reload and restart flowcoll.service"
+        echo "13. Daemon reload and restart flowcoll.service, elasticsearch.service, and kibana.service"
+        echo "14. Watch elasticsearch.service log"
+        echo "15. Watch kibana.service log"
+        echo "16. Enable DNS enrichment"
+        echo "17. Enable NetIntel enrichment"
+        echo "18. Back"
+        read -p "Enter your choice (1-17): " utility_choice
+        case $utility_choice in
+          1)
+            restore_latest_backup
+            read -p "Do you want to reload and restart flowcoll.service? (y/n): " reload_choice
+            if [[ $reload_choice == "y" ]]; then
+              reload_and_restart_service "flowcoll.service"
+              check_service_health
+            fi
+            ;;
+          2)
+            download_default_conf
+            read -p "Do you want to reload and restart flowcoll.service? (y/n): " reload_choice
+            if [[ $reload_choice == "y" ]]; then
+              reload_and_restart_service "flowcoll.service"
+              check_service_health
+            fi
+            ;;
+          3)
+            configure_static_ip
+            ;;
+          4)
+            revert_network_changes
+            ;;
+          5)
+            backup_existing_flowcoll
+            sudo nano /etc/elastiflow/flowcoll.yml
+            latest_backup=$(ls -t /etc/elastiflow/flowcoll.yml.bak.* 2>/dev/null | head -1)
+            if ! sudo diff -q /etc/elastiflow/flowcoll.yml "$latest_backup"; then
+              read -p "Do you want to reload and restart flowcoll.service? (y/n): " reload_choice
+              if [[ $reload_choice == "y" ]]; then
+                reload_and_restart_service "flowcoll.service"
+                check_service_health
+              fi
+            fi
+            ;;
+          6)
+            sudo journalctl -u flowcoll.service -f
+            ;;
+          7)
+            install_flow_generator
+            ;;
+          8)
+            capture_packets
+            ;;
+          9)
+            reconfigure_jvm_memory
+            read -p "Do you want to reload and restart elasticsearch.service and kibana.service? (y/n): " reload_choice
+            if [[ $reload_choice == "y" ]]; then
+              reload_and_restart_services "elasticsearch.service" "kibana.service"
+            fi
+            ;;
+          10)
+            monitor_fps
+            ;;
+          11)
+            perform_health_check
+            ;;
+          12)
+            reload_and_restart_service "flowcoll.service"
+            ;;
+          13)
+            reload_and_restart_services "flowcoll.service" "elasticsearch.service" "kibana.service"
+            ;;
+          14)
+            sudo journalctl -u elasticsearch.service -f
+            ;;
+          15)
+            sudo journalctl -u kibana.service -f
+            ;;
+          16)
+            dns_enrichment
+            ;;
+          17)
+            netintel_enrichment
+            ;;
+          18)
+            break
+            ;;
+          *)
+            print_message "Invalid choice. Please enter a number between 1 and 17." "$RED"
+            ;;
+        esac
+      done
+      ;;
+    4)
+      while true; do
+        echo "Games:"
+        echo "1. Play Battleship"
+        echo "2. Back"
+        read -p "Enter your choice (1-2): " game_choice
+        case $game_choice in
+          1)
+            play_battleship
+            ;;
+          2)
+            break
+            ;;
+          *)
+            print_message "Invalid choice. Please enter 1 or 2." "$RED"
+            ;;
+        esac
+      done
+      ;;
+    5)
+      echo "Quitting..."
+      exit 0
+      ;;
+    *)
+      print_message "Invalid choice. Please enter a number between 1 and 5." "$RED"
+      ;;
+  esac
+done
