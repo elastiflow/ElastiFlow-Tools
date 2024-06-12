@@ -361,6 +361,22 @@ else
 fi
 }
 
+append_to_bashrc() {
+    local text="$1"
+    # Append the text to .bashrc
+    echo "$text" >> ~/.bashrc
+    echo "The script has been added to .bashrc."
+
+    # Reload the .bashrc file
+    source ~/.bashrc
+    echo ".bashrc has been reloaded."
+}
+
+
+
+
+
+
 display_versions() {
   version=$(/usr/share/elastiflow/bin/flowcoll -version)
   printf "Installed ElastiFlow version: $version\n"
@@ -410,8 +426,8 @@ main() {
   download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/support_pack/elastiflow_elasticsearch_opensearch_support_pack" "/home/user/support"
   display_versions
   display_dashboard_url
-  set_first_boot
-  printf "\n\nDone\n"
+
+ 
 
 }
 
