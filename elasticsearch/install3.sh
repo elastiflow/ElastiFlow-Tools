@@ -356,6 +356,8 @@ else
     # Append the variable to .bashrc
     echo "export $variable" >> ~/.bashrc
     echo "The variable has been added to .bashrc."
+    source ~/.bashrc
+    echo ".bashrc has been reloaded."
 fi
 }
 
