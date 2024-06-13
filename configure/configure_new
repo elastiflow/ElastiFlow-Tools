@@ -1126,17 +1126,9 @@ show_maxmind() {
 # Main script execution
 
   script_text='
-  ELASTIFLOW_FIRST_BOOT=1
+  ELASTIFLOW_FIRST_BOOT=0
   '
   append_to_bashrc "$script_text"
-  
-  script_text='
-  if [ "$ELASTIFLOW_FIRST_BOOT" -eq 1 ]; then
-      ./home/user/configure
-  fi
-  '
-  append_to_bashrc "$script_text"
-
 
 while true; do
   show_intro
