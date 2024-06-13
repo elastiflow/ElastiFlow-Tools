@@ -1132,7 +1132,7 @@ while true; do
             print_message "Invalid choice. Please enter 1 or 2." "$RED"
             ;;
         esac
-        clear
+        
       done
       ;;
     6)
