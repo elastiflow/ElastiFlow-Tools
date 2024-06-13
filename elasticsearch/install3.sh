@@ -92,16 +92,6 @@ get_host_ip() {
 }
 
 
-append_to_bashrc() {
-    local text="$1"
-    # Append the text to .bashrc
-    echo "$text" >> /home/user/.bashrc
-    echo "The script has been added to .bashrc."
-
-    # Reload the .bashrc file
-    . /home/user/.bashrc
-    echo ".bashrc has been reloaded."
-}
 
 
 download_file() {
@@ -382,6 +372,17 @@ display_dashboard_url() {
 remove_update_service(){
   printf "\n\n\n*********Removing Ubuntu update service...\n\n"
   apt remove -y unattended-upgrades
+}
+
+append_to_bashrc() {
+    local text="$1"
+    # Append the text to .bashrc
+    echo "$text" >> /home/user/.bashrc
+    echo "The script has been added to .bashrc."
+
+    # Reload the .bashrc file
+    . /home/user/.bashrc
+    echo ".bashrc has been reloaded."
 }
 
 main() {
