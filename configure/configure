@@ -13,6 +13,8 @@ elastiflow_version="7.0.0"
 
 elastic_username="elastic"
 elastic_password2="elastic"
+ip_address=""
+
 
 # Helper function to print messages with color
 print_message() {
@@ -744,8 +746,12 @@ monitor_fps() {
 perform_health_check() {
   clear
   print_message "\n\n********** General **********\n" "$GREEN"
-
-  get_host_ip()
+  print_message "IP address: $ip_address "$GREEN"
+  print_message "Contents of Netplan file - network configuration" "$GREEN"
+  netplan_file=$(find /etc/netplan -name "*.yaml" | head -n 1)
+  **********
+  echo /etc/netplan/$netplan_file
+  **********
 
   total_space=$(df -BG / | tail -1 | awk '{print $2}')
   free_space=$(df -BG / | tail -1 | awk '{print $4}')
