@@ -14,6 +14,7 @@ elastiflow_version="7.0.0"
 elastic_username="elastic"
 elastic_password2="elastic"
 ip_address=""
+dashboard_url=""
 
 
 # Helper function to print messages with color
@@ -55,10 +56,6 @@ get_dashboard_url() {
 
 display_dashboard_url() {
   dashboard_url=$(get_dashboard_url "ElastiFlow (flow): Overview")
-  printf "*********************************************\n"
-  printf "\033[5;37m\n\nGo to %s (%s / %s)\n\n\033[0m" "$dashboard_url" "$elastic_username" "$elastic_password2"
-  printf "For further configuration options, run sudo ./configure\n\n"
-  printf "*********************************************\n"
 }
 
 
@@ -746,6 +743,8 @@ perform_health_check() {
   clear
   print_message "\n\n********** General **********\n" "$GREEN"
   get_host_ip
+  display_dashboard_url
+  print_message "Dashboard URL: $dashboard_url" "$GREEN"
   print_message "IP address: $ip_address" "$GREEN"
   print_message "Contents of Netplan file - network configuration" "$GREEN"
   netplan_file=$(find /etc/netplan -name "*.yaml" | head -n 1)
