@@ -1,28 +1,4 @@
 #!/bin/bash
 
+set_elastiflow_first_boot_to_zero
 
-append_to_bashrc() {
-    local text="$1"
-    # Append the text to .bashrc
-    echo "$text" >> /home/user/.bashrc
-    echo "The script has been added to .bashrc."
-
-    # Reload the .bashrc file
-    . /home/user/.bashrc
-    echo ".bashrc has been reloaded."
-}
-
-
-  ####set configure script to run on first logon
-  
-  script_text='
-  export ELASTIFLOW_FIRST_BOOT=1
-  '
-  append_to_bashrc "$script_text"
-  
-  script_text='
-  if [ "$ELASTIFLOW_FIRST_BOOT" -eq 1 ]; then
-      sudo ./home/user/configure
-  fi
-  '
-  append_to_bashrc "$script_text"
