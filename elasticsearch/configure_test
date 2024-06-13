@@ -1,4 +1,27 @@
 #!/bin/bash
 
+set_elastiflow_first_boot_to_zero() {
+    # Define the variable and the value to set
+    local variable="ELASTIFLOW_FIRST_BOOT"
+    local value="0"
+    
+    # Path to the .bashrc file
+    local bashrc_path="$HOME/.bashrc"
+    
+    # Check if the variable is already set in the .bashrc file
+    if grep -q "^export $variable=" "$bashrc_path"; then
+        # If the variable is found, replace its value with 0
+        sed -i "s/^export $variable=.*/export $variable=$value/" "$bashrc_path"
+    else
+        # If the variable is not found, add it to the .bashrc file
+        echo "export $variable=$value" >> "$bashrc_path"
+    fi
+
+    # Reload the .bashrc file
+    . /home/user/.bashrc
+}
+
+
+
 set_elastiflow_first_boot_to_zero
 
