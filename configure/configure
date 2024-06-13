@@ -42,23 +42,19 @@ get_host_ip() {
 
 
 get_dashboard_url() {
+  
+  get_host_ip
   local kibana_url="http://$ip_address:5601"
   local dashboard_title="$1"
   local encoded_title=$(echo "$dashboard_title" | sed 's/ /%20/g' | sed 's/:/%3A/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
   local response=$(curl -s -u "$elastic_username:$elastic_password2" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
   local dashboard_id=$(echo "$response" | jq -r '.saved_objects[] | select(.attributes.title=="'"$dashboard_title"'") | .id')
   if [ -z "$dashboard_id" ]; then
-    echo "Dashboard not found"
+    dashboard_url="Dashboard not found"
   else
-    echo "$kibana_url/app/kibana#/dashboard/$dashboard_id"
+    dashboard_url="$kibana_url/app/kibana#/dashboard/$dashboard_id"
   fi
 }
-
-display_dashboard_url() {
-  dashboard_url=$(get_dashboard_url "ElastiFlow (flow): Overview")
-}
-
-
 
 set_elastiflow_first_boot_to_zero() {
   printf "setting first boot to zero\n\n"
@@ -741,10 +737,18 @@ monitor_fps() {
 
 perform_health_check() {
   clear
-  print_message "\n\n********** General **********\n" "$GREEN"
   get_host_ip
-  display_dashboard_url
-  print_message "Dashboard URL: $dashboard_url" "$GREEN"
+  get_dashboard_url "ElastiFlow (flow): Overview"
+  print_message "\n\n********** General **********\n" "$GREEN"
+  #print_message "Dashboard URL: $dashboard_url" "$GREEN"
+
+  if [ "$dashboard_url" == "Dashboard not found" ]; then
+    print_message "Dashboard URL: $dashboard_url" "$RED"
+  else
+    print_message "Dashboard URL: $dashboard_url" "$GREEN"
+  fi
+
+
   print_message "IP address: $ip_address" "$GREEN"
   print_message "Contents of Netplan file - network configuration" "$GREEN"
   netplan_file=$(find /etc/netplan -name "*.yaml" | head -n 1)
