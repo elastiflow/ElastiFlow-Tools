@@ -22,7 +22,6 @@ append_to_bashrc() {
 script_text='
  if [ "$ELASTIFLOW_FIRST_BOOT" -eq 1 ]; then
      ./home/user/configure
-     export ELASTIFLOW_FIRST_BOOT=0
  fi
  '
  append_to_bashrc "$script_text"
