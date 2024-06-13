@@ -92,6 +92,18 @@ get_host_ip() {
 }
 
 
+append_to_bashrc() {
+    local text="$1"
+    # Append the text to .bashrc
+    echo "$text" >> /home/user/.bashrc
+    echo "The script has been added to .bashrc."
+
+    # Reload the .bashrc file
+    . /home/user/.bashrc
+    echo ".bashrc has been reloaded."
+}
+
+
 download_file() {
   local url=$1
   local target_path=$2
@@ -426,9 +438,20 @@ main() {
   download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/support_pack/elastiflow_elasticsearch_opensearch_support_pack" "/home/user/support"
   display_versions
   display_dashboard_url
-
- 
-
+  
+  ####set configure script to run on first logon
+  
+  script_text='
+  ELASTIFLOW_FIRST_BOOT=1
+  '
+  append_to_bashrc "$script_text"
+  
+  script_text='
+  if [ "$ELASTIFLOW_FIRST_BOOT" -eq 1 ]; then
+      ./home/user/configure
+  fi
+  '
+  append_to_bashrc "$script_text"
 }
 
 main
