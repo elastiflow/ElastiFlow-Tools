@@ -17,6 +17,183 @@ ip_address=""
 dashboard_url=""
 
 
+perform_health_check() {
+  clear
+  get_host_ip
+  get_dashboard_url "ElastiFlow (flow): Overview"
+  print_message "\n\n********** General **********\n" "$GREEN"
+  #print_message "Dashboard URL: $dashboard_url" "$GREEN"
+
+  if [ "$dashboard_url" == "Dashboard not found" ]; then
+    print_message "Dashboard URL: $dashboard_url" "$RED"
+  else
+    print_message "Dashboard URL: $dashboard_url" "$GREEN"
+  fi
+
+
+  print_message "IP address: $ip_address" "$GREEN"
+  print_message "Contents of Netplan file - network configuration" "$GREEN"
+  netplan_file=$(find /etc/netplan -name "*.yaml" | head -n 1)
+  print_message "$netplan_file" "$GREEN"
+  printf "***************\n"
+  cat "$netplan_file"
+  printf "***************\n"
+  total_space=$(df -BG / | tail -1 | awk '{print $2}')
+  free_space=$(df -BG / | tail -1 | awk '{print $4}')
+  print_message "Total disk space: $total_space" "$GREEN"
+  print_message "Free disk space: $free_space" "$GREEN"
+
+  disk_usage=$(df / | tail -1 | awk '{print $5}' | sed 's/%//')
+  if [ $disk_usage -lt 85 ]; then
+    print_message "At least 15% disk space is available." "$GREEN"
+  else
+    print_message "Less than 15% disk space is available." "$RED"
+  fi
+
+  default_gateway=$(ip route | grep default | awk '{print $3}')
+  if [ -n "$default_gateway" ]; then
+    if ping -c 1 $default_gateway &> /dev/null; then
+      print_message "Default gateway $default_gateway is reachable." "$GREEN"
+    else
+      print_message "Default gateway $default_gateway is not reachable." "$RED"
+    fi
+  else
+    print_message "Default gateway is not set." "$RED"
+  fi
+
+  if wget -q --spider http://google.com; then
+    print_message "Internet connection is available." "$GREEN"
+  else
+    print_message "Internet connection is not available." "$RED"
+  fi
+
+  print_message "\n\n********** Flowcoll **********\n" "$GREEN"
+  if systemctl is-active --quiet flowcoll.service; then
+    print_message "flowcoll.service is running." "$GREEN"
+  else
+    print_message "flowcoll.service is not running." "$RED"
+  fi
+
+  if journalctl -u flowcoll.service | grep -q "level=error"; then
+    print_message "Errors found in flowcoll.service logs:" "$RED"
+    journalctl -u flowcoll.service | grep "level=error"
+  else
+    print_message "No errors found in flowcoll.service logs." "$GREEN"
+  fi
+  print_message "Checking http://localhost:8080/readyz..." "$GREEN"
+  response=$(curl -s http://localhost:8080/readyz)
+  if echo "$response" | grep -q "200"; then
+    print_message "$response" "$GREEN"
+  else
+    print_message "$response" "$RED"
+  fi
+  echo
+
+  print_message "Checking http://localhost:8080/livez..." "$GREEN"
+  response=$(curl -s http://localhost:8080/livez)
+  if echo "$response" | grep -q "200"; then
+    print_message "$response" "$GREEN"
+  else
+    print_message "$response" "$RED"
+  fi
+  echo
+
+  for port in 2055 4739 6343 9995; do
+    if netstat -tuln | grep -q ":$port"; then
+      print_message "Port $port is open." "$GREEN"
+    else
+      print_message "Port $port is not open." "$RED"
+    fi
+  done
+
+# Path to the flowcoll.yml file
+flowcoll_file="/etc/elastiflow/flowcoll.yml"
+
+if [ -f "$flowcoll_file" ]; then
+  # Extract values from the flowcoll.yml file
+  ef_account_id=$(grep '^EF_ACCOUNT_ID: ' "$flowcoll_file" | awk '{print $2}' | tr -d '"')
+  ef_flow_license_key=$(grep '^EF_FLOW_LICENSE_KEY: ' "$flowcoll_file" | awk '{print $2}' | tr -d '"')
+  ef_license_accepted=$(grep '^EF_LICENSE_ACCEPTED: ' "$flowcoll_file" | awk '{print $2}' | tr -d '"')
+fi
+
+  if [ -n "$ef_account_id" ] && [ -n "$ef_flow_license_key" ] && [ "$ef_license_accepted" == "true" ]; then
+    print_message "EF_LICENSE_ACCEPTED: $ef_license_accepted" "$GREEN"
+    print_message "EF_ACCOUNT_ID: $ef_account_id" "$GREEN"
+    print_message "EF_FLOW_LICENSE_KEY: $ef_flow_license_key" "$GREEN"
+  else
+    print_message "ElastiFlow account ID, flow license key, or license accepted is not correctly configured." "$RED"
+  fi
+
+  if grep -q '^EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE: "true"' /etc/elastiflow/flowcoll.yml && grep -q '^EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE: "true"' /etc/elastiflow/flowcoll.yml; then
+    print_message "MaxMind enrichment is active." "$GREEN"
+  else
+    print_message "MaxMind enrichment is not active." "$RED"
+  fi
+
+  printf "\n"
+
+  if grep -q '^EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE: "true"' /etc/elastiflow/flowcoll.yml; then
+    print_message "DNS enrichment is active." "$GREEN"
+  else
+    print_message "DNS enrichment is not active." "$RED"
+  fi
+
+  if grep -q '^EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE: "true"' /etc/elastiflow/flowcoll.yml; then
+    print_message "NetIntel enrichment is active." "$GREEN"
+  else
+    print_message "NetIntel enrichment is not active." "$RED"
+  fi
+
+  print_message "\n\n********** Elasticsearch **********\n" "$GREEN"
+  if systemctl is-active --quiet elasticsearch.service; then
+    print_message "elasticsearch.service is running." "$GREEN"
+  else
+    print_message "elasticsearch.service is not running." "$RED"
+  fi
+
+  if journalctl -u elasticsearch.service | grep -q "level=error"; then
+    print_message "Errors found in elasticsearch.service logs:" "$RED"
+    journalctl -u elasticsearch.service | grep "level=error"
+  else
+    print_message "No errors found in elasticsearch.service logs." "$GREEN"
+  fi
+
+  if netstat -tuln | grep -q ":9200"; then
+    print_message "Port 9200 is open." "$GREEN"
+  else
+    print_message "Port 9200 is not open." "$RED"
+  fi
+
+  curl_result=$(curl -s -k -u elastic:elastic https://localhost:9200)
+  search_text='cluster_name" : "elasticsearch'
+  if echo "$curl_result" | grep -q "$search_text"; then
+    print_message "Elastic is up!" "$GREEN"
+  else
+    print_message "Something's wrong with Elastic..." "$RED"
+  fi
+
+  print_message "\n\n********** Kibana **********\n" "$GREEN"
+  if systemctl is-active --quiet kibana.service; then
+    print_message "kibana.service is running." "$GREEN"
+  else
+    print_message "kibana.service is not running." "$RED"
+  fi
+
+  if journalctl -u kibana.service | grep -q "level=error"; then
+    print_message "Errors found in kibana.service logs:" "$RED"
+    journalctl -u kibana.service | grep "level=error"
+  else
+    print_message "No errors found in kibana.service logs." "$GREEN"
+  fi
+
+  if netstat -tuln | grep -q ":5601"; then
+    print_message "Port 5601 is open." "$GREEN"
+  else
+    print_message "Port 5601 is not open." "$RED"
+  fi
+}
+
+
 # Helper function to print messages with color
 print_message() {
   local message=$1
@@ -733,182 +910,6 @@ monitor_fps() {
       break
     fi
   done
-}
-
-perform_health_check() {
-  clear
-  get_host_ip
-  get_dashboard_url "ElastiFlow (flow): Overview"
-  print_message "\n\n********** General **********\n" "$GREEN"
-  #print_message "Dashboard URL: $dashboard_url" "$GREEN"
-
-  if [ "$dashboard_url" == "Dashboard not found" ]; then
-    print_message "Dashboard URL: $dashboard_url" "$RED"
-  else
-    print_message "Dashboard URL: $dashboard_url" "$GREEN"
-  fi
-
-
-  print_message "IP address: $ip_address" "$GREEN"
-  print_message "Contents of Netplan file - network configuration" "$GREEN"
-  netplan_file=$(find /etc/netplan -name "*.yaml" | head -n 1)
-  print_message "$netplan_file" "$GREEN"
-  printf "***************\n"
-  cat "$netplan_file"
-  printf "***************\n"
-  total_space=$(df -BG / | tail -1 | awk '{print $2}')
-  free_space=$(df -BG / | tail -1 | awk '{print $4}')
-  print_message "Total disk space: $total_space" "$GREEN"
-  print_message "Free disk space: $free_space" "$GREEN"
-
-  disk_usage=$(df / | tail -1 | awk '{print $5}' | sed 's/%//')
-  if [ $disk_usage -lt 85 ]; then
-    print_message "At least 15% disk space is available." "$GREEN"
-  else
-    print_message "Less than 15% disk space is available." "$RED"
-  fi
-
-  default_gateway=$(ip route | grep default | awk '{print $3}')
-  if [ -n "$default_gateway" ]; then
-    if ping -c 1 $default_gateway &> /dev/null; then
-      print_message "Default gateway $default_gateway is reachable." "$GREEN"
-    else
-      print_message "Default gateway $default_gateway is not reachable." "$RED"
-    fi
-  else
-    print_message "Default gateway is not set." "$RED"
-  fi
-
-  if wget -q --spider http://google.com; then
-    print_message "Internet connection is available." "$GREEN"
-  else
-    print_message "Internet connection is not available." "$RED"
-  fi
-
-  print_message "\n\n********** Flowcoll **********\n" "$GREEN"
-  if systemctl is-active --quiet flowcoll.service; then
-    print_message "flowcoll.service is running." "$GREEN"
-  else
-    print_message "flowcoll.service is not running." "$RED"
-  fi
-
-  if journalctl -u flowcoll.service | grep -q "level=error"; then
-    print_message "Errors found in flowcoll.service logs:" "$RED"
-    journalctl -u flowcoll.service | grep "level=error"
-  else
-    print_message "No errors found in flowcoll.service logs." "$GREEN"
-  fi
-  print_message "Checking http://localhost:8080/readyz..." "$GREEN"
-  response=$(curl -s http://localhost:8080/readyz)
-  if echo "$response" | grep -q "200"; then
-    print_message "$response" "$GREEN"
-  else
-    print_message "$response" "$RED"
-  fi
-  echo
-
-  print_message "Checking http://localhost:8080/livez..." "$GREEN"
-  response=$(curl -s http://localhost:8080/livez)
-  if echo "$response" | grep -q "200"; then
-    print_message "$response" "$GREEN"
-  else
-    print_message "$response" "$RED"
-  fi
-  echo
-
-  for port in 2055 4739 6343 9995; do
-    if netstat -tuln | grep -q ":$port"; then
-      print_message "Port $port is open." "$GREEN"
-    else
-      print_message "Port $port is not open." "$RED"
-    fi
-  done
-
-# Path to the flowcoll.yml file
-flowcoll_file="/etc/elastiflow/flowcoll.yml"
-
-if [ -f "$flowcoll_file" ]; then
-  # Extract values from the flowcoll.yml file
-  ef_account_id=$(grep '^EF_ACCOUNT_ID: ' "$flowcoll_file" | awk '{print $2}' | tr -d '"')
-  ef_flow_license_key=$(grep '^EF_FLOW_LICENSE_KEY: ' "$flowcoll_file" | awk '{print $2}' | tr -d '"')
-  ef_license_accepted=$(grep '^EF_LICENSE_ACCEPTED: ' "$flowcoll_file" | awk '{print $2}' | tr -d '"')
-fi
-
-  if [ -n "$ef_account_id" ] && [ -n "$ef_flow_license_key" ] && [ "$ef_license_accepted" == "true" ]; then
-    print_message "EF_LICENSE_ACCEPTED: $ef_license_accepted" "$GREEN"
-    print_message "EF_ACCOUNT_ID: $ef_account_id" "$GREEN"
-    print_message "EF_FLOW_LICENSE_KEY: $ef_flow_license_key" "$GREEN"
-  else
-    print_message "ElastiFlow account ID, flow license key, or license accepted is not correctly configured." "$RED"
-  fi
-
-  if grep -q '^EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE: "true"' /etc/elastiflow/flowcoll.yml && grep -q '^EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE: "true"' /etc/elastiflow/flowcoll.yml; then
-    print_message "MaxMind enrichment is active." "$GREEN"
-  else
-    print_message "MaxMind enrichment is not active." "$RED"
-  fi
-
-  printf "\n"
-
-  if grep -q '^EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE: "true"' /etc/elastiflow/flowcoll.yml; then
-    print_message "DNS enrichment is active." "$GREEN"
-  else
-    print_message "DNS enrichment is not active." "$RED"
-  fi
-
-  if grep -q '^EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE: "true"' /etc/elastiflow/flowcoll.yml; then
-    print_message "NetIntel enrichment is active." "$GREEN"
-  else
-    print_message "NetIntel enrichment is not active." "$RED"
-  fi
-
-  print_message "\n\n********** Elasticsearch **********\n" "$GREEN"
-  if systemctl is-active --quiet elasticsearch.service; then
-    print_message "elasticsearch.service is running." "$GREEN"
-  else
-    print_message "elasticsearch.service is not running." "$RED"
-  fi
-
-  if journalctl -u elasticsearch.service | grep -q "level=error"; then
-    print_message "Errors found in elasticsearch.service logs:" "$RED"
-    journalctl -u elasticsearch.service | grep "level=error"
-  else
-    print_message "No errors found in elasticsearch.service logs." "$GREEN"
-  fi
-
-  if netstat -tuln | grep -q ":9200"; then
-    print_message "Port 9200 is open." "$GREEN"
-  else
-    print_message "Port 9200 is not open." "$RED"
-  fi
-
-  curl_result=$(curl -s -k -u elastic:elastic https://localhost:9200)
-  search_text='cluster_name" : "elasticsearch'
-  if echo "$curl_result" | grep -q "$search_text"; then
-    print_message "Elastic is up!" "$GREEN"
-  else
-    print_message "Something's wrong with Elastic..." "$RED"
-  fi
-
-  print_message "\n\n********** Kibana **********\n" "$GREEN"
-  if systemctl is-active --quiet kibana.service; then
-    print_message "kibana.service is running." "$GREEN"
-  else
-    print_message "kibana.service is not running." "$RED"
-  fi
-
-  if journalctl -u kibana.service | grep -q "level=error"; then
-    print_message "Errors found in kibana.service logs:" "$RED"
-    journalctl -u kibana.service | grep "level=error"
-  else
-    print_message "No errors found in kibana.service logs." "$GREEN"
-  fi
-
-  if netstat -tuln | grep -q ":5601"; then
-    print_message "Port 5601 is open." "$GREEN"
-  else
-    print_message "Port 5601 is not open." "$RED"
-  fi
 }
 
 play_battleship() {
