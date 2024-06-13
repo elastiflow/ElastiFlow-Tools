@@ -22,6 +22,6 @@ set_elastiflow_first_boot_to_zero() {
 }
 
 
-
+echo $ELASTIFLOW_FIRST_BOOT
 set_elastiflow_first_boot_to_zero
-
+echo $ELASTIFLOW_FIRST_BOOT
