@@ -46,6 +46,51 @@ STRINGS_TO_REPLACE=(
 "EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE: \"true\""
 )
 
+backup_and_create_issue_text() {
+  # Backup the existing /etc/issue file
+  sudo cp /etc/issue /etc/issue.bak
+
+  # Create the new /etc/issue content
+  new_issue_content=$(cat << 'EOF'
+
+@@@@@@@@@@@@@@ @@@@@                                @@@@     @@@@  @@@@@@@@@@@@@@@ @@@@
+@@@@@@@@@@@@@  @@@@@                               @@@@@     @@@@  @@@@@@@@@@@@@@  @@@@
+@@@@           @@@@@     @@@@@@        @@@@@@    @@@@@@@@@@  @@@@  @@@@@           @@@@     @@@@@@@@   @@@@     @@@@     @@@@
+@@@@           @@@@@  @@@@@@@@@@@@  @@@@@@@@@@@@ @@@@@@@@@@        @@@@@           @@@@   @@@@@@@@@@@  @@@@@    @@@@@    @@@@
+@@@@@@@@@@     @@@@@ @@@@@@  @@@@@  @@@@@  @@@@@@@@@@@@@@@   @@@@  @@@@@@@@@@@     @@@@  @@@@@@@@@@@@@@ @@@@   @@@@@@   @@@@@
+@@@@@@@@@      @@@@@          @@@@@ @@@@@@@@       @@@@@     @@@@  @@@@@@@@@@      @@@@ @@@@@     @@@@@ @@@@   @@@@@@@  @@@@
+@@@@@@@@       @@@@@  @@@@@@@@@@@@@ @@@@@@@@@@@@   @@@@@     @@@@  @@@@@@@@@       @@@@ @@@@@      @@@@  @@@@ @@@@ @@@ @@@@@
+@@@@           @@@@@ @@@@@@@@@@@@@@    @@@@@@@@@@  @@@@@     @@@@  @@@@@           @@@@ @@@@@     @@@@@  @@@@ @@@  @@@@@@@@
+@@@@@@@@@@@@@@ @@@@@ @@@@    @@@@@@@@@@@    @@@@@  @@@@@@    @@@@  @@@@@           @@@@ @@@@@@   @@@@@@   @@@@@@@   @@@@@@@
+@@@@@@@@@@@@@@ @@@@@ @@@@@@@@@@@@@@ @@@@@@@@@@@@    @@@@@@@  @@@@  @@@@@           @@@@  @@@@@@@@@@@@@    @@@@@@    @@@@@@
+@@@@@@@@@@@@@  @@@@@  @@@@@@@ @@@@@  @@@@@@@@@@      @@@@@@  @@@@  @@@@@           @@@@    @@@@@@@@@       @@@@@     @@@@@
+
+=======================================
+
+Welcome to ElastiFlow Virtual Appliance
+
+=======================================
+
+Log in and type sudo ./configure to get started.
+
+Setup Instructions:  https://sites.google.com/elastiflow.com/elastiflow
+Documentation:       https://docs.elastiflow.com
+Support:             https://support.elastiflow.com
+Slack:               https://elastiflowcommunity.slack.com/signup#/domain-signup
+
+
+
+
+EOF
+  )
+
+  # Write the new content to /etc/issue
+  echo "$new_issue_content" | sudo tee /etc/issue
+}
+
+
+
+
 print_message() {
   local message=$1
   local color=$2
@@ -408,7 +453,8 @@ main() {
   download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/support_pack/elastiflow_elasticsearch_opensearch_support_pack" "/home/user/support"
   display_versions
   display_dashboard_url
-  
+
+  backup_and_create_issue_text
   ####set configure script to run on first logon
   
 #  script_text='
