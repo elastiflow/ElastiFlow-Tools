@@ -6,7 +6,7 @@ set_elastiflow_first_boot_to_zero() {
     local value="0"
     
     # Path to the .bashrc file
-    local bashrc_path="$HOME/.bashrc"
+    local bashrc_path="/home/user/.bashrc"
     
     # Check if the variable is already set in the .bashrc file
     if grep -q "^\s*export $variable=" "$bashrc_path"; then
@@ -18,7 +18,7 @@ set_elastiflow_first_boot_to_zero() {
     fi
 
     # Reload the .bashrc file
-    . /home/user/.bashrc
+    . $bashrc_path
 }
 
 
