@@ -24,7 +24,7 @@ perform_health_check() {
   (
   get_host_ip
   get_dashboard_url "ElastiFlow (flow): Overview"
-  print_message "\n\n********** General **********\n" "$GREEN"
+  print_message "\n\n********** General **********" "$GREEN"
 
   if [ "$dashboard_url" == "Dashboard not found" ]; then
     print_message "Dashboard URL: $dashboard_url" "$RED"
@@ -68,7 +68,7 @@ perform_health_check() {
     print_message "Internet connection is not available." "$RED"
   fi
 
-  print_message "\n\n********** Flowcoll **********\n" "$GREEN"
+  print_message "********** Flowcoll **********\n" "$GREEN"
   if systemctl is-active --quiet flowcoll.service; then
     print_message "flowcoll.service is running." "$GREEN"
   else
@@ -143,7 +143,7 @@ perform_health_check() {
     print_message "NetIntel enrichment is not active." "$RED"
   fi
 
-  print_message "\n\n********** Elasticsearch **********\n" "$GREEN"
+  print_message "********** Elasticsearch **********" "$GREEN"
   if systemctl is-active --quiet elasticsearch.service; then
     print_message "elasticsearch.service is running." "$GREEN"
   else
@@ -171,7 +171,7 @@ perform_health_check() {
     print_message "Something's wrong with Elastic..." "$RED"
   fi
 
-  print_message "\n\n********** Kibana **********\n" "$GREEN"
+  print_message "********** Kibana **********" "$GREEN"
   if systemctl is-active --quiet kibana.service; then
     print_message "kibana.service is running." "$GREEN"
   else
