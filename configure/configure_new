@@ -18,17 +18,27 @@ print_message() {
   echo -e "${color}${message}${NC}"
 }
 
-append_to_bashrc() {
-    local text="$1"
-    # Append the text to .bashrc
-    echo "$text" >> /home/user/.bashrc
-    echo "The script has been added to .bashrc."
+
+set_elastiflow_first_boot_to_zero() {
+    # Define the variable and the value to set
+    local variable="ELASTIFLOW_FIRST_BOOT"
+    local value="0"
+    
+    # Path to the .bashrc file
+    local bashrc_path="$HOME/.bashrc"
+    
+    # Check if the variable is already set in the .bashrc file
+    if grep -q "^export $variable=" "$bashrc_path"; then
+        # If the variable is found, replace its value with 0
+        sed -i "s/^export $variable=.*/export $variable=$value/" "$bashrc_path"
+    else
+        # If the variable is not found, add it to the .bashrc file
+        echo "export $variable=$value" >> "$bashrc_path"
+    fi
 
     # Reload the .bashrc file
     . /home/user/.bashrc
-    echo ".bashrc has been reloaded."
 }
-
 
 comment_and_add_line() {
   local FILE=$1
@@ -1125,10 +1135,7 @@ show_maxmind() {
 
 # Main script execution
 
-  script_text='
-  ELASTIFLOW_FIRST_BOOT=0
-  '
-  append_to_bashrc "$script_text"
+set_elastiflow_first_boot_to_zero
 
 while true; do
   show_intro
