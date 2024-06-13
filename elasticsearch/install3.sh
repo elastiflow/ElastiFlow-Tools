@@ -412,13 +412,13 @@ main() {
   ####set configure script to run on first logon
   
   script_text='
-  export ELASTIFLOW_FIRST_BOOT=1
+export ELASTIFLOW_FIRST_BOOT=1
   '
   append_to_bashrc "$script_text"
   
   script_text='
   if [ "$ELASTIFLOW_FIRST_BOOT" -eq 1 ]; then
-      sudo ./home/user/configure
+      sudo ./configure
   fi
   '
   append_to_bashrc "$script_text"
