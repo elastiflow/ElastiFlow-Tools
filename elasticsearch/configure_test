@@ -9,7 +9,7 @@ set_elastiflow_first_boot_to_zero() {
     local bashrc_path="$HOME/.bashrc"
     
     # Check if the variable is already set in the .bashrc file
-    if grep -q "^export $variable=" "$bashrc_path"; then
+    if grep -q "^\s*export $variable=" "$bashrc_path"; then
         # If the variable is found, replace its value with 0
         sed -i "s/^export $variable=.*/export $variable=$value/" "$bashrc_path"
     else
