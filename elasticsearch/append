@@ -1,9 +1,6 @@
 
 #!/bin/bash
 
-
-
-
 append_to_bashrc() {
     local text="$1"
     # Append the text to .bashrc
