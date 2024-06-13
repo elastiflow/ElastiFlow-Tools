@@ -358,37 +358,6 @@ check_dashboards_status() {
   fi
 }
 
-set_first_boot(){
-variable="ELASTIFLOW_FIRST_BOOT=1"
-
-# Check if the variable is already set in .bashrc
-if grep -q "^export $variable" ~/.bashrc; then
-    echo "The variable is already set in .bashrc."
-else
-    # Append the variable to .bashrc
-    echo "export $variable" >> ~/.bashrc
-    echo "The variable has been added to .bashrc."
-    source ~/.bashrc
-    echo ".bashrc has been reloaded."
-fi
-}
-
-append_to_bashrc() {
-    local text="$1"
-    # Append the text to .bashrc
-    echo "$text" >> ~/.bashrc
-    echo "The script has been added to .bashrc."
-
-    # Reload the .bashrc file
-    source ~/.bashrc
-    echo ".bashrc has been reloaded."
-}
-
-
-
-
-
-
 display_versions() {
   version=$(/usr/share/elastiflow/bin/flowcoll -version)
   printf "Installed ElastiFlow version: $version\n"
