@@ -34,7 +34,6 @@ get_host_ip() {
       echo "No IP address found for interface $INTERFACE."
       return 1
     else
-      echo "$ip_address"
       return 0
     fi
   fi
@@ -746,13 +745,14 @@ monitor_fps() {
 perform_health_check() {
   clear
   print_message "\n\n********** General **********\n" "$GREEN"
-  print_message "IP address: $ip_address "$GREEN"
+  get_host_ip
+  print_message "IP address: $ip_address" "$GREEN"
   print_message "Contents of Netplan file - network configuration" "$GREEN"
   netplan_file=$(find /etc/netplan -name "*.yaml" | head -n 1)
-  **********
-  echo /etc/netplan/$netplan_file
-  **********
-
+  print_message "$netplan_file" "$GREEN"
+  printf "***************\n"
+  cat "$netplan_file"
+  printf "***************\n"
   total_space=$(df -BG / | tail -1 | awk '{print $2}')
   free_space=$(df -BG / | tail -1 | awk '{print $4}')
   print_message "Total disk space: $total_space" "$GREEN"
@@ -777,9 +777,9 @@ perform_health_check() {
   fi
 
   if wget -q --spider http://google.com; then
-    print_message "Internet connection is available.\n" "$GREEN"
+    print_message "Internet connection is available." "$GREEN"
   else
-    print_message "Internet connection is not available.\n" "$RED"
+    print_message "Internet connection is not available." "$RED"
   fi
 
   print_message "\n\n********** Flowcoll **********\n" "$GREEN"
@@ -821,9 +821,15 @@ perform_health_check() {
     fi
   done
 
-  ef_account_id=$(grep '^EF_ACCOUNT_ID: ' /etc/elastiflow/flowcoll.yml | awk '{print $2}' | tr -d '"')
-  ef_flow_license_key=$(grep '^EF_FLOW_LICENSE_KEY: ' /etc/elastiflow/flowcoll.yml | awk '{print $2}' | tr -d '"')
-  ef_license_accepted=$(grep '^EF_LICENSE_ACCEPTED: ' /etc/elastiflow/flowcoll.yml | awk '{print $2}' | tr -d '"')
+# Path to the flowcoll.yml file
+flowcoll_file="/etc/elastiflow/flowcoll.yml"
+
+if [ -f "$flowcoll_file" ]; then
+  # Extract values from the flowcoll.yml file
+  ef_account_id=$(grep '^EF_ACCOUNT_ID: ' "$flowcoll_file" | awk '{print $2}' | tr -d '"')
+  ef_flow_license_key=$(grep '^EF_FLOW_LICENSE_KEY: ' "$flowcoll_file" | awk '{print $2}' | tr -d '"')
+  ef_license_accepted=$(grep '^EF_LICENSE_ACCEPTED: ' "$flowcoll_file" | awk '{print $2}' | tr -d '"')
+fi
 
   if [ -n "$ef_account_id" ] && [ -n "$ef_flow_license_key" ] && [ "$ef_license_accepted" == "true" ]; then
     print_message "EF_LICENSE_ACCEPTED: $ef_license_accepted" "$GREEN"
@@ -1164,7 +1170,6 @@ while true; do
             print_message "Invalid choice. Please enter a number between 1 and 18." "$RED"
             ;;
         esac
-        clear
       done
       ;;
     5)
