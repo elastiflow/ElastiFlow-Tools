@@ -1,6 +1,8 @@
 #!/bin/bash
 
 set_elastiflow_first_boot_to_zero() {
+   
+    printf "running boot menu...\n\n"
     # Define the variable and the value to set
     local variable="ELASTIFLOW_FIRST_BOOT"
     local value="0"
