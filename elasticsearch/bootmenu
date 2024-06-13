@@ -1,5 +1,18 @@
 #!/bin/bash
 
+
+append_to_bashrc() {
+    local text="$1"
+    # Append the text to .bashrc
+    echo "$text" >> /home/user/.bashrc
+    echo "The script has been added to .bashrc."
+
+    # Reload the .bashrc file
+    . /home/user/.bashrc
+    echo ".bashrc has been reloaded."
+}
+
+
   ####set configure script to run on first logon
   
   script_text='
