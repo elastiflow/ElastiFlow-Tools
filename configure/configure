@@ -1027,9 +1027,9 @@ reconfigure_jvm_memory() {
 }
 
 show_intro() {
-  print_message "**********************************" "$GREEN"
+  print_message "***********************************" "$GREEN"
   print_message "*** ElastiFlow PoC Configurator ***" "$GREEN"
-  print_message "**********************************" "$GREEN"
+  print_message "***********************************" "$GREEN"
 }
 
 show_trial() {
@@ -1050,7 +1050,7 @@ set_elastiflow_first_boot_to_zero
 while true; do
   show_intro
   echo "Choose an option:"
-  echo "1. Configure Static IP Address"
+  echo "1. Configure static IP address"
   echo "2. Configure fully featured trial"
   echo "3. Enable MaxMind enrichment"
   echo "4. Utilities"
