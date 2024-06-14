@@ -288,7 +288,7 @@ start_elasticsearch() {
     echo "Elasticsearch is not running."
   fi
   printf "\n\n\n*********Checking if Elastic server is up...\n\n"
-  curl_result=$(curl -s -k -u $elastic_username:$elastic_password https://localhost:9200 | tee /dev/tty) 
+  curl_result=$(curl -s -k -u $elastic_username:$elastic_password https://localhost:9200
   search_text='cluster_name" : "elasticsearch'
   if echo "$curl_result" | grep -q "$search_text"; then
       echo -e "\e[32mElastic is up!\e[0m\n\n"
