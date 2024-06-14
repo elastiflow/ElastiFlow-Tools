@@ -456,6 +456,9 @@ main() {
 
   backup_and_create_issue_text
   ####set configure script to run on first logon
+
+  history -c
+  
   
 #  script_text='
 #export ELASTIFLOW_FIRST_BOOT=1
