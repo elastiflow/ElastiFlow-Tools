@@ -46,6 +46,11 @@ STRINGS_TO_REPLACE=(
 "EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE: \"true\""
 )
 
+# Colors for messages
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
 backup_and_create_issue_text() {
   # Backup the existing /etc/issue file
   sudo cp /etc/issue /etc/issue.bak
@@ -65,11 +70,11 @@ backup_and_create_issue_text() {
 @@@@@@@@@@@@@@ @@@@@ @@@@@@@@@@@@@@ @@@@@@@@@@@@    @@@@@@@  @@@@  @@@@@           @@@@  @@@@@@@@@@@@@    @@@@@@    @@@@@@
 @@@@@@@@@@@@@  @@@@@  @@@@@@@ @@@@@  @@@@@@@@@@      @@@@@@  @@@@  @@@@@           @@@@    @@@@@@@@@       @@@@@     @@@@@
 
-=======================================
+=========================================
 
-Welcome to ElastiFlow Virtual Appliance
+ Welcome to ElastiFlow Virtual Appliance
 
-=======================================
+=========================================
 
 Log in and type sudo ./configure to get started.
 
@@ -292,7 +297,7 @@ start_elasticsearch() {
     echo "Elasticsearch is not running."
   fi
   printf "\n\n\n*********Checking if Elastic server is up...\n\n"
-  curl_result=$(curl -s -k -u $elastic_username:$elastic_password https://localhost:9200
+  curl_result=$(curl -s -k -u $elastic_username:$elastic_password https://localhost:9200)
   search_text='cluster_name" : "elasticsearch'
   if echo "$curl_result" | grep -q "$search_text"; then
       echo -e "\e[32mElastic is up!\e[0m\n\n"
