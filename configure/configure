@@ -770,7 +770,8 @@ capture_packets() {
 generate_fake_flow() {
   clear
   print_message "Generating fake flow..." "$GREEN"
-  docker run -it --rm networkstatic/nflow-generator -t 127.0.0.1 -p 9995
+  get_host_ip
+  docker run -it --rm networkstatic/nflow-generator -t $ip_address -p 9995
 }
 
 install_flow_generator() {
