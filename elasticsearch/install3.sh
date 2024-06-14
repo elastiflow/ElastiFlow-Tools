@@ -82,11 +82,11 @@ Setup Instructions:  https://sites.google.com/elastiflow.com/elastiflow
 Documentation:       https://docs.elastiflow.com
 Support:             https://support.elastiflow.com
 Slack:               https://elastiflowcommunity.slack.com/signup#/domain-signup
-
-
-
-
-
+ 
+ 
+ 
+ 
+ 
 EOF
   )
 
