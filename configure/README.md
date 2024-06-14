@@ -1,22 +1,26 @@
 
-ElastiFlow PoC Configurator Version 1.3
+ElastiFlow PoC Configuration Script
 ================================  
 
 ## Author
 - [O.J. Wolanyk]
 
 # ElastiFlow PoC configurator
-Script to quickly configure ElastiFlow for a trial and MaxMind enrichment
+Script to streamline getting a PoC ElastiFlow Virtual Appliance up and running.
 
 
 What this is:
 ----------------
-This bash shell script can be run on the ElastiFlow Virtual Appliance 1.4 to automatically configure the flowcoll.conf file to add in trial license information and configure and download MaxMind enrichment.
+This bash shell script can be run on the ElastiFlow Virtual Appliance to help configure an IP, add trial credentials, and configure and download MaxMind enrichment.
 
 What this script does:
 ----------------
+
+Configures a static IP address
+  Prompts the user for a static IP, gateway, and DNS servers, and then does a netplan apply
+
 Configures trial
-  Prompts the user for ElastiFlow account ID and ElastiFlow license key
+  Prompts the user for an ElastiFlow account ID and ElastiFlow license key
   Adds this information to flowcoll.conf
   Restarts flowcoll.service and verifies valid changes.
   
@@ -34,5 +38,5 @@ ElastiFlow Virtual Appliance
 Instructions:
 ----------------
 1) Copy configure.sh to your home directory on your virtual appliance.
-2) sudo chmod +x configure.sh
-3) sudo ./configure.sh
+2) sudo chmod +x configure
+3) sudo ./configure
