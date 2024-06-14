@@ -400,7 +400,7 @@ display_versions() {
 display_dashboard_url() {
   dashboard_url=$(get_dashboard_url "ElastiFlow (flow): Overview")
   printf "*********************************************\n"
-  printf "\033[5;37m\n\nGo to %s (%s / %s)\n\n\033[0m" "$dashboard_url" "$elastic_username" "$elastic_password2"
+  printf "\033[32m\n\nGo to %s (%s / %s)\n\n\033[0m" "$dashboard_url" "$elastic_username" "$elastic_password2"
   printf "For further configuration options, run sudo ./configure\n\n"
   printf "*********************************************\n"
 }
