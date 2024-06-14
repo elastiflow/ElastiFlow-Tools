@@ -17,6 +17,13 @@ ip_address=""
 dashboard_url=""
 
 
+# Helper function to print messages with color
+print_message() {
+  local message=$1
+  local color=$2
+  echo -e "${color}${message}${NC}"
+}
+
 perform_health_check() {
   clear
   {
@@ -193,14 +200,6 @@ perform_health_check() {
   } | less
 }
 
-
-
-# Helper function to print messages with color
-print_message() {
-  local message=$1
-  local color=$2
-  echo -e "${color}${message}${NC}"
-}
 
 get_host_ip() {
   INTERFACE=$(ip -o link show | awk -F': ' '{print $2}' | grep -vE '^(docker|lo)' | head -n 1)
