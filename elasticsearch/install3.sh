@@ -51,7 +51,7 @@ backup_and_create_issue_text() {
   sudo cp /etc/issue /etc/issue.bak
 
   # Create the new /etc/issue content
-  new_issue_content=$(cat << 'EOF'
+  new_issue_content=$(cat << EOF
 
 @@@@@@@@@@@@@@ @@@@@                                @@@@     @@@@  @@@@@@@@@@@@@@@ @@@@
 @@@@@@@@@@@@@  @@@@@                               @@@@@     @@@@  @@@@@@@@@@@@@@  @@@@
@@ -78,18 +78,12 @@ Documentation:       https://docs.elastiflow.com
 Support:             https://support.elastiflow.com
 Slack:               https://elastiflowcommunity.slack.com/signup#/domain-signup
 
-
-
-
 EOF
   )
 
   # Write the new content to /etc/issue
   echo "$new_issue_content" | sudo tee /etc/issue
 }
-
-
-
 
 print_message() {
   local message=$1
@@ -135,9 +129,6 @@ get_host_ip() {
     fi
   fi
 }
-
-
-
 
 download_file() {
   local url=$1
@@ -269,7 +260,7 @@ install_elasticsearch() {
   elastic_install_log=$(apt-get -q update && apt-get -q install elasticsearch=$elasticsearch_version | stdbuf -oL tee /dev/tty) || handle_error "Failed to install Elasticsearch." "${LINENO}"
   elastic_password=$(echo "$elastic_install_log" | awk -F' : ' '/The generated password for the elastic built-in superuser/{print $2}') 
   elastic_password=$(echo -n "$elastic_password" | tr -cd '[:print:]')
-  printf "\n\n\n*********Elastic password is $elastic_password\n\n"
+  printf "\n\n\nElastic password: $elastic_password\n\n"
 }
 
 configure_jvm_memory() {
@@ -468,6 +459,6 @@ main() {
 #  fi
 #  '
 #  append_to_bashrc "$script_text"
-#}
+}
 
 main
