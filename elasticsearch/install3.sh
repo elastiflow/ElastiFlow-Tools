@@ -318,7 +318,7 @@ configure_kibana() {
   fi
   printf "\n\n\n*********Generating Kibana enrollment token...\n\n"
   kibana_token=$(/usr/share/elasticsearch/bin/elasticsearch-create-enrollment-token -s kibana)
-  printf "\n\n\nKibana enrollment token is:\n\n $kibana_token\n\n"
+  printf "\n\n\nKibana enrollment token is:\n\n$kibana_token\n\n"
   printf "\n\n\n*********Enrolling Kibana with Elastic...\n\n"
   /usr/share/kibana/bin/kibana-setup --enrollment-token $kibana_token
   printf "\n\n\n*********Enabling and starting Kibana service...\n\n"
