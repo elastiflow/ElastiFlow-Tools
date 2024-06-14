@@ -80,8 +80,8 @@ Log in and type sudo ./configure to get started.
 
 Setup Instructions:  https://sites.google.com/elastiflow.com/elastiflow
 Documentation:       https://docs.elastiflow.com
-Support:             https://support.elastiflow.com
-Slack:               https://elastiflowcommunity.slack.com/signup#/domain-signup
+Community:           https://forum.elastiflow.com/
+Slack:               https://elastiflowcommunity.slack.com
  
  
  
