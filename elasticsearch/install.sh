@@ -331,14 +331,15 @@ configure_kibana() {
   /usr/share/kibana/bin/kibana-setup --enrollment-token $kibana_token
   printf "\n\n\n*********Enabling and starting Kibana service...\n\n"
   systemctl daemon-reload && systemctl enable kibana.service && systemctl start kibana.service
-  sleep_message "Giving Kibana service time to stabilize" 10
+  sleep_message "Giving Kibana service time to stabilize" 20
   printf "\n\n\n*********Configuring Kibana - set 0.0.0.0 as server.host\n\n"
   replace_text "/etc/kibana/kibana.yml" "#server.host: \"localhost\"" "server.host: \"0.0.0.0\"" "${LINENO}"
   printf "\n\n\n*********Configuring Kibana - set elasticsearch.hosts to localhost instead of DHCP IP...\n\n"
   replace_text "/etc/kibana/kibana.yml" "elasticsearch.hosts: \['https:\/\/[^']*'\]" "elasticsearch.hosts: \['https:\/\/localhost:9200'\]" "${LINENO}"
   replace_text "/etc/kibana/kibana.yml" '#server.publicBaseUrl: ""' 'server.publicBaseUrl: "http://kibana.example.com:5601"' "${LINENO}"
-  sleep_message "Giving Kibana service time to stabilize" 10
   systemctl daemon-reload && systemctl enable kibana.service && systemctl start kibana.service
+  sleep_message "Giving Kibana service time to stabilize" 20
+
 }
 
 change_elasticsearch_password() {
