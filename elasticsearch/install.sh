@@ -145,7 +145,7 @@ download_file() {
   curl -o "$target_path" "$url"
   if [ $? -eq 0 ]; then
     chmod +x "$target_path"
-    echo "Downloaded and made $target_path executable.\n\n"
+    echo "Downloaded and made $target_path executable."
   else
     echo "Failed to download $target_path.\n\n"
   fi
