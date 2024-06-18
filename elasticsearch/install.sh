@@ -339,7 +339,7 @@ configure_kibana() {
   printf "\n\n\n*********Configuring Kibana - set elasticsearch.hosts to localhost instead of DHCP IP...\n\n"
   replace_text "/etc/kibana/kibana.yml" "elasticsearch.hosts: \['https:\/\/[^']*'\]" "elasticsearch.hosts: \['https:\/\/localhost:9200'\]" "${LINENO}"
   replace_text "/etc/kibana/kibana.yml" '#server.publicBaseUrl: ""' 'server.publicBaseUrl: "http://kibana.example.com:5601"' "${LINENO}"
-  systemctl daemon-reload && systemctl enable kibana.service && systemctl start kibana.service
+  systemctl restart kibana.service
   sleep_message "Giving Kibana service time to stabilize" 20
 
 }
