@@ -438,6 +438,7 @@ main() {
   check_compatibility
   print_startup_message
   ip_address=$(get_host_ip)
+  printf "$ip_address"
   remove_update_service
   install_prerequisites
   tune_system
