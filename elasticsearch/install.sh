@@ -157,7 +157,7 @@ get_dashboard_url() {
   local dashboard_title="$1"
   printf "dashboard title: $dashboard_title\n"
   printf "username: $elastic_username\n"
-  printf "elastic pasword: "$elastic_password2\n"
+  printf "elastic pasword: $elastic_password2\n"
   local encoded_title=$(echo "$dashboard_title" | sed 's/ /%20/g' | sed 's/:/%3A/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
   local response=$(curl -s -u "$elastic_username:$elastic_password2" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
   printf "response: $response\n"
