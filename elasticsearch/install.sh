@@ -400,7 +400,7 @@ check_dashboards_status() {
 }
 
 display_versions() {
-  printf "*********************************************"
+  printf "*********************************************\n"
   version=$(/usr/share/elastiflow/bin/flowcoll -version)
   printf "Installed ElastiFlow version: $version\n"
   version=$(/usr/share/kibana/bin/kibana --version --allow-root | jq -r '.config.serviceVersion.value' 2>/dev/null)
