@@ -153,14 +153,16 @@ download_file() {
 
 get_dashboard_url() {
   local kibana_url="http://$ip_address:5601"
-  printf "kibana url: $kibana_url"
+  printf "kibana url: $kibana_url\n"
   local dashboard_title="$1"
-  printf "dashboard title: $dashboard_title"
+  printf "dashboard title: $dashboard_title\n"
+  printf "username: $elastic_username\n"
+  printf "elastic pasword: "$elastic_password2\n"
   local encoded_title=$(echo "$dashboard_title" | sed 's/ /%20/g' | sed 's/:/%3A/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
   local response=$(curl -s -u "$elastic_username:$elastic_password2" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
-  printf "response: $response"
+  printf "response: $response\n"
   local dashboard_id=$(echo "$response" | jq -r '.saved_objects[] | select(.attributes.title=="'"$dashboard_title"'") | .id')
-  printf "dashboard id: $dashboard_id"
+  printf "dashboard id: $dashboard_id\n"
   if [ -z "$dashboard_id" ]; then
     echo "Dashboard not found"
   else
