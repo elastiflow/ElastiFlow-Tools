@@ -195,12 +195,14 @@ perform_health_check() {
       print_message "Port 5601 is not open" "$RED"
     fi
 
-    # Check Kibana server readiness
-    kibana_status=$(curl -s http://localhost:5601)
-    if [[ "$kibana_status" == *"Kibana server is not ready yet"* ]]; then
-      print_message "Kibana server is not ready yet" "$RED"
+    # Check Kibana status
+    response=$(curl -s -X GET "http://$ip_address:5601/api/status")
+    
+    if [[ $response == *"\"state\":\"green\""* ]]; then
+        
+         print_message "Kibana is ready" "$GREEN"
     else
-      print_message "Kibana server is ready" "$GREEN"
+         print_message "Kibana is not ready" "$RED"
     fi
 
   } | tee "$output_file"
