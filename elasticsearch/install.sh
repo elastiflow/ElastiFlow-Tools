@@ -309,11 +309,6 @@ start_elasticsearch() {
 install_kibana() {
   printf "\n\n\n*********Downloading and installing Kibana...\n\n"
   apt-get -q update && apt-get -q install kibana=$kibana_version
-  printf "\n\n\n*********Configuring Kibana - set 0.0.0.0 as server.host\n\n"
-  replace_text "/etc/kibana/kibana.yml" "#server.host: \"localhost\"" "server.host: \"0.0.0.0\"" "${LINENO}"
-  printf "\n\n\n*********Configuring Kibana - set elasticsearch.hosts to localhost instead of DHCP IP...\n\n"
-  replace_text "/etc/kibana/kibana.yml" "elasticsearch.hosts: \['https:\/\/[^']*'\]" "elasticsearch.hosts: \['https:\/\/localhost:9200'\]" "${LINENO}"
-  replace_text "/etc/kibana/kibana.yml" '#server.publicBaseUrl: ""' 'server.publicBaseUrl: "http://kibana.example.com:5601"' "${LINENO}"
 }
 
 configure_kibana() {
@@ -333,6 +328,13 @@ configure_kibana() {
   printf "\n\n\n*********Enabling and starting Kibana service...\n\n"
   systemctl daemon-reload && systemctl enable kibana.service && systemctl start kibana.service
   sleep_message "Giving Kibana service time to stabilize" 10
+  printf "\n\n\n*********Configuring Kibana - set 0.0.0.0 as server.host\n\n"
+  replace_text "/etc/kibana/kibana.yml" "#server.host: \"localhost\"" "server.host: \"0.0.0.0\"" "${LINENO}"
+  printf "\n\n\n*********Configuring Kibana - set elasticsearch.hosts to localhost instead of DHCP IP...\n\n"
+  replace_text "/etc/kibana/kibana.yml" "elasticsearch.hosts: \['https:\/\/[^']*'\]" "elasticsearch.hosts: \['https:\/\/localhost:9200'\]" "${LINENO}"
+  replace_text "/etc/kibana/kibana.yml" '#server.publicBaseUrl: ""' 'server.publicBaseUrl: "http://kibana.example.com:5601"' "${LINENO}"
+  sleep_message "Giving Kibana service time to stabilize" 10
+  systemctl daemon-reload && systemctl enable kibana.service && systemctl start kibana.service
 }
 
 change_elasticsearch_password() {
