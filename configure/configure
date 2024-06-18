@@ -456,25 +456,29 @@ configure_maxmind() {
 
   mkdir -p /etc/elastiflow/maxmind/
 
+  asn_download_success=false
+  geoip_download_success=false
+
   if wget -O ./Geolite2-ASN.tar.gz "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-ASN&license_key=$maxmind_license_key&suffix=tar.gz"; then
     tar -xvzf Geolite2-ASN.tar.gz --strip-components 1 -C /etc/elastiflow/maxmind/
     rm -f ./Geolite2-ASN.tar.gz
     print_message "MaxMind ASN database downloaded and extracted successfully." "$GREEN"
+    asn_download_success=true
   else
     print_message "Failed to download MaxMind ASN database." "$RED"
-    read -p "Do you still want to add the configuration settings to flowcoll.yml? (y/n): " add_config_choice
-    if [[ $add_config_choice != "y" ]]; then
-      return
-    fi
   fi
 
   if wget -O ./Geolite2-City.tar.gz "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=$maxmind_license_key&suffix=tar.gz"; then
     tar -xvzf Geolite2-City.tar.gz --strip-components 1 -C /etc/elastiflow/maxmind/
     rm -f ./Geolite2-City.tar.gz
     print_message "MaxMind GeoIP City database downloaded and extracted successfully." "$GREEN"
+    geoip_download_success=true
   else
     print_message "Failed to download MaxMind GeoIP City database." "$RED"
-    read -p "Do you still want to add the configuration settings to flowcoll.yml? (y/n): " add_config_choice
+  fi
+
+  if ! $asn_download_success || ! $geoip_download_success; then
+    read -p "One or both downloads failed. Do you still want to add the configuration settings to flowcoll.yml? (y/n): " add_config_choice
     if [[ $add_config_choice != "y" ]]; then
       return
     fi
@@ -497,6 +501,7 @@ configure_maxmind() {
     print_message "Failed to enable MaxMind ASN and Geo enrichment. Changes reverted. Returning to main menu." "$RED"
   fi
 }
+
 
 validate_cidr() {
   local cidr=$1
