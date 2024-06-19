@@ -335,24 +335,8 @@ for path in "${paths[@]}"; do
     fi
 
     if [[ -d $path ]]; then
-        # It's a directory, check its size first
-        dir_size=0 # Initialize directory size
-        # Loop through files in the directory
-        while IFS= read -r -d '' file; do
-            if skip_files "$file"; then
-                continue # Skip binary files
-            fi
-            # Add the size of non-skipped files to the directory size
-            dir_size=$(( dir_size + $(stat -c '%s' "$file") / 1024 / 1024 )) # Size in MB
-        done < <(find "$path" -type f -print0)
-        
-        if [[ $dir_size -gt 100 ]]; then
-            echo -e "\033[0;31m$path is larger than 100MB, skipping...\033[0m"
-            continue # Skip this directory
-        fi
-
-        # If the directory is not larger than 100MB, copy everything
-        #cp -r "$path" "$temp_dir" 2>/dev/null && echo -e "\033[0;32mSuccessfully copied $path to $temp_dir\033[0m"
+      
+        find "$path" -type f ! -name "*.mmdb" -exec cp --parents {} "$temp_dir" \; 2>/dev/null && echo -e "\033[0;32mSuccessfully copied $path to $temp_dir\033[0m"
     else
         # It's a file, check if it's a log file by its path
         if [[ $path == *.log ]]; then
