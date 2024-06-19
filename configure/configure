@@ -506,11 +506,16 @@ configure_maxmind() {
 
   backup_existing_flowcoll
   find_and_replace "$FILE_PATH" "${STRINGS_TO_REPLACE[@]}"
-  reload_and_restart_service "flowcoll.service"
-  if check_service_health configure_maxmind; then
-    print_message "MaxMind ASN and Geo enrichment enabled with the provided license key." "$GREEN"
+
+  if $asn_download_success && $geoip_download_success; then
+    reload_and_restart_service "flowcoll.service"
+    if check_service_health configure_maxmind; then
+      print_message "MaxMind ASN and Geo enrichment enabled with the provided license key." "$GREEN"
+    else
+      print_message "Failed to enable MaxMind ASN and Geo enrichment. Changes reverted. Returning to main menu." "$RED"
+    fi
   else
-    print_message "Failed to enable MaxMind ASN and Geo enrichment. Changes reverted. Returning to main menu." "$RED"
+    print_message "Configuration settings added to flowcoll.yml but flowcoll service was not restarted due to download failures." "$YELLOW"
   fi
 }
 
