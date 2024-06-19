@@ -38,7 +38,7 @@ perform_health_check() {
     get_host_ip
     get_dashboard_url "ElastiFlow (flow): Overview"
 
-    print_message "************* General *************" "$NC"
+    print_message "\n\n************* General *************" "$NC"
     if [ "$dashboard_url" == "Dashboard not found" ]; then
       print_message "Dashboard URL: $dashboard_url" "$RED"
     else
@@ -204,6 +204,7 @@ perform_health_check() {
         print_message "Kibana is not ready" "$RED"
     fi
 
+    print_message "************************************" "$NC"
 
   } | tee "$output_file"
 }
