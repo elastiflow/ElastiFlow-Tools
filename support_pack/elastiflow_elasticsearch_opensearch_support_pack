@@ -68,6 +68,36 @@ attempt_fetch_node_stats() {
     esac
 }
 
+check_and_enable_flowcoll_logging() {
+    local file="/etc/elastiflow/flowcoll.yml"
+    local key_value="EF_LOGGER_FILE_LOG_ENABLE: \"true\""
+
+    if grep -q "$key_value" "$file" && ! grep -q "^#.*$key_value" "$file"; then
+        echo "Key-value pair $key_value already exists and is uncommented in $file."
+    else
+        echo "Key-value pair $key_value does not exist or is commented out in $file."
+        read -p "Would you like to add it? (yes/no): " response
+        if [[ "$response" == "yes" ]]; then
+            echo "$key_value" | sudo tee -a "$file"
+            echo "Added $key_value to $file."
+            
+            read -p "Would you like to reload the daemon and restart the flowcoll service? (yes/no): " reload_response
+            if [[ "$reload_response" == "yes" ]]; then
+                echo "Reloading daemon and restarting flowcoll service..."
+                sudo systemctl daemon-reload
+                sudo systemctl restart flowcoll
+                echo "Daemon reloaded and flowcoll service restarted."
+            else
+                echo "Daemon reload and flowcoll service restart skipped."
+            fi
+        else
+            echo "No changes made."
+        fi
+    fi
+}
+
+
+
 attempt_fetch_saved_objects() {
     local retry_choice
     local share_choice
@@ -377,6 +407,8 @@ wrap_up() {
     
     echo "Done."
 }
+
+check_and_enable_flowcoll_logging
 
 # obtain node stats...
 attempt_fetch_node_stats
