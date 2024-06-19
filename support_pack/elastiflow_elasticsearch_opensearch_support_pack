@@ -77,12 +77,12 @@ check_and_enable_flowcoll_logging() {
     else
         echo "Key-value pair $key_value does not exist or is commented out in $file."
         read -p "Would you like to add it? (yes/no): " response
-        if [[ "$response" == "yes" ]]; then
+        if [[ "$response" == "y" ]]; then
             echo "$key_value" | sudo tee -a "$file"
             echo "Added $key_value to $file."
             
             read -p "Would you like to reload the daemon and restart the flowcoll service? (yes/no): " reload_response
-            if [[ "$reload_response" == "yes" ]]; then
+            if [[ "$reload_response" == "y" ]]; then
                 echo "Reloading daemon and restarting flowcoll service..."
                 sudo systemctl daemon-reload
                 sudo systemctl restart flowcoll
