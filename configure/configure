@@ -1072,8 +1072,9 @@ while true; do
   echo "3. Enable MaxMind enrichment"
   echo "4. Utilities"
   echo "5. Games"
-  echo "6. Quit"
-  read -p "Enter your choice (1-6): " choice
+  echo "6. Run support pack"
+  echo "7. Quit"
+  read -p "Enter your choice (1-7): " choice
   clear
   case $choice in
     1)
@@ -1214,11 +1215,24 @@ while true; do
       done
       ;;
     6)
+      echo "Running support pack..."
+      wget -O /user/support https://drive.google.com/uc?export=download&id=1sjc3zGWlselxuaPtHBUhqlUjwHBpsWoj && chmod +x /user/support
+      if [[ ! -f /user/support ]]; then
+        if [[ -f /home/user/support ]]; then
+          /home/user/support
+        else
+          print_message "Support pack script not found." "$RED"
+        fi
+      else
+        /user/support
+      fi
+      ;;
+    7)
       echo "Quitting..."
       exit 0
       ;;
     *)
-      print_message "Invalid choice. Please enter a number between 1 and 6." "$RED"
+      print_message "Invalid choice. Please enter a number between 1 and 7." "$RED"
       ;;
   esac
 done
