@@ -352,7 +352,7 @@ for path in "${paths[@]}"; do
         fi
 
         # If the directory is not larger than 100MB, copy everything
-        cp -r "$path" "$temp_dir" 2>/dev/null && echo -e "\033[0;32mSuccessfully copied $path to $temp_dir\033[0m"
+        #cp -r "$path" "$temp_dir" 2>/dev/null && echo -e "\033[0;32mSuccessfully copied $path to $temp_dir\033[0m"
     else
         # It's a file, check if it's a log file by its path
         if [[ $path == *.log ]]; then
