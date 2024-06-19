@@ -304,7 +304,8 @@ skip_files() {
     local file_path="$1"
     local archive_extensions=("zip" "tar.gz" "rar" "7z" "tar" "gz")
     local geolite_pattern="(?i).*geolite.*"
-    
+    local mmdb_extension="mmdb"
+
     # Check if the file is an archive
     for ext in "${archive_extensions[@]}"; do
         if [[ "$file_path" == *.$ext ]]; then
@@ -317,7 +318,12 @@ skip_files() {
         return 1 # Contains "Geolite"
     fi
 
-    return 0 # Not an archive and does not contain "Geolite"
+    # Check if the file has a .mmdb extension
+    if [[ "$file_path" == *.$mmdb ]]; then
+        return 1 # .mmdb file
+    fi
+
+    return 0 # Not an archive, does not contain "Geolite", and is not a .mmdb file
 }
 
 
