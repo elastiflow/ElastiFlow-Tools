@@ -198,12 +198,12 @@ perform_health_check() {
     # Check Kibana status
     response=$(curl -s -X GET "http://$ip_address:5601/api/status")
     
-    if [[ $response == *"\"state\":\"green\""* ]]; then
-        
-         print_message "Kibana is ready" "$GREEN"
+    if [[ $response == *'"status":{"overall":{"level":"available"}}'* ]]; then
+        print_message "Kibana is ready" "$GREEN"
     else
-         print_message "Kibana is not ready" "$RED"
+        print_message "Kibana is not ready" "$RED"
     fi
+
 
   } | tee "$output_file"
 }
