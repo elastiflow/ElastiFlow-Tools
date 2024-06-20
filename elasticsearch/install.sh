@@ -441,7 +441,6 @@ main() {
   check_compatibility
   print_startup_message
   ip_address=$(get_host_ip)
-  printf "$ip_address"
   remove_update_service
   install_prerequisites
   tune_system
@@ -462,11 +461,11 @@ main() {
   display_dashboard_url
 
   backup_and_create_issue_text
-  ####set configure script to run on first logon
-
+  
   history -c
   
-  
+  ####set configure script to run on first logon
+
 #  script_text='
 #export ELASTIFLOW_FIRST_BOOT=1
 #  '
