@@ -462,8 +462,15 @@ main() {
 
   backup_and_create_issue_text
   
-  history -c
+  #release DHCP address
+  dhclient -r
   
+  #clear command history
+  history -c
+
+  #shutdown now
+  shutdown -now
+
   ####set configure script to run on first logon
 
 #  script_text='
