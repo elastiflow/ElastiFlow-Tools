@@ -465,12 +465,7 @@ main() {
   #release DHCP address
   dhclient -r
   
-  #clear command history
-  history -c
-
-  #shutdown now
-  shutdown -now
-
+ 
   ####set configure script to run on first logon
 
 #  script_text='
