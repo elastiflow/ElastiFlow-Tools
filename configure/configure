@@ -54,10 +54,10 @@ perform_health_check() {
     print_message "Total disk space: $total_space, Free: $free_space" "$GREEN"
 
     disk_usage=$(df / | tail -1 | awk '{print $5}' | sed 's/%//')
-    if [ $disk_usage -lt 85 ]; then
-      print_message "Disk usage: At least 15% space available" "$GREEN"
+    if [ $disk_usage -lt 70 ]; then
+      print_message "Disk usage: At least 30% space available" "$GREEN"
     else
-      print_message "Disk usage: Less than 15% space available" "$RED"
+      print_message "Disk usage: Less than 30% space available" "$RED"
     fi
 
     default_gateway=$(ip route | grep default | awk '{print $3}')
