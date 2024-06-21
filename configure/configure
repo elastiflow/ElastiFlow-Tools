@@ -170,7 +170,7 @@ perform_health_check() {
     curl_result=$(curl -s -k -u elastic:elastic https://localhost:9200)
     search_text='cluster_name" : "elasticsearch'
     if echo "$curl_result" | grep -q "$search_text"; then
-      print_message "Elastic is up!" "$GREEN"
+      print_message "Elastic is ready. Used curl." "$GREEN"
     else
       print_message "Something's wrong with Elastic..." "$RED"
     fi
@@ -199,7 +199,7 @@ perform_health_check() {
     response=$(curl -s -X GET "http://$ip_address:5601/api/status")
     
     if [[ $response == *'"status":{"overall":{"level":"available"}}'* ]]; then
-        print_message "Kibana is ready" "$GREEN"
+        print_message "Kibana is ready. Used curl" "$GREEN"
     else
         print_message "Kibana is not ready" "$RED"
     fi
