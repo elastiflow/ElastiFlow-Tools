@@ -173,6 +173,7 @@ perform_health_check() {
       print_message "Elastic is ready. Used curl." "$GREEN"
     else
       print_message "Something's wrong with Elastic..." "$RED"
+      echo "$curl_result"
     fi
 
     print_message "************** Kibana *************" "$NC"
@@ -202,6 +203,7 @@ perform_health_check() {
         print_message "Kibana is ready. Used curl" "$GREEN"
     else
         print_message "Kibana is not ready" "$RED"
+        echo "$response"
     fi
 
     print_message "************************************" "$NC"
