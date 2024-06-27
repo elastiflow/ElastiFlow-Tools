@@ -337,9 +337,12 @@ reload_and_restart_services() {
   local services=("$@")
   systemctl daemon-reload
   for service in "${services[@]}"; do
+    echo "Restarting service: $service"
     systemctl restart "$service"
+    echo "done"
   done
 }
+
 
 check_service_health() {
   print_message "Checking if flowcoll.service stays running for at least 10 seconds..." "$GREEN"
