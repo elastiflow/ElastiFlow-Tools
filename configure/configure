@@ -331,6 +331,7 @@ reload_and_restart_service() {
   systemctl daemon-reload
   printf "Restarting service $service\n"
   systemctl restart "$service"
+  echo "done"
 }
 
 reload_and_restart_services() {
