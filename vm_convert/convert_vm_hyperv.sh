@@ -25,7 +25,7 @@ memory_mb=$((memory_gb * 1024))
 touch "$input_dir/conversion_in_progress"
 
 # Convert the VMDK file to VHDX format
-qemu-img convert -cpf vmdk -O vhdx "$input_file" "$temp_file"
+qemu-img convert -pf vmdk -O vhdx "$input_file" "$temp_file"
 if [ $? -ne 0 ]; then
   echo "Conversion failed"
   rm -f "$input_dir/conversion_in_progress"
