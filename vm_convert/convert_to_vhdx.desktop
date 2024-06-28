@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+MimeType=application/x-vmware-vmdisk;
+Actions=convert_vm_hyperv
+
+[Desktop Action convert_vm_hyperv]
+Name=Convert vmdk to VHDX
+Icon=background
+Terminal=true
+Exec=/home/user/scripts/convert_vm_hyperv.sh "%f"
