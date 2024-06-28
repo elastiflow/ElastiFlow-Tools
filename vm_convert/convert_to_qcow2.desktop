@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Service
+MimeType=application/vmdk;
+Actions=convert_vm
+
+[Desktop Action convert_vm]
+Name=Convert VM
+Icon=background
+Exec=/bin/sh -c ";qemu-img convert -cpf vmdk -O qcow2 /home/user/Downloads/ElastiFlow_Virtual_Appliance/ElastiFlow_Virtual_Appliance-disk1.vmdk /home/user/Downloads/ElastiFlow_Virtual_Appliance/ElastiFlow_Virtual_Appliance-disk1.qcow2"
