@@ -383,6 +383,23 @@ check_service_status() {
   fi
 }
 
+resize_part_to_max() {
+    # Display the partition size before resizing
+    echo "Partition size before resizing:"
+    lsblk -o NAME,SIZE | grep 'ubuntu-lv'
+
+    # Extend the logical volume to use all free space
+    lvextend -l +100%FREE /dev/ubuntu-vg/ubuntu-lv
+
+    # Resize the filesystem
+    resize2fs -p /dev/mapper/ubuntu--vg-ubuntu--lv
+
+    # Display the partition size after resizing
+    echo "Partition size after resizing:"
+    lsblk -o NAME,SIZE | grep 'ubuntu-lv'
+}
+
+
 check_all_services() {
   SERVICES=("elasticsearch.service" "kibana.service" "flowcoll.service")
   for SERVICE_NAME in "${SERVICES[@]}"; do
@@ -463,8 +480,9 @@ main() {
   backup_and_create_issue_text
   
   #release DHCP address
-  dhclient -r
+  #dhclient -r
   
+  resize_part_to_max
  
   ####set configure script to run on first logon
 
