@@ -55,7 +55,7 @@ NC='\033[0m' # No Color
 
 backup_and_create_issue_text() {
   # Backup the existing /etc/issue file
-  sudo cp /etc/issue /etc/issue.bak
+  cp /etc/issue /etc/issue.bak
 
   # Create the new /etc/issue content
   new_issue_content=$(cat << EOF
@@ -93,7 +93,7 @@ EOF
   )
 
   # Write the new content to /etc/issue
-  echo "$new_issue_content" | sudo tee /etc/issue
+  echo "$new_issue_content" | tee /etc/issue
 }
 
 print_message() {
@@ -117,7 +117,7 @@ comment_and_replace_line() {
       sed -i.bak "/^#ElastiFlow PoC Configurator/a $REPLACE" "$FILE"
       print_message "Added '$REPLACE' under '#ElastiFlow PoC Configurator'." "$GREEN"
     else
-      echo -e "\n#ElastiFlow PoC Configurator" | sudo tee -a "$FILE" > /dev/null
+      echo -e "\n#ElastiFlow PoC Configurator" | tee -a "$FILE" > /dev/null
       sed -i.bak "/^#ElastiFlow PoC Configurator/a $REPLACE" "$FILE"
       print_message "Added heading and '$REPLACE'." "$GREEN"
     fi
@@ -318,7 +318,7 @@ configure_kibana() {
   output=$(/usr/share/kibana/bin/kibana-encryption-keys generate -q)
   key_line=$(echo "$output" | grep '^xpack.encryptedSavedObjects.encryptionKey')
   if [[ -n "$key_line" ]]; then
-      echo "$key_line" | sudo tee -a /etc/kibana/kibana.yml > /dev/null
+      echo "$key_line" | tee -a /etc/kibana/kibana.yml > /dev/null
   else
       echo "No encryption key line found."
   fi
