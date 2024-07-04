@@ -285,15 +285,6 @@ install_kibana() {
 }
 
 configure_kibana() {
-  kibana_config_strings=(
-  "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: \"true\""
-  "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: \"${elastiflow_account_id}\""
-  "server.host:" "server.host: \"0.0.0.0\""
-  "elasticsearch.hosts:" "elasticsearch.hosts: \['https:\/\/localhost:9200'\]"
-  "server.publicBaseUrl: ""' 'server.publicBaseUrl: "http://kibana.example.com:5601"'
-  "server.publicBaseUrl: ""' 'server.publicBaseUrl: "http://kibana.example.com:5601"
-   ) 
-  
   printf "\n\n\n*********Generating Kibana saved objects encryption key...\n\n"
   output=$(/usr/share/kibana/bin/kibana-encryption-keys generate -q)
   key_line=$(echo "$output" | grep '^xpack.encryptedSavedObjects.encryptionKey')
@@ -314,7 +305,6 @@ configure_kibana() {
   replace_text "/etc/kibana/kibana.yml" "#server.host: \"localhost\"" "server.host: \"0.0.0.0\"" "${LINENO}"
   printf "\n\n\n*********Configuring Kibana - set elasticsearch.hosts to localhost instead of interface IP...\n\n"
   replace_text "/etc/kibana/kibana.yml" "elasticsearch.hosts: \['https:\/\/[^']*'\]" "elasticsearch.hosts: \['https:\/\/localhost:9200'\]" "${LINENO}"
-  replace_text "/etc/kibana/kibana.yml" '#server.publicBaseUrl: ""' 'server.publicBaseUrl: "http://kibana.example.com:5601"' "${LINENO}"
   replace_text "/etc/kibana/kibana.yml" '#server.publicBaseUrl: ""' 'server.publicBaseUrl: "http://kibana.example.com:5601"' "${LINENO}"
   systemctl restart kibana.service
   sleep_message "Giving Kibana service time to stabilize" 20
