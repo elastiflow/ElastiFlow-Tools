@@ -285,6 +285,11 @@ install_kibana() {
 }
 
 configure_kibana() {
+  kibana_config_strings=(
+  "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: \"true\""
+  "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: \"${elastiflow_account_id}\""
+   ) 
+  
   printf "\n\n\n*********Generating Kibana saved objects encryption key...\n\n"
   output=$(/usr/share/kibana/bin/kibana-encryption-keys generate -q)
   key_line=$(echo "$output" | grep '^xpack.encryptedSavedObjects.encryptionKey')
