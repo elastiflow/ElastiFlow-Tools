@@ -288,6 +288,10 @@ configure_kibana() {
   kibana_config_strings=(
   "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: \"true\""
   "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: \"${elastiflow_account_id}\""
+  "server.host:" "server.host: \"0.0.0.0\""
+  "elasticsearch.hosts:" "elasticsearch.hosts: \['https:\/\/localhost:9200'\]"
+  "server.publicBaseUrl: ""' 'server.publicBaseUrl: "http://kibana.example.com:5601"'
+  "server.publicBaseUrl: ""' 'server.publicBaseUrl: "http://kibana.example.com:5601"
    ) 
   
   printf "\n\n\n*********Generating Kibana saved objects encryption key...\n\n"
