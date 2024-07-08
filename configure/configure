@@ -24,6 +24,9 @@ print_message() {
   echo -e "${color}${message}${NC}"
 }
 
+#!/bin/bash
+
+# Function to install Docker
 install_docker() {
     echo "Docker is not installed. Installing Docker..."
     
