@@ -825,9 +825,9 @@ capture_packets() {
   print_message "Packet capture completed. File saved as $capture_path." "$GREEN"
 }
 
-generate_fake_flow() {
+generate_sample_flow() {
   clear
-  print_message "Generating fake flow..." "$GREEN"
+  print_message "Generating sample flow..." "$GREEN"
 
   if ! command -v docker &> /dev/null; then
     install_docker
@@ -1145,7 +1145,7 @@ while true; do
         echo "5. Enable DNS enrichment"
         echo "6. Enable FPS monitor"
         echo "7. Enable NetIntel enrichment"
-        echo "8. Generate fake flow"
+        echo "8. Generate sample flow"
         echo "9. Health check"
         echo "10. Install/Uninstall flow generator (pmacct)"
         echo "11. Reconfigure JVM memory usage"
@@ -1190,7 +1190,7 @@ while true; do
             netintel_enrichment
             ;;
           8)
-            generate_fake_flow
+            generate_sample_flow
             ;;
           9)
             perform_health_check
