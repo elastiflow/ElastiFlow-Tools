@@ -8,9 +8,10 @@ elastiflow_account_id=""
 elastiflow_flow_license_key=""
 ########################################################
 
-elastiflow_version="7.0.0"
+elastiflow_version="7.0.2"
 elasticsearch_version="8.14.0"
 kibana_version="8.14.0"
+kibana_dashboards_version="8.14.x"
 flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
 elastic_username="elastic"
 elastic_password2="elastic"
@@ -365,7 +366,7 @@ install_elastiflow() {
 install_dashboards() {
   printf "\n\n\n*********Downloading and installing ElastiFlow flow dashboards\n\n"
   git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
-  response=$(curl --connect-timeout 10 -X POST -u $elastic_username:$elastic_password "localhost:5601/api/saved_objects/_import?overwrite=true" -H "kbn-xsrf: true" --form file=@/etc/elastiflow_for_elasticsearch/kibana/flow/kibana-8.2.x-flow-ecs.ndjson -H 'kbn-xsrf: true')
+  response=$(curl --connect-timeout 10 -X POST -u $elastic_username:$elastic_password "localhost:5601/api/saved_objects/_import?overwrite=true" -H "kbn-xsrf: true" --form file=@/etc/elastiflow_for_elasticsearch/kibana/flow/kibana-$kibana_dashboards_version-flow-ecs.ndjson -H 'kbn-xsrf: true')
   dashboards_success=$(echo "$response" | jq -r '.success')
   if [ "$dashboards_success" == "true" ]; then
       printf "Flow dashboards installed successfully.\n\n"
