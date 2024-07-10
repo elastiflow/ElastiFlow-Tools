@@ -29,20 +29,34 @@ while true; do
         INITIAL_FREE_SPACE=$(df / | awk 'NR==2 {print $4}')
         log_message "Initial free space: $INITIAL_FREE_SPACE KB."
 
-        while [ "$FREE_SPACE" -lt $THRESHOLD ]; do
-            log_message "Attempting to delete the oldest shard to free up space."
+        # Get the current write index for the data stream
+        CURRENT_WRITE_INDEX=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/_data_stream/$DATA_STREAM" | jq -r '.data_streams[0].indices[0].index_name')
+        log_message "Current write index: $CURRENT_WRITE_INDEX."
 
-            # Get the oldest shard
-            OLDEST_SHARD=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/_cat/shards?h=index,shard,prirep,state,unassigned.reason,store,ip,node,creation.date" | sort -k8 | head -n 1 | awk '{print $1}')
-            
+        while [ "$FREE_SPACE" -lt $THRESHOLD ]; do
+            log_message "Attempting to identify the oldest shard of the data stream to free up space."
+
+            # Get the oldest shard of the specified data stream excluding the current write index
+            OLDEST_SHARD=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/_cat/shards?h=index,shard,prirep,state,unassigned.reason,store,ip,node,creation.date" | grep "$DATA_STREAM" | grep -v "$CURRENT_WRITE_INDEX" | sort -k8 | head -n 1 | awk '{print $1}')
+
             if [ -z "$OLDEST_SHARD" ]; then
-                log_message "No shards available for deletion."
+                log_message "No shards available for deletion in the specified data stream."
                 break
             fi
 
-            log_message "Deleting oldest shard: $OLDEST_SHARD."
+            log_message "Oldest shard identified: $OLDEST_SHARD."
 
-            # Delete the oldest shard
+            # Prompt user for confirmation before deletion
+            read -p "Do you want to delete the shard $OLDEST_SHARD? (y/n): " CONFIRMATION
+
+            if [ "$CONFIRMATION" != "y" ]; then
+                log_message "User chose not to delete the shard $OLDEST_SHARD."
+                break
+            fi
+
+            log_message "Deleting shard: $OLDEST_SHARD."
+
+            # Delete the shard
             DELETE_RESPONSE=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -X DELETE "$ELASTIC_ENDPOINT/$OLDEST_SHARD" -s)
             DELETE_STATUS=$?
 
@@ -60,7 +74,7 @@ while true; do
 
         # Get the final free space
         FINAL_FREE_SPACE=$(df / | awk 'NR==2 {print $4}')
-        log_message "Free space increased from $INITIAL_FREE_SPACE KB to $FINAL_FREE_SPACE KB after deletions."
+        log_message "Free space before delete: $INITIAL_FREE_SPACE KB. Free space after delete: $FINAL_FREE_SPACE KB."
 
     else
         log_message "Free space is $FREE_SPACE%, which is above the threshold of $THRESHOLD%."
