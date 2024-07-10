@@ -18,14 +18,15 @@ log_message() {
 }
 
 while true; do
-    # Get the percentage of free space on the root partition
-    FREE_SPACE=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
+    # Get the percentage of used space on the root partition and calculate free space
+    USED_SPACE=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
+    FREE_SPACE=$((100 - USED_SPACE))
     log_message "Current free space on root partition: $FREE_SPACE%."
 
     if [ "$FREE_SPACE" -lt $THRESHOLD ]; then
         log_message "Free space is $FREE_SPACE%, which is below the threshold of $THRESHOLD%."
 
-        # Get the initial free space
+        # Get the initial free space in KB
         INITIAL_FREE_SPACE=$(df / | awk 'NR==2 {print $4}')
         log_message "Initial free space: $INITIAL_FREE_SPACE KB."
 
@@ -48,13 +49,13 @@ while true; do
 
             # Estimate free space after deletion
             SHARD_SIZE=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/$OLDEST_SHARD/_stats/store" | jq -r '.indices[]._all.total.store.size_in_bytes')
-            ESTIMATED_FREE_SPACE=$((INITIAL_FREE_SPACE + SHARD_SIZE / 1024))
-            ESTIMATED_FREE_SPACE_PERCENT=$(df / | awk 'NR==2 {print ($4 + '$SHARD_SIZE' / 1024) / ($2 / 100)}')
+            SHARD_SIZE_KB=$((SHARD_SIZE / 1024))
+            TOTAL_SPACE=$(df / | awk 'NR==2 {print $2}')
+            ESTIMATED_FREE_SPACE=$((INITIAL_FREE_SPACE + SHARD_SIZE_KB))
+            ESTIMATED_FREE_SPACE_PERCENT=$((100 * ESTIMATED_FREE_SPACE / TOTAL_SPACE))
             log_message "Estimated free space after deleting shard $OLDEST_SHARD: $ESTIMATED_FREE_SPACE KB ($ESTIMATED_FREE_SPACE_PERCENT%)."
 
-#           if [ "$ESTIMATED_FREE_SPACE_PERCENT" -ge "$THRESHOLD" ]; then
-            if []; then
-
+            if [ "$ESTIMATED_FREE_SPACE_PERCENT" -ge "$THRESHOLD" ]; then
                 # Prompt user for confirmation before deletion
                 read -p "Deleting shard $OLDEST_SHARD will increase free space to $ESTIMATED_FREE_SPACE_PERCENT%. Do you want to delete it? (y/n): " CONFIRMATION
 
@@ -76,8 +77,9 @@ while true; do
                     log_message "Deleted shard $OLDEST_SHARD. Curl response: $DELETE_RESPONSE"
                 fi
 
-                # Get the new percentage of free space
-                FREE_SPACE=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
+                # Get the new percentage of used space and calculate free space
+                USED_SPACE=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
+                FREE_SPACE=$((100 - USED_SPACE))
                 log_message "Deleted shard $OLDEST_SHARD. Free space is now $FREE_SPACE%."
                 break
             else
@@ -86,7 +88,7 @@ while true; do
             fi
         done
 
-        # Get the final free space
+        # Get the final free space in KB
         FINAL_FREE_SPACE=$(df / | awk 'NR==2 {print $4}')
         log_message "Free space before delete: $INITIAL_FREE_SPACE KB. Free space after delete: $FINAL_FREE_SPACE KB."
 
