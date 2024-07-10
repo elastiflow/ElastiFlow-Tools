@@ -9,7 +9,7 @@ ELASTIC_USERNAME="elastic"
 ELASTIC_PASSWORD="elastic"
 
 # Elasticsearch endpoint and data stream
-ELASTIC_ENDPOINT="http://localhost:9200"
+ELASTIC_ENDPOINT="https://localhost:9200"
 DATA_STREAM="elastiflow-flow-ecs-8.0-2.3-tsds"
 
 function log_message {
