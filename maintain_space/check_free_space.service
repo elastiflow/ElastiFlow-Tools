@@ -1,0 +1,11 @@
+[Unit]
+Description=Check Free Space and Clean Elasticsearch Shards
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/path/to/check_free_space.sh
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
