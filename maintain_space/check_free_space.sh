@@ -30,70 +30,82 @@ while true; do
         INITIAL_FREE_SPACE=$(df / | awk 'NR==2 {print $4}')
         log_message "Initial free space: $INITIAL_FREE_SPACE KB."
 
-        # Get the current write index for the data stream
+        # Get the current and next write indices for the data stream
         CURRENT_WRITE_INDEX=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/_data_stream/$DATA_STREAM" | jq -r '.data_streams[0].indices[0].index_name')
+        NEXT_WRITE_INDEX=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/_data_stream/$DATA_STREAM" | jq -r '.data_streams[0].indices[1].index_name')
         log_message "Current write index: $CURRENT_WRITE_INDEX."
+        log_message "Next write index: $NEXT_WRITE_INDEX."
 
         while [ "$FREE_SPACE" -lt $THRESHOLD ]; do
-            log_message "Attempting to identify the oldest shard of the data stream to free up space."
+            log_message "Attempting to identify all eligible shards of the data stream to free up space."
 
             # Get all shards of the specified data stream
-            ALL_SHARDS=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/_cat/shards?h=index" | grep "$DATA_STREAM")
-            
+            ALL_SHARDS=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/_cat/shards?h=index,shard,prirep,state,unassigned.reason,store,ip,node,creation.date" | grep "$DATA_STREAM")
+
             # Log the contents of ALL_SHARDS
             log_message "ALL_SHARDS content: $ALL_SHARDS"
 
-            # Get the oldest shard of the specified data stream excluding the current write index
-            OLDEST_SHARD=$(echo "$ALL_SHARDS" | grep -v "$CURRENT_WRITE_INDEX" | sort -k8 | head -n 1 | awk '{print $1}')
+            # Filter out the current and next write indices
+            ELIGIBLE_SHARDS=$(echo "$ALL_SHARDS" | grep -v "$CURRENT_WRITE_INDEX" | grep -v "$NEXT_WRITE_INDEX")
 
             if [ -z "$ALL_SHARDS" ]; then
                 log_message "No shards exist in the data stream."
                 break
-            elif [ -z "$OLDEST_SHARD" ]; then
-                log_message "The remaining shards are the current write index."
+            elif [ -z "$ELIGIBLE_SHARDS" ]; then
+                log_message "The remaining shards are the current or next write index."
                 break
             fi
 
-            log_message "Oldest shard identified: $OLDEST_SHARD."
+            log_message "Eligible shards for deletion: $ELIGIBLE_SHARDS"
 
-            # Estimate free space after deletion
-            SHARD_SIZE=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/$OLDEST_SHARD/_stats/store" | jq -r '.indices[]._all.total.store.size_in_bytes')
-            SHARD_SIZE_KB=$((SHARD_SIZE / 1024))
+            # Calculate the total size of all eligible shards
+            TOTAL_SHARDS_SIZE=0
+            while read -r SHARD; do
+                SHARD_NAME=$(echo "$SHARD" | awk '{print $1}')
+                SHARD_NUMBER=$(echo "$SHARD" | awk '{print $2}')
+                SHARD_SIZE=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/$SHARD_NAME/_stats/store" | jq -r '.indices[]._all.total.store.size_in_bytes')
+                SHARD_SIZE_KB=$((SHARD_SIZE / 1024))
+                TOTAL_SHARDS_SIZE=$((TOTAL_SHARDS_SIZE + SHARD_SIZE_KB))
+            done <<< "$ELIGIBLE_SHARDS"
+
+            ESTIMATED_FREE_SPACE=$((INITIAL_FREE_SPACE + TOTAL_SHARDS_SIZE))
             TOTAL_SPACE=$(df / | awk 'NR==2 {print $2}')
-            ESTIMATED_FREE_SPACE=$((INITIAL_FREE_SPACE + SHARD_SIZE_KB))
             ESTIMATED_FREE_SPACE_PERCENT=$((100 * ESTIMATED_FREE_SPACE / TOTAL_SPACE))
-            log_message "Estimated free space after deleting shard $OLDEST_SHARD: $ESTIMATED_FREE_SPACE KB ($ESTIMATED_FREE_SPACE_PERCENT%)."
+            log_message "Estimated free space after deleting eligible shards: $ESTIMATED_FREE_SPACE KB ($ESTIMATED_FREE_SPACE_PERCENT%)."
 
-           if [ 1 -eq 1 ]; then
-     #     if [ "$ESTIMATED_FREE_SPACE_PERCENT" -ge "$THRESHOLD" ]; then
+            # This condition will always be true
+            if [ 1 -eq 1 ]; then
                 # Prompt user for confirmation before deletion
-                read -p "Deleting shard $OLDEST_SHARD will increase free space to $ESTIMATED_FREE_SPACE_PERCENT%. Do you want to delete it? (y/n): " CONFIRMATION
+                read -p "Deleting all eligible shards will increase free space to $ESTIMATED_FREE_SPACE_PERCENT%. Do you want to delete them? (y/n): " CONFIRMATION
 
                 if [ "$CONFIRMATION" != "y" ]; then
-                    log_message "User chose not to delete the shard $OLDEST_SHARD."
+                    log_message "User chose not to delete the eligible shards."
                     break
                 fi
 
-                log_message "Deleting shard: $OLDEST_SHARD."
+                log_message "Deleting eligible shards."
 
-                # Delete the shard
-                DELETE_RESPONSE=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -X DELETE "$ELASTIC_ENDPOINT/$OLDEST_SHARD" -s)
-                DELETE_STATUS=$?
+                # Delete each eligible shard
+                while read -r SHARD; do
+                    SHARD_NAME=$(echo "$SHARD" | awk '{print $1}')
+                    SHARD_NUMBER=$(echo "$SHARD" | awk '{print $2}')
+                    DELETE_RESPONSE=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -X DELETE "$ELASTIC_ENDPOINT/$SHARD_NAME" -s)
+                    DELETE_STATUS=$?
 
-                if [ $DELETE_STATUS -ne 0 ]; then
-                    log_message "Failed to delete shard $OLDEST_SHARD. Curl response: $DELETE_RESPONSE"
-                    continue
-                else
-                    log_message "Deleted shard $OLDEST_SHARD. Curl response: $DELETE_RESPONSE"
-                fi
+                    if [ $DELETE_STATUS -ne 0 ]; then
+                        log_message "Failed to delete shard $SHARD_NAME (shard number: $SHARD_NUMBER). Curl response: $DELETE_RESPONSE"
+                    else
+                        log_message "Deleted shard $SHARD_NAME (shard number: $SHARD_NUMBER). Curl response: $DELETE_RESPONSE"
+                    fi
+                done <<< "$ELIGIBLE_SHARDS"
 
                 # Get the new percentage of used space and calculate free space
                 USED_SPACE=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
                 FREE_SPACE=$((100 - USED_SPACE))
-                log_message "Deleted shard $OLDEST_SHARD. Free space is now $FREE_SPACE%."
+                log_message "Deleted eligible shards. Free space is now $FREE_SPACE%."
                 break
             else
-                log_message "Deleting shard $OLDEST_SHARD will not attain the free space target."
+                log_message "Deleting eligible shards will not attain the free space target."
                 break
             fi
         done
