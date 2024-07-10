@@ -2,7 +2,7 @@
 
 LOG_FILE="/var/log/elastic_cleanup.log"
 THRESHOLD=25
-CHECK_INTERVAL=30
+CHECK_INTERVAL=5
 
 # Set Elasticsearch credentials
 ELASTIC_USERNAME="elastic"
