@@ -43,7 +43,15 @@ while true; do
             log_message "Deleting oldest shard: $OLDEST_SHARD."
 
             # Delete the oldest shard
-            curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -X DELETE "$ELASTIC_ENDPOINT/$OLDEST_SHARD" -s
+            DELETE_RESPONSE=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -X DELETE "$ELASTIC_ENDPOINT/$OLDEST_SHARD" -s)
+            DELETE_STATUS=$?
+
+            if [ $DELETE_STATUS -ne 0 ]; then
+                log_message "Failed to delete shard $OLDEST_SHARD. Curl response: $DELETE_RESPONSE"
+                continue
+            else
+                log_message "Deleted shard $OLDEST_SHARD. Curl response: $DELETE_RESPONSE"
+            fi
 
             # Get the new percentage of free space
             FREE_SPACE=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
