@@ -52,7 +52,9 @@ while true; do
             ESTIMATED_FREE_SPACE_PERCENT=$(df / | awk 'NR==2 {print ($4 + '$SHARD_SIZE' / 1024) / ($2 / 100)}')
             log_message "Estimated free space after deleting shard $OLDEST_SHARD: $ESTIMATED_FREE_SPACE KB ($ESTIMATED_FREE_SPACE_PERCENT%)."
 
-            if [ "$ESTIMATED_FREE_SPACE_PERCENT" -ge "$THRESHOLD" ]; then
+#           if [ "$ESTIMATED_FREE_SPACE_PERCENT" -ge "$THRESHOLD" ]; then
+            if []; then
+
                 # Prompt user for confirmation before deletion
                 read -p "Deleting shard $OLDEST_SHARD will increase free space to $ESTIMATED_FREE_SPACE_PERCENT%. Do you want to delete it? (y/n): " CONFIRMATION
 
