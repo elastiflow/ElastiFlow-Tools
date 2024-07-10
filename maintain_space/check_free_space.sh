@@ -4,6 +4,14 @@ LOG_FILE="/var/log/elastic_cleanup.log"
 THRESHOLD=25
 CHECK_INTERVAL=30
 
+# Set Elasticsearch credentials
+ELASTIC_USERNAME="elastic"
+ELASTIC_PASSWORD="elastic"
+
+# Elasticsearch endpoint and data stream
+ELASTIC_ENDPOINT="http://localhost:9200"
+DATA_STREAM="elastiflow-flow-ecs-8.0-2.3-tsds"
+
 function log_message {
     echo "$(date): $1" >> $LOG_FILE
 }
@@ -19,9 +27,11 @@ while true; do
         INITIAL_FREE_SPACE=$(df / | awk 'NR==2 {print $4}')
 
         while [ "$FREE_SPACE" -lt $THRESHOLD ]; do
+            # Get the oldest shard
+            OLDEST_SHARD=$(curl -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/_cat/shards?h=index,shard,prirep,state,unassigned.reason,store,ip,node,creation.date" | sort -k8 | head -n 1 | awk '{print $1}')
+            
             # Delete the oldest shard
-            OLDEST_SHARD=$(curl -s "http://localhost:9200/_cat/shards?h=index,shard,prirep,state,unassigned.reason,store,ip,node,creation.date" | sort -k8 | head -n 1 | awk '{print $1}')
-            curl -X DELETE "http://localhost:9200/$OLDEST_SHARD" -s
+            curl -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -X DELETE "$ELASTIC_ENDPOINT/$OLDEST_SHARD" -s
 
             # Get the new percentage of free space
             FREE_SPACE=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
