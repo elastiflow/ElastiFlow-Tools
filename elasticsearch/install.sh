@@ -191,7 +191,7 @@ check_compatibility() {
 sleep_message() {
   local message=$1
   local duration=$2
-  printf "\n\n\n********* %s *********\n\n" "$message"
+  printf "\n\n\n********* %s...n\n" "$message"
   
   while [ $duration -gt 0 ]; do
     printf "\rTime remaining: %02d seconds" $duration
