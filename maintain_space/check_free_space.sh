@@ -1,7 +1,7 @@
 #!/bin/bash
 
 LOG_FILE="/var/log/elastic_cleanup.log"
-THRESHOLD=25
+THRESHOLD=97
 CHECK_INTERVAL=5
 
 # Set Elasticsearch credentials
@@ -10,7 +10,7 @@ ELASTIC_PASSWORD="elastic"
 
 # Elasticsearch endpoint and data stream
 ELASTIC_ENDPOINT="https://localhost:9200"
-DATA_STREAM="elastiflow-flow-ecs-8.0-2.3-tsds"
+DATA_STREAM="elastiflow-flow-codex-2.3-tsds"
 
 # Function to log messages to both the screen and log file with timestamps
 log_message() {
@@ -37,11 +37,20 @@ while true; do
         while [ "$FREE_SPACE" -lt $THRESHOLD ]; do
             log_message "Attempting to identify the oldest shard of the data stream to free up space."
 
-            # Get the oldest shard of the specified data stream excluding the current write index
-            OLDEST_SHARD=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/_cat/shards?h=index,shard,prirep,state,unassigned.reason,store,ip,node,creation.date" | grep "$DATA_STREAM" | grep -v "$CURRENT_WRITE_INDEX" | sort -k8 | head -n 1 | awk '{print $1}')
+            # Get all shards of the specified data stream
+            ALL_SHARDS=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/_cat/shards?h=index" | grep "$DATA_STREAM")
+            
+            # Log the contents of ALL_SHARDS
+            log_message "ALL_SHARDS content: $ALL_SHARDS"
 
-            if [ -z "$OLDEST_SHARD" ]; then
-                log_message "No shards available for deletion in the specified data stream."
+            # Get the oldest shard of the specified data stream excluding the current write index
+            OLDEST_SHARD=$(echo "$ALL_SHARDS" | grep -v "$CURRENT_WRITE_INDEX" | sort -k8 | head -n 1 | awk '{print $1}')
+
+            if [ -z "$ALL_SHARDS" ]; then
+                log_message "No shards exist in the data stream."
+                break
+            elif [ -z "$OLDEST_SHARD" ]; then
+                log_message "The remaining shards are the current write index."
                 break
             fi
 
@@ -55,8 +64,7 @@ while true; do
             ESTIMATED_FREE_SPACE_PERCENT=$((100 * ESTIMATED_FREE_SPACE / TOTAL_SPACE))
             log_message "Estimated free space after deleting shard $OLDEST_SHARD: $ESTIMATED_FREE_SPACE KB ($ESTIMATED_FREE_SPACE_PERCENT%)."
 
-         #   if [ "$ESTIMATED_FREE_SPACE_PERCENT" -ge "$THRESHOLD" ]; then
-          if []; then
+            if [ "$ESTIMATED_FREE_SPACE_PERCENT" -ge "$THRESHOLD" ]; then
                 # Prompt user for confirmation before deletion
                 read -p "Deleting shard $OLDEST_SHARD will increase free space to $ESTIMATED_FREE_SPACE_PERCENT%. Do you want to delete it? (y/n): " CONFIRMATION
 
