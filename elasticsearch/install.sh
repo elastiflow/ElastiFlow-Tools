@@ -429,7 +429,7 @@ display_versions() {
   version=$(/usr/share/elastiflow/bin/flowcoll -version)
   printf "Installed ElastiFlow version: $version\n"
   version=$kibana_dashboards_version
-  printf "Installed ElastiFlow Dashboards version: $version\n"
+  printf "Installed ElastiFlow Dashboards version: $kibana_dashboards_codex_ecs $version\n"
   version=$(/usr/share/kibana/bin/kibana --version --allow-root | jq -r '.config.serviceVersion.value' 2>/dev/null)
   printf "Installed Kibana version: $version\n"
   version=$(/usr/share/elasticsearch/bin/elasticsearch --version | grep -oP 'Version: \K[\d.]+')
