@@ -64,7 +64,8 @@ while true; do
             ESTIMATED_FREE_SPACE_PERCENT=$((100 * ESTIMATED_FREE_SPACE / TOTAL_SPACE))
             log_message "Estimated free space after deleting shard $OLDEST_SHARD: $ESTIMATED_FREE_SPACE KB ($ESTIMATED_FREE_SPACE_PERCENT%)."
 
-            if [ "$ESTIMATED_FREE_SPACE_PERCENT" -ge "$THRESHOLD" ]; then
+           if [ 1 -eq 1 ]; then
+     #     if [ "$ESTIMATED_FREE_SPACE_PERCENT" -ge "$THRESHOLD" ]; then
                 # Prompt user for confirmation before deletion
                 read -p "Deleting shard $OLDEST_SHARD will increase free space to $ESTIMATED_FREE_SPACE_PERCENT%. Do you want to delete it? (y/n): " CONFIRMATION
 
