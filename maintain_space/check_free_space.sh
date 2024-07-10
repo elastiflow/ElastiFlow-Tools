@@ -46,30 +46,42 @@ while true; do
 
             log_message "Oldest shard identified: $OLDEST_SHARD."
 
-            # Prompt user for confirmation before deletion
-            read -p "Do you want to delete the shard $OLDEST_SHARD? (y/n): " CONFIRMATION
+            # Estimate free space after deletion
+            SHARD_SIZE=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/$OLDEST_SHARD/_stats/store" | jq -r '.indices[]._all.total.store.size_in_bytes')
+            ESTIMATED_FREE_SPACE=$((INITIAL_FREE_SPACE + SHARD_SIZE / 1024))
+            ESTIMATED_FREE_SPACE_PERCENT=$(df / | awk 'NR==2 {print ($4 + '$SHARD_SIZE' / 1024) / ($2 / 100)}')
+            log_message "Estimated free space after deleting shard $OLDEST_SHARD: $ESTIMATED_FREE_SPACE KB ($ESTIMATED_FREE_SPACE_PERCENT%)."
 
-            if [ "$CONFIRMATION" != "y" ]; then
-                log_message "User chose not to delete the shard $OLDEST_SHARD."
+            if [ "$ESTIMATED_FREE_SPACE_PERCENT" -ge "$THRESHOLD" ]; then
+                # Prompt user for confirmation before deletion
+                read -p "Deleting shard $OLDEST_SHARD will increase free space to $ESTIMATED_FREE_SPACE_PERCENT%. Do you want to delete it? (y/n): " CONFIRMATION
+
+                if [ "$CONFIRMATION" != "y" ]; then
+                    log_message "User chose not to delete the shard $OLDEST_SHARD."
+                    break
+                fi
+
+                log_message "Deleting shard: $OLDEST_SHARD."
+
+                # Delete the shard
+                DELETE_RESPONSE=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -X DELETE "$ELASTIC_ENDPOINT/$OLDEST_SHARD" -s)
+                DELETE_STATUS=$?
+
+                if [ $DELETE_STATUS -ne 0 ]; then
+                    log_message "Failed to delete shard $OLDEST_SHARD. Curl response: $DELETE_RESPONSE"
+                    continue
+                else
+                    log_message "Deleted shard $OLDEST_SHARD. Curl response: $DELETE_RESPONSE"
+                fi
+
+                # Get the new percentage of free space
+                FREE_SPACE=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
+                log_message "Deleted shard $OLDEST_SHARD. Free space is now $FREE_SPACE%."
+                break
+            else
+                log_message "Deleting shard $OLDEST_SHARD will not attain the free space target."
                 break
             fi
-
-            log_message "Deleting shard: $OLDEST_SHARD."
-
-            # Delete the shard
-            DELETE_RESPONSE=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -X DELETE "$ELASTIC_ENDPOINT/$OLDEST_SHARD" -s)
-            DELETE_STATUS=$?
-
-            if [ $DELETE_STATUS -ne 0 ]; then
-                log_message "Failed to delete shard $OLDEST_SHARD. Curl response: $DELETE_RESPONSE"
-                continue
-            else
-                log_message "Deleted shard $OLDEST_SHARD. Curl response: $DELETE_RESPONSE"
-            fi
-
-            # Get the new percentage of free space
-            FREE_SPACE=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
-            log_message "Deleted shard $OLDEST_SHARD. Free space is now $FREE_SPACE%."
         done
 
         # Get the final free space
