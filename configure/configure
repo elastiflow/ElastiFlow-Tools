@@ -19,6 +19,8 @@ dashboard_url=""
 elastiflow_snmp_config_path="/etc/elastiflow/snmpcoll.yml"
 
 
+
+
 install_snmp_collector() {
   # Prompt the user for the SNMP flow key
   while true; do
@@ -60,6 +62,18 @@ install_snmp_collector() {
   # Enable and start the SNMP collector service
   systemctl enable elastiflow-snmpcollector.service
   systemctl start elastiflow-snmpcollector.service
+
+  #install snmp dashboards
+  printf "\n\n\n*********Downloading and installing ElastiFlow snmp dashboards\n\n"
+  git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
+  response=$(curl --connect-timeout 10 -X POST -u $elastic_username:$elastic_password2 "localhost:5601/api/saved_objects/_import?overwrite=true" -H "kbn-xsrf: true" --form file=@/etc/elastiflow_for_elasticsearch/kibana/snmp/kibana-8.2.x-snmp-codex.ndjson -H 'kbn-xsrf: true')
+  dashboards_success=$(echo "$response" | jq -r '.success')
+  if [ "$dashboards_success" == "true" ]; then
+      printf "Flow dashboards installed successfully.\n\n"
+  else
+      printf "Flow dashboards not installed successfully\n\n"
+  fi
+
 
   # Check the status of the service
   if systemctl is-active --quiet elastiflow-snmpcollector.service; then
