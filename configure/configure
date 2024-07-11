@@ -19,9 +19,10 @@ dashboard_url=""
 elastiflow_snmp_config_path="/etc/elastiflow/snmpcoll.yml"
 
 
-
-
 install_snmp_collector() {
+  kibana_dashboards_version="8.2.x"
+  kibana_dashboards_codex_ecs="codex"
+
   # Prompt the user for the SNMP flow key
   while true; do
     read -p "Enter your ElastiFlow SNMP License Key (or 'q' to quit): " elastiflow_snmp_license_key
@@ -53,7 +54,7 @@ install_snmp_collector() {
   
   # Download the ElastiFlow SNMP collector package
   wget -O elastiflow-snmpcollector.deb "https://elastiflow-releases.s3.us-east-2.amazonaws.com/snmp-collector/snmp-collector_${elastiflow_snmp_collector_version}_linux_amd64.deb"
-  
+
   # Install the package
   dpkg -i elastiflow-snmpcollector.deb
 
@@ -64,16 +65,16 @@ install_snmp_collector() {
   systemctl start elastiflow-snmpcollector.service
 
   #install snmp dashboards
-  printf "\n\n\n*********Downloading and installing ElastiFlow snmp dashboards\n\n"
+  printf "\n\n\n*********Downloading and installing ElastiFlow SNMP dashboards\n\n"
   git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
-  response=$(curl --connect-timeout 10 -X POST -u $elastic_username:$elastic_password2 "localhost:5601/api/saved_objects/_import?overwrite=true" -H "kbn-xsrf: true" --form file=@/etc/elastiflow_for_elasticsearch/kibana/snmp/kibana-8.2.x-snmp-codex.ndjson -H 'kbn-xsrf: true')
+  response=$(curl --connect-timeout 10 -X POST -u $elastic_username:$elastic_password2 "localhost:5601/api/saved_objects/_import?overwrite=true" -H "kbn-xsrf: true" --form file=@/etc/elastiflow_for_elasticsearch/kibana/snmp/kibana-$kibana_dashboards_version-snmp-$kibana_dashboards_codex_ecs.ndjson -H 'kbn-xsrf: true')
   dashboards_success=$(echo "$response" | jq -r '.success')
+
   if [ "$dashboards_success" == "true" ]; then
       printf "Flow dashboards installed successfully.\n\n"
   else
       printf "Flow dashboards not installed successfully\n\n"
   fi
-
 
   # Check the status of the service
   if systemctl is-active --quiet elastiflow-snmpcollector.service; then
