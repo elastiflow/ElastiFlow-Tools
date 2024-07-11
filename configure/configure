@@ -21,17 +21,28 @@ elastiflow_snmp_config_path="/etc/elastiflow/snmpcoll/snmpcoll.yml"
 
 
 install_snmp_collector() {
+  # Prompt the user for the SNMP flow key
+  while true; do
+    read -p "Enter your ElastiFlow SNMP License Key (or 'q' to quit): " elastiflow_snmp_license_key
+    if [[ $elastiflow_snmp_license_key == "q" ]]; then
+      return
+    elif [[ -z $elastiflow_snmp_license_key ]]; then
+      print_message "ElastiFlow SNMP License Key cannot be empty. Please enter a valid key." "$RED"
+    else
+      break
+    fi
+  done
 
-elastiflow_snmp_config_strings=(
-  "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: \"true\""
-  "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: \"${elastiflow_account_id}\""
-  "EF_SNMP_LICENSE_KEY" "EF_SNMP_LICENSE_KEY: \"${elastiflow_snmp_license_key}\""
-  "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: \"true\""
-  "EF_OUTPUT_ELASTICSEARCH_ADDRESSES" "EF_OUTPUT_ELASTICSEARCH_ADDRESSES: \"127.0.0.1:9200\""
-  "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: \"${elastic_password2}\""
-  "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: \"true\""
-  "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION" "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: \"true\""
- )
+  elastiflow_snmp_config_strings=(
+    "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: \"true\""
+    "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: \"${elastiflow_account_id}\""
+    "EF_SNMP_LICENSE_KEY" "EF_SNMP_LICENSE_KEY: \"${elastiflow_snmp_license_key}\""
+    "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: \"true\""
+    "EF_OUTPUT_ELASTICSEARCH_ADDRESSES" "EF_OUTPUT_ELASTICSEARCH_ADDRESSES: \"127.0.0.1:9200\""
+    "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: \"${elastic_password2}\""
+    "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: \"true\""
+    "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION" "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: \"true\""
+  )
 
   print_message "Installing ElastiFlow Unified SNMP Collector..." "$GREEN"
   
@@ -58,6 +69,7 @@ elastiflow_snmp_config_strings=(
     print_message "Failed to start ElastiFlow Unified SNMP Collector." "$RED"
   fi
 }
+
 
 
 # Helper function to print messages with color
