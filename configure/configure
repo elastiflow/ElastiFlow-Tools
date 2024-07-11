@@ -22,6 +22,18 @@ install_snmp_collector() {
   kibana_dashboards_version="8.2.x"
   kibana_dashboards_codex_ecs="codex"
 
+  # Prompt the user for the ElastiFlow Account ID
+  while true; do
+    read -p "Enter your ElastiFlow Account ID (or 'q' to quit): " elastiflow_account_id
+    if [[ $elastiflow_account_id == "q" ]]; then
+      return
+    elif [[ -z $elastiflow_account_id ]]; then
+      print_message "ElastiFlow Account ID cannot be empty. Please enter a valid ID." "$RED"
+    else
+      break
+    fi
+  done
+
   # Prompt the user for the SNMP flow key
   while true; do
     read -p "Enter your ElastiFlow SNMP License Key (or 'q' to quit): " elastiflow_snmp_license_key
@@ -74,14 +86,11 @@ install_snmp_collector() {
   # Clone the repository
   git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
 
-  response=$(curl --verbose --connect-timeout 10 -X POST -u $elastic_username:$elastic_password2 \
+  response=$(curl --silent --show-error --fail --connect-timeout 10 -X POST -u $elastic_username:$elastic_password2 \
     "localhost:5601/api/saved_objects/_import?overwrite=true" \
     -H "kbn-xsrf: true" \
     --form file=@/etc/elastiflow_for_elasticsearch/kibana/snmp/kibana-$kibana_dashboards_version-snmp-$kibana_dashboards_codex_ecs.ndjson \
     -H 'kbn-xsrf: true')
-
-  echo "Debug: API response:"
-  echo "$response"
 
   dashboards_success=$(echo "$response" | jq -r '.success')
 
@@ -89,6 +98,8 @@ install_snmp_collector() {
     print_message "SNMP dashboards installed successfully." "$GREEN"
   else
     print_message "SNMP dashboards not installed successfully." "$RED"
+    echo "Debug: API response:"
+    echo "$response"
   fi
 
   # Check the status of the service
@@ -98,6 +109,7 @@ install_snmp_collector() {
     print_message "Failed to start ElastiFlow Unified SNMP Collector." "$RED"
   fi
 }
+
 
 
 
