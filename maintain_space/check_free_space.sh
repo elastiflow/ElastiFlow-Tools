@@ -40,12 +40,12 @@ get_write_indices() {
 get_eligible_shards() {
     ALL_SHARDS=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/_cat/shards?h=index,shard,prirep,state,unassigned.reason,store,ip,node,creation.date" | grep "$DATA_STREAM")
     log_message "ALL_SHARDS content: $ALL_SHARDS"
-    ELIGIBLE_SHARDS=$(echo "$ALL_SHARDS" | grep -v "$CURRENT_WRITE_INDEX" | grep -v "$NEXT_WRITE_INDEX" | grep "r") # Exclude primary shards and write indices
+    ELIGIBLE_SHARDS=$(echo "$ALL_SHARDS" | grep -v "$CURRENT_WRITE_INDEX" | grep -v "$NEXT_WRITE_INDEX")
     if [ -z "$ALL_SHARDS" ]; then
         log_message "No shards exist in the data stream."
         return 1
     elif [ -z "$ELIGIBLE_SHARDS" ]; then
-        log_message "The remaining shards are the current or next write index, or they are primary shards."
+        log_message "The remaining shards are the current or next write index."
         return 1
     fi
     log_message "Eligible shards for deletion: $ELIGIBLE_SHARDS"
