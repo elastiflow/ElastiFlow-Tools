@@ -9,12 +9,45 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-elastiflow_version="7.0.0"
+elastiflow_version="7.0.2"
+elastiflow_snmp_collector_version="7.0.2"
 
 elastic_username="elastic"
 elastic_password2="elastic"
 ip_address=""
 dashboard_url=""
+
+
+install_snmp_collector() {
+  print_message "Installing ElastiFlow Unified SNMP Collector..." "$GREEN"
+  
+  # Update package list and install prerequisites
+  apt-get update -qq > /dev/null
+  apt-get install -qq -y snmp snmpd snmp-mibs-downloader curl apt-transport-https gnupg > /dev/null
+  
+  # Download the ElastiFlow SNMP collector package
+  wget -O elastiflow-snmpcollector.deb "https://elastiflow-releases.s3.us-east-2.amazonaws.com/snmpcollector/elastiflow-snmpcollector_${snmp_collector_version}_linux_amd64.deb"
+  
+  # Install the package
+  dpkg -i elastiflow-snmpcollector.deb
+
+  # Configure the SNMP collector (adjust paths and commands based on actual instructions)
+  cp /etc/elastiflow/snmp/snmpcollector.yml.example /etc/elastiflow/snmp/snmpcollector.yml
+
+  # Enable and start the SNMP collector service
+  systemctl enable elastiflow-snmpcollector.service
+  systemctl start elastiflow-snmpcollector.service
+
+  # Check the status of the service
+  if systemctl is-active --quiet elastiflow-snmpcollector.service; then
+    print_message "ElastiFlow Unified SNMP Collector installed and running." "$GREEN"
+  else
+    print_message "Failed to start ElastiFlow Unified SNMP Collector." "$RED"
+  fi
+
+  # Cleanup
+  rm elastiflow-snmpcollector.deb
+}
 
 
 # Helper function to print messages with color
@@ -23,8 +56,6 @@ print_message() {
   local color=$2
   echo -e "${color}${message}${NC}"
 }
-
-#!/bin/bash
 
 # Function to install Docker
 install_docker() {
@@ -1155,8 +1186,9 @@ while true; do
         echo "15. Watch elasticsearch.service log"
         echo "16. Watch flowcoll.service log"
         echo "17. Watch kibana.service log"
-        echo "18. Back"
-        read -p "Enter your choice (1-18): " utility_choice
+        echo "18. Install SNMP Collector"
+        echo "19. Back"
+        read -p "Enter your choice (1-19): " utility_choice
         clear
         case $utility_choice in
           1)
@@ -1234,10 +1266,13 @@ while true; do
             journalctl -u kibana.service -f
             ;;
           18)
+            install_snmp_collector
+            ;;
+          19)
             break
             ;;
           *)
-            print_message "Invalid choice. Please enter a number between 1 and 18." "$RED"
+            print_message "Invalid choice. Please enter a number between 1 and 19." "$RED"
             ;;
         esac
       done
