@@ -40,12 +40,12 @@ get_write_indices() {
 get_eligible_shards() {
     ALL_SHARDS=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/_cat/shards?h=index,shard,prirep,state,unassigned.reason,store,ip,node,creation.date" | grep "$DATA_STREAM")
     log_message "ALL_SHARDS content: $ALL_SHARDS"
-    ELIGIBLE_SHARDS=$(echo "$ALL_SHARDS" | grep -v "$CURRENT_WRITE_INDEX" | grep -v "$NEXT_WRITE_INDEX")
+    ELIGIBLE_SHARDS=$(echo "$ALL_SHARDS" | grep -v "$CURRENT_WRITE_INDEX" | grep -v "$NEXT_WRITE_INDEX" | grep "r") # Exclude primary shards and write indices
     if [ -z "$ALL_SHARDS" ]; then
         log_message "No shards exist in the data stream."
         return 1
     elif [ -z "$ELIGIBLE_SHARDS" ]; then
-        log_message "The remaining shards are the current or next write index."
+        log_message "The remaining shards are the current or next write index, or they are primary shards."
         return 1
     fi
     log_message "Eligible shards for deletion: $ELIGIBLE_SHARDS"
@@ -104,20 +104,25 @@ check_and_delete_shards() {
             get_write_indices
             get_eligible_shards
             if [ $? -ne 0 ]; then
-                break
+                NEXT_RUN_TIME=$(date -d "now + $CHECK_INTERVAL seconds" "+%Y-%m-%d %H:%M:%S")
+                log_message "Next check will run at $NEXT_RUN_TIME."
+                sleep $CHECK_INTERVAL
+                continue
             fi
             calculate_total_shards_size
             read -p "Deleting all eligible shards will increase free space to $ESTIMATED_FREE_SPACE_PERCENT%. Do you want to delete them? (y/n): " CONFIRMATION
             if [ "$CONFIRMATION" != "y" ]; then
                 log_message "User chose not to delete the eligible shards."
-                break
+                NEXT_RUN_TIME=$(date -d "now + $CHECK_INTERVAL seconds" "+%Y-%m-%d %H:%M:%S")
+                log_message "Next check will run at $NEXT_RUN_TIME."
+                sleep $CHECK_INTERVAL
+                continue
             fi
             log_message "Deleting eligible shards."
             delete_eligible_shards
             USED_SPACE=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
             FREE_SPACE=$((100 - USED_SPACE))
             log_message "Deleted eligible shards. Free space is now $FREE_SPACE%."
-            break
         else
             log_message "Free space is $FREE_SPACE%, which is above the threshold of $THRESHOLD%."
         fi
