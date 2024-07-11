@@ -19,6 +19,18 @@ dashboard_url=""
 
 
 install_snmp_collector() {
+
+elastiflow_snmp_config_strings=(
+  "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: \"true\""
+  "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: \"${elastiflow_account_id}\""
+  "EF_SNMP_LICENSE_KEY" "EF_SNMP_LICENSE_KEY: \"${elastiflow_snmp_license_key}\""
+  "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: \"true\""
+  "EF_OUTPUT_ELASTICSEARCH_ADDRESSES" "EF_OUTPUT_ELASTICSEARCH_ADDRESSES: \"127.0.0.1:9200\""
+  "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: \"${elastic_password2}\""
+  "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: \"true\""
+  "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION" "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: \"true\""
+ )
+
   print_message "Installing ElastiFlow Unified SNMP Collector..." "$GREEN"
   
   # Update package list and install prerequisites
