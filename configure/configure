@@ -18,11 +18,14 @@ dashboard_url=""
 elastiflow_snmp_config_path="/etc/elastiflow/snmpcoll.yml"
 
 check_for_updates() {
-  local current_script="/home/user/configure"
+  # Dynamically determine the path to the current script
+  local current_script=$(realpath "$0")
   local new_script_url="https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/configure/configure"
   local tmp_script="/tmp/configure"
 
-  echo "Debug: Checking for updates..."
+  echo "Checking for updates..."
+  echo "Current script path: $current_script"
+
   wget -q -O "$tmp_script" "$new_script_url"
 
   if [[ $? -ne 0 ]]; then
@@ -30,14 +33,13 @@ check_for_updates() {
     return
   fi
 
-  echo "Debug: Downloaded new script to $tmp_script."
+  echo "Downloaded new script to $tmp_script."
 
   local new_version=$(grep -m 1 '^# Version: ' "$tmp_script" | awk '{print $3}')
   local current_version=$(grep -m 1 '^# Version: ' "$current_script" | awk '{print $3}')
 
-  echo "Debug: Current script path: $current_script"
-  echo "Debug: Current version: $current_version"
-  echo "Debug: New version: $new_version"
+  echo "Current version: $current_version"
+  echo "New version: $new_version"
 
   if [[ -z "$current_version" ]]; then
     print_message "Failed to detect the current version." "$RED"
@@ -60,7 +62,7 @@ check_for_updates() {
     print_message "No updates available." "$GREEN"
   fi
 
-  echo "Debug: Cleaning up temporary script."
+  echo "Cleaning up temporary script."
   rm -f "$tmp_script"
 }
 
