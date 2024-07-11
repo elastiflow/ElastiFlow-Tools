@@ -27,7 +27,7 @@ check_for_updates() {
   echo "Checking for updates..."
   echo "Current script path: $current_script"
 
-  wget -O "$tmp_script" "$new_script_url"
+  wget -q -O "$tmp_script" "$new_script_url"
 
   if [[ $? -ne 0 ]]; then
     print_message "Failed to check for updates." "$RED"
