@@ -62,8 +62,8 @@ check_for_updates() {
     print_message "No updates available." "$GREEN"
   fi
 
-  echo "Cleaning up temporary script."
-  rm -f "$tmp_script"
+#  echo "Cleaning up temporary script."
+#  rm -f "$tmp_script"
 }
 
 print_message() {
