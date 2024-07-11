@@ -22,11 +22,11 @@ install_snmp_collector() {
   print_message "Installing ElastiFlow Unified SNMP Collector..." "$GREEN"
   
   # Update package list and install prerequisites
-  apt-get update -qq > /dev/null
-  apt-get install -qq -y snmp snmpd snmp-mibs-downloader curl apt-transport-https gnupg > /dev/null
+  apt-get update -qq
+  apt-get install -qq -y snmp snmpd snmp-mibs-downloader curl apt-transport-https gnupg
   
   # Download the ElastiFlow SNMP collector package
-  wget -O elastiflow-snmpcollector.deb "https://elastiflow-releases.s3.us-east-2.amazonaws.com/snmpcollector/elastiflow-snmpcollector_${snmp_collector_version}_linux_amd64.deb"
+  wget -O elastiflow-snmpcollector.deb "https://elastiflow-releases.s3.us-east-2.amazonaws.com/snmp-collector/snmp-collector_${snmp_collector_version}_linux_amd64.deb"
   
   # Install the package
   dpkg -i elastiflow-snmpcollector.deb
