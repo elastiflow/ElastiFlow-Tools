@@ -22,15 +22,21 @@ check_for_updates() {
   local new_script_url="https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/configure/configure"
   local tmp_script="/tmp/configure"
 
+  echo "Debug: Checking for updates..."
   wget -q -O "$tmp_script" "$new_script_url"
-
+  
   if [[ $? -ne 0 ]]; then
     print_message "Failed to check for updates." "$RED"
     return
   fi
 
+  echo "Debug: Downloaded new script to $tmp_script."
+
   local new_version=$(grep -m 1 '^# Version: ' "$tmp_script" | awk '{print $3}')
   local current_version=$(grep -m 1 '^# Version: ' "$current_script" | awk '{print $3}')
+
+  echo "Debug: Current version: $current_version"
+  echo "Debug: New version: $new_version"
 
   if [[ "$new_version" > "$current_version" ]]; then
     print_message "New version $new_version available." "$GREEN"
@@ -48,8 +54,10 @@ check_for_updates() {
     print_message "No updates available." "$GREEN"
   fi
 
+  echo "Debug: Cleaning up temporary script."
   rm -f "$tmp_script"
 }
+
 
 install_snmp_collector() {
   kibana_dashboards_version="8.2.x"
