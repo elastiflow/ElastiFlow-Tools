@@ -64,7 +64,7 @@ install_snmp_collector() {
   apt-get install -qq -y snmp snmpd snmp-mibs-downloader curl apt-transport-https gnupg
   
   # Download the ElastiFlow SNMP collector package
-  wget -O elastiflow-snmpcollector.deb "https://elastiflow-releases.s3.us-east-2.amazonaws.com/snmp-collector/snmp-collector_${elastiflow_snmp_collector_version}_linux_amd64.deb"
+  wget -q -O elastiflow-snmpcollector.deb "https://elastiflow-releases.s3.us-east-2.amazonaws.com/snmp-collector/snmp-collector_${elastiflow_snmp_collector_version}_linux_amd64.deb"
 
   # Install the package
   dpkg -i elastiflow-snmpcollector.deb
@@ -125,7 +125,7 @@ check_for_updates() {
   echo "Checking for updates..."
   echo "Current script path: $current_script"
 
-  wget --show-progress -O "$tmp_script" "$new_script_url"
+  wget -q -O "$tmp_script" "$new_script_url"
 
   if [[ $? -ne 0 ]]; then
     print_message "Failed to check for updates." "$RED"
