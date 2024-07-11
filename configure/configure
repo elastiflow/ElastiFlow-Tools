@@ -33,18 +33,23 @@ check_for_updates() {
   local current_version=$(grep -m 1 '^# Version: ' "$current_script" | awk '{print $3}')
 
   if [[ "$new_version" > "$current_version" ]]; then
-    print_message "New version $new_version available. Updating..." "$GREEN"
-    cp "$tmp_script" "$current_script"
-    chmod +x "$current_script"
-    print_message "Update successful. Restarting script..." "$GREEN"
-    exec "$current_script"
+    print_message "New version $new_version available." "$GREEN"
+    read -p "Do you want to update to the new version? (y/n): " update_choice
+    if [[ $update_choice == "y" ]]; then
+      print_message "Updating to version $new_version..." "$GREEN"
+      cp "$tmp_script" "$current_script"
+      chmod +x "$current_script"
+      print_message "Update successful. Restarting script..." "$GREEN"
+      exec "$current_script"
+    else
+      print_message "Update skipped." "$RED"
+    fi
   else
     print_message "No updates available." "$GREEN"
   fi
 
   rm -f "$tmp_script"
 }
-
 
 install_snmp_collector() {
   kibana_dashboards_version="8.2.x"
