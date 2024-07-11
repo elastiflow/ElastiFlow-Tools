@@ -16,8 +16,7 @@ elastic_username="elastic"
 elastic_password2="elastic"
 ip_address=""
 dashboard_url=""
-elastiflow_snmp_config_path="/etc/elastiflow/snmpcoll/snmpcoll.yml"
-
+elastiflow_snmp_config_path="/etc/elastiflow/snmpcoll.yml"
 
 
 install_snmp_collector() {
@@ -69,7 +68,6 @@ install_snmp_collector() {
     print_message "Failed to start ElastiFlow Unified SNMP Collector." "$RED"
   fi
 }
-
 
 
 # Helper function to print messages with color
