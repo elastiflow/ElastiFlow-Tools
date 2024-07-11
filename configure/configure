@@ -1205,7 +1205,6 @@ show_maxmind() {
   print_message "**********************************" "$GREEN"
 }
 
-set_elastiflow_first_boot_to_zero
 check_for_updates
 
 while true; do
