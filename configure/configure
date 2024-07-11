@@ -18,6 +18,34 @@ ip_address=""
 dashboard_url=""
 elastiflow_snmp_config_path="/etc/elastiflow/snmpcoll.yml"
 
+check_for_updates() {
+  local current_script="/home/user/configure"
+  local new_script_url="https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/configure/configure"
+  local tmp_script="/tmp/configure"
+
+  wget -q -O "$tmp_script" "$new_script_url"
+
+  if [[ $? -ne 0 ]]; then
+    print_message "Failed to check for updates." "$RED"
+    return
+  fi
+
+  local new_version=$(grep -m 1 '^# Version: ' "$tmp_script" | awk '{print $3}')
+  local current_version=$(grep -m 1 '^# Version: ' "$current_script" | awk '{print $3}')
+
+  if [[ "$new_version" > "$current_version" ]]; then
+    print_message "New version $new_version available. Updating..." "$GREEN"
+    cp "$tmp_script" "$current_script"
+    chmod +x "$current_script"
+    print_message "Update successful. Restarting script..." "$GREEN"
+    exec "$current_script"
+  else
+    print_message "No updates available." "$GREEN"
+  fi
+
+  rm -f "$tmp_script"
+}
+
 
 install_snmp_collector() {
   kibana_dashboards_version="8.2.x"
@@ -1178,6 +1206,7 @@ show_maxmind() {
 }
 
 set_elastiflow_first_boot_to_zero
+check_for_updates
 
 while true; do
   show_intro
