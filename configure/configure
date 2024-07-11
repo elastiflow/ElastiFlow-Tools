@@ -117,23 +117,31 @@ install_snmp_collector() {
   find_and_replace "$elastiflow_snmp_config_path" "${elastiflow_snmp_config_strings[@]}"
 
   # Enable and start the SNMP collector service
-  systemctl enable elastiflow-snmpcollector.service
-  systemctl start elastiflow-snmpcollector.service
+  systemctl enable snmpcoll.service
+  systemctl start snmpcoll.service
 
   #install snmp dashboards
   printf "\n\n\n*********Downloading and installing ElastiFlow SNMP dashboards\n\n"
+
+  # Remove the existing directory if it exists
+  if [ -d "/etc/elastiflow_for_elasticsearch" ]; then
+    rm -rf /etc/elastiflow_for_elasticsearch
+  fi
+  
+  # Clone the repository
   git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
+
   response=$(curl --connect-timeout 10 -X POST -u $elastic_username:$elastic_password2 "localhost:5601/api/saved_objects/_import?overwrite=true" -H "kbn-xsrf: true" --form file=@/etc/elastiflow_for_elasticsearch/kibana/snmp/kibana-$kibana_dashboards_version-snmp-$kibana_dashboards_codex_ecs.ndjson -H 'kbn-xsrf: true')
   dashboards_success=$(echo "$response" | jq -r '.success')
 
   if [ "$dashboards_success" == "true" ]; then
-      printf "Flow dashboards installed successfully.\n\n"
+      print_message "SNMP dashboards installed successfully." "$GREEN"
   else
-      printf "Flow dashboards not installed successfully\n\n"
+      print_message "SNMP dashboards not installed successfully." "$RED"
   fi
 
   # Check the status of the service
-  if systemctl is-active --quiet elastiflow-snmpcollector.service; then
+  if systemctl is-active --quiet snmpcoll.service; then
     print_message "ElastiFlow Unified SNMP Collector installed and running." "$GREEN"
   else
     print_message "Failed to start ElastiFlow Unified SNMP Collector." "$RED"
