@@ -17,6 +17,17 @@ log_message() {
     echo "$(date): $1" | tee -a $LOG_FILE
 }
 
+# Function to check if an index is the write index for the data stream
+is_write_index() {
+    local index=$1
+    local write_index=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/_data_stream/$DATA_STREAM" | jq -r '.data_streams[0].indices[] | select(.index_name == "'$index'") | .index_name')
+    if [[ $index == $write_index ]]; then
+        echo "true"
+    else
+        echo "false"
+    fi
+}
+
 while true; do
     # Get the percentage of used space on the root partition and calculate free space
     USED_SPACE=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
@@ -30,11 +41,9 @@ while true; do
         INITIAL_FREE_SPACE=$(df / | awk 'NR==2 {print $4}')
         log_message "Initial free space: $INITIAL_FREE_SPACE KB."
 
-        # Get the current and next write indices for the data stream
+        # Get the current write index for the data stream
         CURRENT_WRITE_INDEX=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/_data_stream/$DATA_STREAM" | jq -r '.data_streams[0].indices[0].index_name')
-        NEXT_WRITE_INDEX=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/_data_stream/$DATA_STREAM" | jq -r '.data_streams[0].indices[1].index_name')
         log_message "Current write index: $CURRENT_WRITE_INDEX."
-        log_message "Next write index: $NEXT_WRITE_INDEX."
 
         while [ "$FREE_SPACE" -lt $THRESHOLD ]; do
             log_message "Attempting to identify all eligible shards of the data stream to free up space."
@@ -46,13 +55,13 @@ while true; do
             log_message "ALL_SHARDS content: $ALL_SHARDS"
 
             # Filter out the current and next write indices
-            ELIGIBLE_SHARDS=$(echo "$ALL_SHARDS" | grep -v "$CURRENT_WRITE_INDEX" | grep -v "$NEXT_WRITE_INDEX")
+            ELIGIBLE_SHARDS=$(echo "$ALL_SHARDS" | grep -v "$CURRENT_WRITE_INDEX")
 
             if [ -z "$ALL_SHARDS" ]; then
                 log_message "No shards exist in the data stream."
                 break
             elif [ -z "$ELIGIBLE_SHARDS" ]; then
-                log_message "The remaining shards are the current or next write index."
+                log_message "The remaining shards are the current write index."
                 break
             fi
 
@@ -89,6 +98,13 @@ while true; do
                 while read -r SHARD; do
                     SHARD_NAME=$(echo "$SHARD" | awk '{print $1}')
                     SHARD_NUMBER=$(echo "$SHARD" | awk '{print $2}')
+
+                    # Check if the shard is part of the current or next write index
+                    if [ $(is_write_index "$SHARD_NAME") == "true" ]; then
+                        log_message "Skipping deletion of write index shard $SHARD_NAME (shard number: $SHARD_NUMBER)."
+                        continue
+                    fi
+
                     DELETE_RESPONSE=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -X DELETE "$ELASTIC_ENDPOINT/$SHARD_NAME" -s)
                     DELETE_STATUS=$?
 
