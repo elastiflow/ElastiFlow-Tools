@@ -86,10 +86,16 @@ install_snmp_collector() {
   # Clone the repository
   git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
 
+  # Path to the downloaded JSON file
+  json_file="/etc/elastiflow_for_elasticsearch/kibana/snmp/kibana-$kibana_dashboards_version-snmp-$kibana_dashboards_codex_ecs.ndjson"
+  
+  # Perform find and replace in the JSON file
+  sed -i 's/elastiflow-\*-codex-\*/elastiflow-telemetry_\*-codex-\*/g' "$json_file"
+
   response=$(curl --silent --show-error --fail --connect-timeout 10 -X POST -u $elastic_username:$elastic_password2 \
     "localhost:5601/api/saved_objects/_import?overwrite=true" \
     -H "kbn-xsrf: true" \
-    --form file=@/etc/elastiflow_for_elasticsearch/kibana/snmp/kibana-$kibana_dashboards_version-snmp-$kibana_dashboards_codex_ecs.ndjson \
+    --form file=@"$json_file" \
     -H 'kbn-xsrf: true')
 
   dashboards_success=$(echo "$response" | jq -r '.success')
