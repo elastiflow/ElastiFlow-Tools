@@ -18,63 +18,6 @@ dashboard_url=""
 elastiflow_snmp_config_path="/etc/elastiflow/snmpcoll.yml"
 
 
-check_for_updates() {
-  # Dynamically determine the path to the current script
-  local current_script=$(realpath "$0")
-  local new_script_url="https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/configure/configure"
-  local tmp_script="/tmp/configure"
-
-  echo "Checking for updates..."
-  echo "Current script path: $current_script"
-
-  wget -q -O "$tmp_script" "$new_script_url"
-
-  if [[ $? -ne 0 ]]; then
-    print_message "Failed to check for updates." "$RED"
-    return
-  fi
-
-  echo "Downloaded new script to $tmp_script."
-
-  local new_version=$(grep -m 1 '^# Version: ' "$tmp_script" | awk '{print $3}')
-  local current_version=$(grep -m 1 '^# Version: ' "$current_script" | awk '{print $3}')
-
-  echo "Current version: $current_version"
-  echo "New version: $new_version"
-
-  if [[ -z "$current_version" ]]; then
-    print_message "Failed to detect the current version." "$RED"
-    return
-  fi
-
-  if [[ "$new_version" > "$current_version" ]]; then
-    print_message "New version $new_version available." "$GREEN"
-    read -p "Do you want to update to the new version? (y/n): " update_choice
-    if [[ $update_choice == "y" ]]; then
-      print_message "Updating to version $new_version..." "$GREEN"
-      cp "$tmp_script" "$current_script"
-      chmod +x "$current_script"
-      print_message "Update successful. Restarting script..." "$GREEN"
-      exec "$current_script"
-    else
-      print_message "Update skipped." "$RED"
-    fi
-  else
-    print_message "No updates available." "$GREEN"
-  fi
-
-  echo "Cleaning up temporary script."
-  rm -f "$tmp_script"
-}
-
-
-print_message() {
-  local message=$1
-  local color=$2
-  echo -e "${color}${message}${NC}"
-}
-
-
 install_snmp_collector() {
   kibana_dashboards_version="8.2.x"
   kibana_dashboards_codex_ecs="codex"
@@ -120,7 +63,7 @@ install_snmp_collector() {
   systemctl enable snmpcoll.service
   systemctl start snmpcoll.service
 
-  #install snmp dashboards
+  # Install SNMP dashboards
   printf "\n\n\n*********Downloading and installing ElastiFlow SNMP dashboards\n\n"
 
   # Remove the existing directory if it exists
@@ -131,13 +74,21 @@ install_snmp_collector() {
   # Clone the repository
   git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
 
-  response=$(curl --connect-timeout 10 -X POST -u $elastic_username:$elastic_password2 "localhost:5601/api/saved_objects/_import?overwrite=true" -H "kbn-xsrf: true" --form file=@/etc/elastiflow_for_elasticsearch/kibana/snmp/kibana-$kibana_dashboards_version-snmp-$kibana_dashboards_codex_ecs.ndjson -H 'kbn-xsrf: true')
+  response=$(curl --verbose --connect-timeout 10 -X POST -u $elastic_username:$elastic_password2 \
+    "localhost:5601/api/saved_objects/_import?overwrite=true" \
+    -H "kbn-xsrf: true" \
+    --form file=@/etc/elastiflow_for_elasticsearch/kibana/snmp/kibana-$kibana_dashboards_version-snmp-$kibana_dashboards_codex_ecs.ndjson \
+    -H 'kbn-xsrf: true')
+
+  echo "Debug: API response:"
+  echo "$response"
+
   dashboards_success=$(echo "$response" | jq -r '.success')
 
   if [ "$dashboards_success" == "true" ]; then
-      print_message "SNMP dashboards installed successfully." "$GREEN"
+    print_message "SNMP dashboards installed successfully." "$GREEN"
   else
-      print_message "SNMP dashboards not installed successfully." "$RED"
+    print_message "SNMP dashboards not installed successfully." "$RED"
   fi
 
   # Check the status of the service
@@ -147,6 +98,7 @@ install_snmp_collector() {
     print_message "Failed to start ElastiFlow Unified SNMP Collector." "$RED"
   fi
 }
+
 
 
 # Helper function to print messages with color
