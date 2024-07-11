@@ -16,6 +16,8 @@ elastic_username="elastic"
 elastic_password2="elastic"
 ip_address=""
 dashboard_url=""
+elastiflow_snmp_config_path="/etc/elastiflow/snmpcoll/snmpcoll.yml"
+
 
 
 install_snmp_collector() {
@@ -43,10 +45,7 @@ elastiflow_snmp_config_strings=(
   # Install the package
   dpkg -i elastiflow-snmpcollector.deb
 
-  # Configure the SNMP collector (adjust paths and commands based on actual instructions)
-  cp /etc/elastiflow/snmp/snmpcollector.yml.example /etc/elastiflow/snmp/snmpcollector.yml
-
-  find_and_replace "$flowcoll_snmp_config_path" "${elastiflow_snmp_config_strings[@]}"
+  find_and_replace "$elastiflow_snmp_config_path" "${elastiflow_snmp_config_strings[@]}"
 
   # Enable and start the SNMP collector service
   systemctl enable elastiflow-snmpcollector.service
@@ -58,9 +57,6 @@ elastiflow_snmp_config_strings=(
   else
     print_message "Failed to start ElastiFlow Unified SNMP Collector." "$RED"
   fi
-
-  # Cleanup
-  rm elastiflow-snmpcollector.deb
 }
 
 
