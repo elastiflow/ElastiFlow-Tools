@@ -373,18 +373,6 @@ get_dashboard_url() {
   fi
 }
 
-set_elastiflow_first_boot_to_zero() {
-  printf "setting first boot to zero\n\n"
-  local variable="ELASTIFLOW_FIRST_BOOT"
-  local value="0"
-  local bashrc_path="/home/user/.bashrc"
-  if grep -q "^\s*export $variable=" "$bashrc_path"; then
-    sed -i "s/^export $variable=.*/export $variable=$value/" "$bashrc_path"
-  else
-    echo "export $variable=$value" >> "$bashrc_path"
-  fi
-  source $bashrc_path
-}
 
 comment_and_add_line() {
   local FILE=$1
