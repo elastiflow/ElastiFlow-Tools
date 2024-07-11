@@ -24,7 +24,7 @@ check_for_updates() {
 
   echo "Debug: Checking for updates..."
   wget -q -O "$tmp_script" "$new_script_url"
-  
+
   if [[ $? -ne 0 ]]; then
     print_message "Failed to check for updates." "$RED"
     return
@@ -35,8 +35,14 @@ check_for_updates() {
   local new_version=$(grep -m 1 '^# Version: ' "$tmp_script" | awk '{print $3}')
   local current_version=$(grep -m 1 '^# Version: ' "$current_script" | awk '{print $3}')
 
+  echo "Debug: Current script path: $current_script"
   echo "Debug: Current version: $current_version"
   echo "Debug: New version: $new_version"
+
+  if [[ -z "$current_version" ]]; then
+    print_message "Failed to detect the current version." "$RED"
+    return
+  fi
 
   if [[ "$new_version" > "$current_version" ]]; then
     print_message "New version $new_version available." "$GREEN"
@@ -54,8 +60,14 @@ check_for_updates() {
     print_message "No updates available." "$GREEN"
   fi
 
-  #echo "Debug: Cleaning up temporary script."
-  #rm -f "$tmp_script"
+  echo "Debug: Cleaning up temporary script."
+  rm -f "$tmp_script"
+}
+
+print_message() {
+  local message=$1
+  local color=$2
+  echo -e "${color}${message}${NC}"
 }
 
 
