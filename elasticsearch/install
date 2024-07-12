@@ -550,6 +550,11 @@ cleanup (){
 
 }
 
+download_aux_files(){
+  download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/configure/configure" "/home/user/configure"
+  download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/support_pack/elastiflow_elasticsearch_opensearch_support_pack" "/home/user/support"
+}
+
 
 main() {
   check_for_updates
@@ -569,10 +574,9 @@ main() {
   configure_kibana
   install_elastiflow
   install_dashboards
+  download_aux_files
   check_all_services
   check_dashboards_status
-  download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/configure/configure" "/home/user/configure"
-  download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/support_pack/elastiflow_elasticsearch_opensearch_support_pack" "/home/user/support"
   display_versions
   display_dashboard_url
   backup_and_create_issue_text
