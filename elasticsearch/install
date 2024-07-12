@@ -188,7 +188,7 @@ get_host_ip() {
 download_file() {
   local url=$1
   local target_path=$2
-  curl -o "$target_path" "$url"
+  curl -s -o "$target_path" "$url"
   if [ $? -eq 0 ]; then
     chmod +x "$target_path"
     echo "Downloaded and made $target_path executable."
@@ -196,6 +196,7 @@ download_file() {
     echo "Failed to download $target_path.\n\n"
   fi
 }
+
 
 get_dashboard_url() {
   local kibana_url="http://$ip_address:5601"
@@ -445,14 +446,26 @@ install_elastiflow() {
 install_dashboards() {
   printf "\n\n\n*********Downloading and installing ElastiFlow flow dashboards\n\n"
   git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
-  response=$(curl --connect-timeout 10 -X POST -u $elastic_username:$elastic_password "localhost:5601/api/saved_objects/_import?overwrite=true" -H "kbn-xsrf: true" --form file=@/etc/elastiflow_for_elasticsearch/kibana/flow/kibana-$kibana_dashboards_version-flow-$kibana_dashboards_codex_ecs.ndjson -H 'kbn-xsrf: true')
-  dashboards_success=$(echo "$response" | jq -r '.success')
-  if [ "$dashboards_success" == "true" ]; then
-      printf "Flow dashboards installed successfully.\n\n"
+  
+  response=$(curl --connect-timeout 10 -X POST -u $elastic_username:$elastic_password \
+    "localhost:5601/api/saved_objects/_import?overwrite=true" \
+    -H "kbn-xsrf: true" \
+    --form file=@/etc/elastiflow_for_elasticsearch/kibana/flow/kibana-$kibana_dashboards_version-flow-$kibana_dashboards_codex_ecs.ndjson \
+    -H 'kbn-xsrf: true' 2>&1 >/dev/null)
+
+  if [ $? -ne 0 ]; then
+    printf "Error: %s\n" "$response"
+    printf "Flow dashboards not installed successfully\n\n"
   else
-      printf "Flow dashboards not installed successfully\n\n"
+    dashboards_success=$(echo "$response" | jq -r '.success')
+    if [ "$dashboards_success" == "true" ]; then
+        printf "Flow dashboards installed successfully.\n\n"
+    else
+        printf "Flow dashboards not installed successfully\n\n"
+    fi
   fi
 }
+
 
 check_service_status() {
   local SERVICE_NAME=$1
@@ -473,10 +486,6 @@ resize_part_to_max() {
 
     # Resize the filesystem
     resize2fs -p /dev/mapper/ubuntu--vg-ubuntu--lv
-
-    # Display the partition size after resizing
-    echo "Partition size after resizing:"
-    lsblk -o NAME,SIZE | grep 'ubuntu-lv'
 }
 
 
@@ -497,6 +506,7 @@ check_dashboards_status() {
 
 display_versions() {
   printf "*********************************************\n"
+  
   version=$(/usr/share/elastiflow/bin/flowcoll -version)
   printf "Installed ElastiFlow version: $version\n"
   version=$kibana_dashboards_version
@@ -509,6 +519,18 @@ display_versions() {
   printf "Installed Java version: $version\n"
   version=$(lsb_release -d | awk -F'\t' '{print $2}')
   printf "Operating System: $version\n"
+  display_version "/home/user/configure"
+  display_version "/home/user/support"
+}
+
+display_version() {
+  local file="$1"
+  local version=$(grep -m 1 '^# Version: ' "$file" | awk '{print $3}')
+  if [[ -z "$version" ]]; then
+    echo "Failed to detect the version in $file"
+  else
+    echo "Version of $(basename "$file"): $version"
+  }
 }
 
 display_dashboard_url() {
@@ -541,12 +563,10 @@ cleanup (){
   dhclient -r
   
   resize_part_to_max
-  
-  #clear command history
-  history -c
 
-  #delete self
+  #delete self and any deb files
   rm -f "$current_script"
+  rm -f *.deb
 
 }
 
