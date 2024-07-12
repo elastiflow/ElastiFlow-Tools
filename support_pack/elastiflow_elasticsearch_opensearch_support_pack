@@ -376,7 +376,7 @@ wrap_up() {
 exec &> >(tee -a "$temp_dir/$log_file")
 
 echo "Starting ElastiFlow Support Pack at $(date)"
-
+check_for_updates
 check_and_enable_flowcoll_logging
 attempt_fetch_node_stats
 attempt_fetch_saved_objects
