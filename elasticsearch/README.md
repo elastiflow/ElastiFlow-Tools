@@ -23,11 +23,11 @@ What this script does:
 
 Requirements:
 ----------------
-One Ubuntu Server version 22 or 23, or Debian server version 11 or 12, freshly installed
+One Ubuntu Server version 22 or greater, or Debian server version 11 or greater, freshly installed
 
 Instructions:
 ----------------
-1) Copy install.sh to your home directory
-2) sudo chmod +x install.sh
-3) sudo ./install.sh
+1) Copy install to your home directory
+2) sudo chmod +x install
+3) sudo ./install
 4) When completed, access Kibana at http://your_server_ip:5601, (elastic / elastic)
