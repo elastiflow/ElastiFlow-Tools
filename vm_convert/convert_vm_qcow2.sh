@@ -21,6 +21,13 @@ memory_gb=32
 num_cpus=4
 memory_kib=$((memory_gb * 1024 * 1024))
 
+# Generate a random MAC address
+hexchars="0123456789ABCDEF"
+mac="52:54:00"
+for i in {1..3}; do
+  mac="$mac:${hexchars:$(( $RANDOM % 16 )):1}${hexchars:$(( $RANDOM % 16 )):1}"
+done
+
 # Create a conversion in progress indicator
 touch "$input_dir/conversion_in_progress"
 
@@ -92,7 +99,7 @@ or other application using the libvirt API.
       <address type='pci' domain='0x0000' bus='0x00' slot='0x04' function='0x0'/>
     </disk>
     <interface type='network'>
-      <mac address='52:54:00:83:8f:20'/>
+      <mac address='${mac}'/>
       <source network='default'/>
       <model type='virtio'/>
       <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/>
