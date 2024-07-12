@@ -536,7 +536,7 @@ append_to_bashrc() {
 }
 
 cleanup (){
-  
+  local current_script=$(realpath "$0")  
   #release DHCP address
   dhclient -r
   
@@ -545,7 +545,8 @@ cleanup (){
   #clear command history
   history -c
 
-  
+  #delete self
+  rm -f "$current_script"
 
 }
 
@@ -575,20 +576,7 @@ main() {
   display_versions
   display_dashboard_url
   backup_and_create_issue_text
+  cleanup
 
-  ####set configure script to run on first logon
-
-#  script_text='
-#export ELASTIFLOW_FIRST_BOOT=1
-#  '
-#  append_to_bashrc "$script_text"
-#  
-#  script_text='
-#  if [ "$ELASTIFLOW_FIRST_BOOT" -eq 1 ]; then
-#      sudo ./configure
-#  fi
-#  '
-#  append_to_bashrc "$script_text"
-}
 
 main
