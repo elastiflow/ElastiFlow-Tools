@@ -606,8 +606,6 @@ cleanup (){
   local current_script=$(realpath "$0")  
   #release DHCP address
   dhclient -r
-  
-  resize_part_to_max
 
   #delete self and any deb files
   rm -f "$current_script"
@@ -642,6 +640,7 @@ main() {
   download_aux_files
   check_all_services
   check_dashboards_status
+  resize_part_to_max
   display_versions
   display_dashboard_url
   backup_and_create_issue_text
