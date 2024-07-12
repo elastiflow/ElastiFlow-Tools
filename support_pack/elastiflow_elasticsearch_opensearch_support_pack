@@ -11,6 +11,11 @@ log_file="script_execution.log"
 system_info_file="system.txt"
 temp_dir="temp_elastiflow_$current_time"
 
+# Define color codes
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
 # Create temporary directory
 mkdir -p $temp_dir
 
