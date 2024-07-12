@@ -548,7 +548,7 @@ display_version() {
   else
     echo "Version of $(basename "$file"): $version"
   }
-}
+
 
 display_dashboard_url() {
   dashboard_url=$(get_dashboard_url "ElastiFlow (flow): Overview")
