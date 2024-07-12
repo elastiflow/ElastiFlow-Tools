@@ -642,10 +642,10 @@ download_aux_files(){
 
 main() {
   check_for_updates
-  install_os_updates
+  print_startup_message
   check_for_root
   check_compatibility
-  print_startup_message
+  install_os_updates
   ip_address=$(get_host_ip)
   remove_update_service
   install_prerequisites
