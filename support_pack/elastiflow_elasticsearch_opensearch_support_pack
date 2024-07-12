@@ -18,8 +18,9 @@ mkdir -p $temp_dir
 check_for_updates() {
   # Dynamically determine the path to the current script
   local current_script=$(realpath "$0")
-  local new_script_url="https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/configure/configure"
-  local tmp_script="/tmp/configure"
+  local new_script_url="https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/support_pack/elastiflow_elasticsearch_opensearch_support_pack"
+
+  local tmp_script="/tmp/support"
 
   echo "Checking for updates..."
   echo "Current script path: $current_script"
