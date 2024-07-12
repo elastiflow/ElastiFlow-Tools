@@ -283,9 +283,26 @@ print_startup_message() {
 }
 
 install_prerequisites() {
-  printf "\n\n\n*********Installing prereqs...\n\n"
-  apt-get -qq update && apt-get -qq install jq net-tools git bc gpg default-jre curl wget unzip apt-transport-https isc-dhcp-client libpcap-dev
+  printf "\n\n\n*********Installing prerequisites...\n\n"
+
+  echo "Updating package list..."
+  apt-get -qq update
+
+  # List of packages to be installed
+  packages=(jq net-tools git bc gpg default-jre curl wget unzip apt-transport-https isc-dhcp-client libpcap-dev)
+
+  # Loop through the list and install each package
+  for package in "${packages[@]}"; do
+    echo "Installing $package..."
+    apt-get -qq install -y "$package"
+    if [ $? -eq 0 ]; then
+      echo "$package installed successfully."
+    else
+      echo "Failed to install $package."
+    fi
+  done
 }
+
 
 tune_system() {
   printf "\n\n\n*********System tuning starting...\n\n"
