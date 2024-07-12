@@ -547,8 +547,8 @@ display_version() {
     echo "Failed to detect the version in $file"
   else
     echo "Version of $(basename "$file"): $version"
-  }
-
+  fi
+}
 
 display_dashboard_url() {
   dashboard_url=$(get_dashboard_url "ElastiFlow (flow): Overview")
