@@ -28,6 +28,27 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
+# Function to check for and install updates
+install_os_updates() {
+  printf "\n\n\n*********Checking for and installing updates...\n\n"
+
+  # Update package list
+  apt-get -qq update
+
+  # Upgrade packages without prompting
+  apt-get -qq -y upgrade
+
+  # Perform a distribution upgrade without prompting
+  apt-get -qq -y dist-upgrade
+
+  # Clean up
+  apt-get -qq -y autoremove
+  apt-get -qq -y autoclean
+
+  printf "\n\n\n*********Updates installed successfully.\n\n"
+}
+
+
 backup_and_create_issue_text() {
   # Backup the existing /etc/issue file
   cp /etc/issue /etc/issue.bak
@@ -621,6 +642,7 @@ download_aux_files(){
 
 main() {
   check_for_updates
+  install_os_updates
   check_for_root
   check_compatibility
   print_startup_message
