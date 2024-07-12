@@ -515,7 +515,7 @@ install_dashboards() {
   printf "\n\n\n*********Downloading and installing ElastiFlow flow dashboards\n\n"
   git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
   
-  response=$(curl --connect-timeout 10 -X POST -u $elastic_username:$elastic_password "localhost:5601/api/saved_objects/_import?overwrite=true" -H "kbn-xsrf: true" --form file=@/etc/elastiflow_for_elasticsearch/kibana/flow/kibana-8.2.x-flow-ecs.ndjson -H 'kbn-xsrf: true')
+  response=$(curl --connect-timeout 10 -X POST -u $elastic_username:$elastic_password "localhost:5601/api/saved_objects/_import?overwrite=true" -H "kbn-xsrf: true" --form file=@/etc/elastiflow_for_elasticsearch/kibana/flow/kibana-kibana_dashboards_version-flow-kibana_dashboards_codex_ecs.ndjson -H 'kbn-xsrf: true')
 
   if [ $? -ne 0 ]; then
     printf "Error: %s\n" "$response"
