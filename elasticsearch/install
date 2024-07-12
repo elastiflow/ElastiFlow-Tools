@@ -546,7 +546,7 @@ display_version() {
   if [[ -z "$version" ]]; then
     echo "Failed to detect the version in $file"
   else
-    echo "Version of $(basename "$file"): $version"
+    echo "Version of $(basename "$file"): $version script"
   fi
 }
 
