@@ -68,7 +68,7 @@ EOF
   )
 
   # Write the new content to /etc/issue
-  echo "$new_issue_content" | tee /etc/issue
+  echo "$new_issue_content" > /etc/issue
 }
 
 print_message() {
@@ -535,6 +535,21 @@ append_to_bashrc() {
     echo ".bashrc has been reloaded."
 }
 
+cleanup (){
+  
+  #release DHCP address
+  dhclient -r
+  
+  resize_part_to_max
+  
+  #clear command history
+  history -c
+
+  
+
+}
+
+
 main() {
   check_for_updates
   check_for_root
@@ -559,14 +574,8 @@ main() {
   download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/support_pack/elastiflow_elasticsearch_opensearch_support_pack" "/home/user/support"
   display_versions
   display_dashboard_url
-
   backup_and_create_issue_text
-  
-  #release DHCP address
-  #dhclient -r
-  
-  resize_part_to_max
- 
+
   ####set configure script to run on first logon
 
 #  script_text='
