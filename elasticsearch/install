@@ -577,6 +577,6 @@ main() {
   display_dashboard_url
   backup_and_create_issue_text
   cleanup
-
+}
 
 main
