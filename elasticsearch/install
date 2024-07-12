@@ -370,7 +370,7 @@ install_elasticsearch() {
   elastic_install_log=$(apt-get -q update && apt-get -q install elasticsearch=$elasticsearch_version | stdbuf -oL tee /dev/tty) || handle_error "Failed to install Elasticsearch." "${LINENO}"
   elastic_password=$(echo "$elastic_install_log" | awk -F' : ' '/The generated password for the elastic built-in superuser/{print $2}') 
   elastic_password=$(echo -n "$elastic_password" | tr -cd '[:print:]')
-  printf "\n\n\nElastic password: $elastic_password\n\n"
+  #printf "\n\n\nElastic password: $elastic_password\n\n"
 }
 
 configure_jvm_memory() {
