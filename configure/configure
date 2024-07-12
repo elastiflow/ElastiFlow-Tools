@@ -138,7 +138,7 @@ check_for_updates() {
   local current_version=$(grep -m 1 '^# Version: ' "$current_script" | awk '{print $3}')
 
   echo "Current version: $current_version"
-  echo "New version: $new_version"
+  echo "Remote version: $new_version"
 
   if [[ -z "$current_version" ]]; then
     print_message "Failed to detect the current version." "$RED"
@@ -146,8 +146,8 @@ check_for_updates() {
   fi
 
   if [[ "$new_version" > "$current_version" ]]; then
-    print_message "New version $new_version available." "$GREEN"
-    read -p "Do you want to update to the new version? (y/n): " update_choice
+    print_message "Remote version $new_version available." "$GREEN"
+    read -p "Do you want to update to the Remote version? (y/n): " update_choice
     if [[ $update_choice == "y" ]]; then
       print_message "Updating to version $new_version..." "$GREEN"
       cp "$tmp_script" "$current_script"
