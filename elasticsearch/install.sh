@@ -97,6 +97,58 @@ comment_and_replace_line() {
   fi
 }
 
+
+check_for_updates() {
+  # Dynamically determine the path to the current script
+  local current_script=$(realpath "$0")
+  local new_script_url="https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/configure/configure"
+  local tmp_script="/tmp/configure"
+
+  echo "Checking for updates..."
+  echo "Current script path: $current_script"
+
+  wget -q -O "$tmp_script" "$new_script_url"
+
+  if [[ $? -ne 0 ]]; then
+    print_message "Failed to check for updates." "$RED"
+    return
+  fi
+
+  echo "Downloaded new script to $tmp_script."
+
+  local new_version=$(grep -m 1 '^# Version: ' "$tmp_script" | awk '{print $3}')
+  local current_version=$(grep -m 1 '^# Version: ' "$current_script" | awk '{print $3}')
+
+  echo "Current version: $current_version"
+  echo "Remote version: $new_version"
+
+  if [[ -z "$current_version" ]]; then
+    print_message "Failed to detect the current version." "$RED"
+    return
+  fi
+
+  if [[ "$new_version" > "$current_version" ]]; then
+    print_message "Remote version $new_version available." "$GREEN"
+    read -p "Do you want to update to the Remote version? (y/n): " update_choice
+    if [[ $update_choice == "y" ]]; then
+      print_message "Updating to version $new_version..." "$GREEN"
+      cp "$tmp_script" "$current_script"
+      chmod +x "$current_script"
+      print_message "Update successful. Restarting script..." "$GREEN"
+      exec "$current_script"
+    else
+      print_message "Update skipped." "$RED"
+    fi
+  else
+    print_message "No updates available." "$GREEN"
+  fi
+
+  echo "Cleaning up temporary script."
+  rm -f "$tmp_script"
+}
+
+
+
 get_host_ip() {
   INTERFACE=$(ip -o link show | awk -F': ' '{print $2}' | grep -vE '^(docker|lo)' | head -n 1)
   if [ -z "$INTERFACE" ]; then
@@ -465,6 +517,7 @@ append_to_bashrc() {
 }
 
 main() {
+  check_for_updates
   check_for_root
   check_compatibility
   print_startup_message
