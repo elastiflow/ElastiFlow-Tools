@@ -1,0 +1,21 @@
+display_system_info() {
+  # Main partition size in GB
+  main_partition_size=$(df -h / | awk 'NR==2 {print $2}')
+  echo "Main partition size: $main_partition_size"
+
+  # Free partition space in percentage and GB
+  free_partition_space_percent=$(df -h / | awk 'NR==2 {print $5}')
+  free_partition_space_gb=$(df -h / | awk 'NR==2 {print $4}')
+  echo "Free partition space: $free_partition_space_gb ($free_partition_space_percent)"
+
+  # Installed RAM in GB
+  installed_ram_gb=$(free -g | awk '/^Mem:/{print $2}')
+  echo "Installed RAM: ${installed_ram_gb}GB"
+
+  # Number of physical cores
+  physical_cores=$(lscpu | awk '/^Core\(s\) per socket:/{print $4}')
+  echo "Number of physical cores: $physical_cores"
+}
+
+# Call the function to display the system info
+display_system_info
