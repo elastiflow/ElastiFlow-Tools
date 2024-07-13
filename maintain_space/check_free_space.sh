@@ -48,7 +48,7 @@ get_write_indices() {
 # Function to get all eligible indices of the data stream
 get_eligible_indices() {
     ALL_INDICES=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/_cat/indices?v" | grep "$DATA_STREAM")
-    log_message "ALL_INDICES content: $ALL_INDICES"
+    log_message "ALL_INDICES content:\n$ALL_INDICES"
     ELIGIBLE_INDICES=$(echo "$ALL_INDICES" | grep -v "$CURRENT_WRITE_INDEX" | grep -v "$NEXT_WRITE_INDEX")
     if [ -z "$ALL_INDICES" ]; then
         log_message "No indices exist in the data stream."
@@ -57,7 +57,7 @@ get_eligible_indices() {
         log_message "The remaining indices are the current or next write index."
         return 1
     fi
-    log_message "Eligible indices for deletion: $ELIGIBLE_INDICES"
+    log_message "Eligible indices for deletion:\n$ELIGIBLE_INDICES"
     return 0
 }
 
@@ -96,17 +96,6 @@ delete_eligible_indices() {
             log_error "Deleted index $INDEX_NAME. Curl response: $DELETE_RESPONSE"
         fi
     done <<< "$ELIGIBLE_INDICES"
-
-    # Restart flowcoll.service if indices are deleted
-    if [ -n "$ELIGIBLE_INDICES" ]; then
-        log_message "Restarting flowcoll.service."
-        systemctl restart flowcoll.service
-        if [ $? -eq 0 ]; then
-            log_message "flowcoll.service restarted successfully."
-        else
-            log_error "Failed to restart flowcoll.service."
-        fi
-    fi
 }
 
 # Function to check disk space and delete indices if necessary
