@@ -36,62 +36,61 @@ get_write_indices() {
     log_message "Next write index: $NEXT_WRITE_INDEX."
 }
 
-# Function to get all eligible shards of the data stream
-get_eligible_shards() {
-    ALL_SHARDS=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/_cat/shards?h=index,shard,prirep,state,unassigned.reason,store,ip,node,creation.date" | grep "$DATA_STREAM")
-    log_message "ALL_SHARDS content: $ALL_SHARDS"
-    ELIGIBLE_SHARDS=$(echo "$ALL_SHARDS" | grep -v "$CURRENT_WRITE_INDEX" | grep -v "$NEXT_WRITE_INDEX")
-    if [ -z "$ALL_SHARDS" ]; then
-        log_message "No shards exist in the data stream."
+# Function to get all eligible indices of the data stream
+get_eligible_indices() {
+    ALL_INDICES=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/_cat/indices?v" | grep "$DATA_STREAM")
+    log_message "ALL_INDICES content: $ALL_INDICES"
+    ELIGIBLE_INDICES=$(echo "$ALL_INDICES" | grep -v "$CURRENT_WRITE_INDEX" | grep -v "$NEXT_WRITE_INDEX")
+    if [ -z "$ALL_INDICES" ]; then
+        log_message "No indices exist in the data stream."
         return 1
-    elif [ -z "$ELIGIBLE_SHARDS" ]; then
-        log_message "The remaining shards are the current or next write index."
+    elif [ -z "$ELIGIBLE_INDICES" ]; then
+        log_message "The remaining indices are the current or next write index."
         return 1
     fi
-    log_message "Eligible shards for deletion: $ELIGIBLE_SHARDS"
+    log_message "Eligible indices for deletion: $ELIGIBLE_INDICES"
     return 0
 }
 
-# Function to calculate the total size of all eligible shards
-calculate_total_shards_size() {
-    TOTAL_SHARDS_SIZE=0
-    while read -r SHARD; do
-        SHARD_NAME=$(echo "$SHARD" | awk '{print $1}')
-        SHARD_SIZE=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/$SHARD_NAME/_stats/store" | jq -r '.indices[]._all.total.store.size_in_bytes')
-        SHARD_SIZE_KB=$((SHARD_SIZE / 1024))
-        TOTAL_SHARDS_SIZE=$((TOTAL_SHARDS_SIZE + SHARD_SIZE_KB))
-    done <<< "$ELIGIBLE_SHARDS"
-    ESTIMATED_FREE_SPACE=$((INITIAL_FREE_SPACE + TOTAL_SHARDS_SIZE))
+# Function to calculate the total size of all eligible indices
+calculate_total_indices_size() {
+    TOTAL_INDICES_SIZE=0
+    while read -r INDEX; do
+        INDEX_NAME=$(echo "$INDEX" | awk '{print $3}')
+        INDEX_SIZE=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/$INDEX_NAME/_stats/store" | jq -r '.indices[]._all.total.store.size_in_bytes')
+        INDEX_SIZE_KB=$((INDEX_SIZE / 1024))
+        TOTAL_INDICES_SIZE=$((TOTAL_INDICES_SIZE + INDEX_SIZE_KB))
+    done <<< "$ELIGIBLE_INDICES"
+    ESTIMATED_FREE_SPACE=$((INITIAL_FREE_SPACE + TOTAL_INDICES_SIZE))
     TOTAL_SPACE=$(df / | awk 'NR==2 {print $2}')
     ESTIMATED_FREE_SPACE_PERCENT=$((100 * ESTIMATED_FREE_SPACE / TOTAL_SPACE))
-    log_message "Estimated free space after deleting eligible shards: $ESTIMATED_FREE_SPACE KB ($ESTIMATED_FREE_SPACE_PERCENT%)."
+    log_message "Estimated free space after deleting eligible indices: $ESTIMATED_FREE_SPACE KB ($ESTIMATED_FREE_SPACE_PERCENT%)."
 }
 
-# Function to delete eligible shards
-delete_eligible_shards() {
-    while read -r SHARD; do
-        SHARD_NAME=$(echo "$SHARD" | awk '{print $1}')
-        SHARD_NUMBER=$(echo "$SHARD" | awk '{print $2}')
+# Function to delete eligible indices
+delete_eligible_indices() {
+    while read -r INDEX; do
+        INDEX_NAME=$(echo "$INDEX" | awk '{print $3}')
 
-        # Check if the shard is part of the current or next write index
-        if [ $(is_write_index "$SHARD_NAME") == "true" ]; then
-            log_message "Skipping deletion of write index shard $SHARD_NAME (shard number: $SHARD_NUMBER)."
+        # Check if the index is the current or next write index
+        if [ $(is_write_index "$INDEX_NAME") == "true" ]; then
+            log_message "Skipping deletion of write index $INDEX_NAME."
             continue
         fi
 
-        DELETE_RESPONSE=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -X DELETE "$ELASTIC_ENDPOINT/$SHARD_NAME" -s)
+        DELETE_RESPONSE=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -X DELETE "$ELASTIC_ENDPOINT/$INDEX_NAME" -s)
         DELETE_STATUS=$?
 
         if [ $DELETE_STATUS -ne 0 ]; then
-            log_message "Failed to delete shard $SHARD_NAME (shard number: $SHARD_NUMBER). Curl response: $DELETE_RESPONSE"
+            log_message "Failed to delete index $INDEX_NAME. Curl response: $DELETE_RESPONSE"
         else
-            log_message "Deleted shard $SHARD_NAME (shard number: $SHARD_NUMBER). Curl response: $DELETE_RESPONSE"
+            log_message "Deleted index $INDEX_NAME. Curl response: $DELETE_RESPONSE"
         fi
-    done <<< "$ELIGIBLE_SHARDS"
+    done <<< "$ELIGIBLE_INDICES"
 }
 
-# Function to check disk space and delete shards if necessary
-check_and_delete_shards() {
+# Function to check disk space and delete indices if necessary
+check_and_delete_indices() {
     while true; do
         USED_SPACE=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
         FREE_SPACE=$((100 - USED_SPACE))
@@ -102,27 +101,27 @@ check_and_delete_shards() {
             INITIAL_FREE_SPACE=$(df / | awk 'NR==2 {print $4}')
             log_message "Initial free space: $INITIAL_FREE_SPACE KB."
             get_write_indices
-            get_eligible_shards
+            get_eligible_indices
             if [ $? -ne 0 ]; then
                 NEXT_RUN_TIME=$(date -d "now + $CHECK_INTERVAL seconds" "+%Y-%m-%d %H:%M:%S")
                 log_message "Next check will run at $NEXT_RUN_TIME."
                 sleep $CHECK_INTERVAL
                 continue
             fi
-            calculate_total_shards_size
-            read -p "Deleting all eligible shards will increase free space to $ESTIMATED_FREE_SPACE_PERCENT%. Do you want to delete them? (y/n): " CONFIRMATION
+            calculate_total_indices_size
+            read -p "Deleting all eligible indices will increase free space to $ESTIMATED_FREE_SPACE_PERCENT%. Do you want to delete them? (y/n): " CONFIRMATION
             if [ "$CONFIRMATION" != "y" ]; then
-                log_message "User chose not to delete the eligible shards."
+                log_message "User chose not to delete the eligible indices."
                 NEXT_RUN_TIME=$(date -d "now + $CHECK_INTERVAL seconds" "+%Y-%m-%d %H:%M:%S")
                 log_message "Next check will run at $NEXT_RUN_TIME."
                 sleep $CHECK_INTERVAL
                 continue
             fi
-            log_message "Deleting eligible shards."
-            delete_eligible_shards
+            log_message "Deleting eligible indices."
+            delete_eligible_indices
             USED_SPACE=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
             FREE_SPACE=$((100 - USED_SPACE))
-            log_message "Deleted eligible shards. Free space is now $FREE_SPACE%."
+            log_message "Deleted eligible indices. Free space is now $FREE_SPACE%."
         else
             log_message "Free space is $FREE_SPACE%, which is above the threshold of $THRESHOLD%."
         fi
@@ -134,4 +133,4 @@ check_and_delete_shards() {
 }
 
 # Main script execution
-check_and_delete_shards
+check_and_delete_indices
