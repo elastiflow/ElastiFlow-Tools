@@ -12,9 +12,13 @@ ELASTIC_PASSWORD="elastic"
 ELASTIC_ENDPOINT="https://localhost:9200"
 DATA_STREAM="elastiflow-flow-codex-2.3-tsds"
 
+# Colors
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
 # Function to log messages to both the screen and log file with timestamps
 log_message() {
-    echo "$(date): $1" | tee -a $LOG_FILE
+    echo -e "$(date): $1" | tee -a $LOG_FILE
 }
 
 # Function to log error messages in red to both the screen and log file with timestamps
@@ -43,7 +47,7 @@ get_write_indices() {
 
 # Function to get all eligible indices of the data stream, sorted by creation date
 get_eligible_indices() {
-    ALL_INDICES=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/_cat/indices?h=index,creation.date&format=json" | jq -r '.[] | select(.index | startswith("'"$DATA_STREAM"'")) | "\(.index) \(.creation.date)"' | sort -k2)
+    ALL_INDICES=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/_cat/indices?h=index,creation.date&format=json" | jq -r '.[] | select(.index | contains("'"$DATA_STREAM"'")) | "\(.index) \(.creation.date)"' | sort -k2)
     log_message "ALL_INDICES content:\n$ALL_INDICES"
     ELIGIBLE_INDICES=$(echo "$ALL_INDICES" | grep -v "$CURRENT_WRITE_INDEX" | grep -v "$NEXT_WRITE_INDEX")
     if [ -z "$ALL_INDICES" ]; then
