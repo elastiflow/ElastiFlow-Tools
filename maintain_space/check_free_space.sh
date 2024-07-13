@@ -1,7 +1,7 @@
 #!/bin/bash
 
 LOG_FILE="/var/log/elastic_cleanup.log"
-THRESHOLD=98
+THRESHOLD=97
 CHECK_INTERVAL=5
 
 # Set Elasticsearch credentials
@@ -12,18 +12,9 @@ ELASTIC_PASSWORD="elastic"
 ELASTIC_ENDPOINT="https://localhost:9200"
 DATA_STREAM="elastiflow-flow-codex-2.3-tsds"
 
-# Colors
-RED='\033[0;31m'
-NC='\033[0m' # No Color
-
 # Function to log messages to both the screen and log file with timestamps
 log_message() {
-    echo -e "$(date): $1" | tee -a $LOG_FILE
-}
-
-# Function to log error messages in red to both the screen and log file with timestamps
-log_error() {
-    echo -e "$(date): ${RED}$1${NC}" | tee -a $LOG_FILE
+    echo "$(date): $1" | tee -a $LOG_FILE
 }
 
 # Function to check if an index is the write index for the data stream
@@ -47,12 +38,9 @@ get_write_indices() {
 
 # Function to get all eligible indices of the data stream
 get_eligible_indices() {
-    ALL_INDICES=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/_cat/indices?h=index,status,health,pri,rep,docs.count,store.size,creation.date&format=json" | jq -r '.[] | select(.index | contains("'"$DATA_STREAM"'")) | "\(.index) \(.status) \(.health) \(.pri) \(.rep) \(.docs.count) \(.store.size) \(.creation.date)"' | sort -k8)
-    
-    log_message "ALL_INDICES content:\nindex status health pri rep docs.count store.size creation.date\n$ALL_INDICES"
-    
+    ALL_INDICES=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/_cat/indices?v" | grep "$DATA_STREAM")
+    log_message "ALL_INDICES content: $ALL_INDICES"
     ELIGIBLE_INDICES=$(echo "$ALL_INDICES" | grep -v "$CURRENT_WRITE_INDEX" | grep -v "$NEXT_WRITE_INDEX")
-    
     if [ -z "$ALL_INDICES" ]; then
         log_message "No indices exist in the data stream."
         return 1
@@ -60,9 +48,7 @@ get_eligible_indices() {
         log_message "The remaining indices are the current or next write index."
         return 1
     fi
-    
-    log_message "Eligible indices for deletion:\nindex status health pri rep docs.count store.size creation.date\n$ELIGIBLE_INDICES"
-    
+    log_message "Eligible indices for deletion: $ELIGIBLE_INDICES"
     return 0
 }
 
@@ -70,7 +56,7 @@ get_eligible_indices() {
 calculate_total_indices_size() {
     TOTAL_INDICES_SIZE=0
     while read -r INDEX; do
-        INDEX_NAME=$(echo "$INDEX" | awk '{print $1}')
+        INDEX_NAME=$(echo "$INDEX" | awk '{print $3}')
         INDEX_SIZE=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/$INDEX_NAME/_stats/store" | jq -r '.indices[]._all.total.store.size_in_bytes')
         INDEX_SIZE_KB=$((INDEX_SIZE / 1024))
         TOTAL_INDICES_SIZE=$((TOTAL_INDICES_SIZE + INDEX_SIZE_KB))
@@ -84,7 +70,7 @@ calculate_total_indices_size() {
 # Function to delete eligible indices
 delete_eligible_indices() {
     while read -r INDEX; do
-        INDEX_NAME=$(echo "$INDEX" | awk '{print $1}')
+        INDEX_NAME=$(echo "$INDEX" | awk '{print $3}')
 
         # Check if the index is the current or next write index
         if [ $(is_write_index "$INDEX_NAME") == "true" ]; then
@@ -96,11 +82,22 @@ delete_eligible_indices() {
         DELETE_STATUS=$?
 
         if [ $DELETE_STATUS -ne 0 ]; then
-            log_error "Failed to delete index $INDEX_NAME. Curl response: $DELETE_RESPONSE"
+            log_message "Failed to delete index $INDEX_NAME. Curl response: $DELETE_RESPONSE"
         else
-            log_error "Deleted index $INDEX_NAME. Curl response: $DELETE_RESPONSE"
+            log_message "Deleted index $INDEX_NAME. Curl response: $DELETE_RESPONSE"
         fi
     done <<< "$ELIGIBLE_INDICES"
+
+    # Restart flowcoll.service if indices are deleted
+    if [ -n "$ELIGIBLE_INDICES" ]; then
+        log_message "Restarting flowcoll.service."
+        systemctl restart flowcoll.service
+        if [ $? -eq 0 ]; then
+            log_message "flowcoll.service restarted successfully."
+        else
+            log_message "Failed to restart flowcoll.service."
+        fi
+    fi
 }
 
 # Function to check disk space and delete indices if necessary
@@ -123,7 +120,15 @@ check_and_delete_indices() {
                 continue
             fi
             calculate_total_indices_size
-            log_error "Deleting eligible indices."
+            read -p "Deleting all eligible indices will increase free space to $ESTIMATED_FREE_SPACE_PERCENT%. Do you want to delete them? (y/n): " CONFIRMATION
+            if [ "$CONFIRMATION" != "y" ]; then
+                log_message "User chose not to delete the eligible indices."
+                NEXT_RUN_TIME=$(date -d "now + $CHECK_INTERVAL seconds" "+%Y-%m-%d %H:%M:%S")
+                log_message "Next check will run at $NEXT_RUN_TIME."
+                sleep $CHECK_INTERVAL
+                continue
+            fi
+            log_message "Deleting eligible indices."
             delete_eligible_indices
             USED_SPACE=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
             FREE_SPACE=$((100 - USED_SPACE))
@@ -140,3 +145,5 @@ check_and_delete_indices() {
 
 # Main script execution
 check_and_delete_indices
+
+
