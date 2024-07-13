@@ -1,7 +1,7 @@
 #!/bin/bash
 
 LOG_FILE="/var/log/elastic_cleanup.log"
-THRESHOLD=97
+THRESHOLD=98
 CHECK_INTERVAL=5
 
 # Set Elasticsearch credentials
@@ -120,14 +120,6 @@ check_and_delete_indices() {
                 continue
             fi
             calculate_total_indices_size
-            read -p "Deleting all eligible indices will increase free space to $ESTIMATED_FREE_SPACE_PERCENT%. Do you want to delete them? (y/n): " CONFIRMATION
-            if [ "$CONFIRMATION" != "y" ]; then
-                log_message "User chose not to delete the eligible indices."
-                NEXT_RUN_TIME=$(date -d "now + $CHECK_INTERVAL seconds" "+%Y-%m-%d %H:%M:%S")
-                log_message "Next check will run at $NEXT_RUN_TIME."
-                sleep $CHECK_INTERVAL
-                continue
-            fi
             log_message "Deleting eligible indices."
             delete_eligible_indices
             USED_SPACE=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
