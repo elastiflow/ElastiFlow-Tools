@@ -46,9 +46,12 @@ get_write_indices() {
 }
 
 get_eligible_indices() {
-    ALL_INDICES=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/_cat/indices?h=index,status,health,creation.date,docs.count,store.size,pri,rep&format=json" | jq -r '.[] | select(.index | contains("'"$DATA_STREAM"'")) | "\(.index) \(.status) \(.health) \(.creation.date) \(.docs.count) \(.store.size) \(.pri) \(.rep)"' | sort -k4)
-    log_message "ALL_INDICES content:\n$ALL_INDICES"
+    ALL_INDICES=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/_cat/indices?h=index,status,health,pri,rep,docs.count,store.size,creation.date&format=json" | jq -r '.[] | select(.index | contains("'"$DATA_STREAM"'")) | "\(.index) \(.status) \(.health) \(.pri) \(.rep) \(.docs.count) \(.store.size) \(.creation.date)"' | sort -k8)
+    
+    log_message "ALL_INDICES content:\nindex status health pri rep docs.count store.size creation.date\n$ALL_INDICES"
+    
     ELIGIBLE_INDICES=$(echo "$ALL_INDICES" | grep -v "$CURRENT_WRITE_INDEX" | grep -v "$NEXT_WRITE_INDEX")
+    
     if [ -z "$ALL_INDICES" ]; then
         log_message "No indices exist in the data stream."
         return 1
@@ -56,9 +59,12 @@ get_eligible_indices() {
         log_message "The remaining indices are the current or next write index."
         return 1
     fi
-    log_message "Eligible indices for deletion:\n$ELIGIBLE_INDICES"
+    
+    log_message "Eligible indices for deletion:\nindex status health pri rep docs.count store.size creation.date\n$ELIGIBLE_INDICES"
+    
     return 0
 }
+
 
 
 # Function to calculate the total size of all eligible indices
