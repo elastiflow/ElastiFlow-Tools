@@ -12,13 +12,9 @@ ELASTIC_PASSWORD="elastic"
 ELASTIC_ENDPOINT="https://localhost:9200"
 DATA_STREAM="elastiflow-flow-codex-2.3-tsds"
 
-# Colors
-RED='\033[0;31m'
-NC='\033[0m' # No Color
-
 # Function to log messages to both the screen and log file with timestamps
 log_message() {
-    echo -e "$(date): $1" | tee -a $LOG_FILE
+    echo "$(date): $1" | tee -a $LOG_FILE
 }
 
 # Function to log error messages in red to both the screen and log file with timestamps
@@ -45,9 +41,9 @@ get_write_indices() {
     log_message "Next write index: $NEXT_WRITE_INDEX."
 }
 
-# Function to get all eligible indices of the data stream
+# Function to get all eligible indices of the data stream, sorted by creation date
 get_eligible_indices() {
-    ALL_INDICES=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/_cat/indices?v" | grep "$DATA_STREAM")
+    ALL_INDICES=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/_cat/indices?h=index,creation.date&format=json" | jq -r '.[] | select(.index | startswith("'"$DATA_STREAM"'")) | "\(.index) \(.creation.date)"' | sort -k2)
     log_message "ALL_INDICES content:\n$ALL_INDICES"
     ELIGIBLE_INDICES=$(echo "$ALL_INDICES" | grep -v "$CURRENT_WRITE_INDEX" | grep -v "$NEXT_WRITE_INDEX")
     if [ -z "$ALL_INDICES" ]; then
@@ -65,7 +61,7 @@ get_eligible_indices() {
 calculate_total_indices_size() {
     TOTAL_INDICES_SIZE=0
     while read -r INDEX; do
-        INDEX_NAME=$(echo "$INDEX" | awk '{print $3}')
+        INDEX_NAME=$(echo "$INDEX" | awk '{print $1}')
         INDEX_SIZE=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/$INDEX_NAME/_stats/store" | jq -r '.indices[]._all.total.store.size_in_bytes')
         INDEX_SIZE_KB=$((INDEX_SIZE / 1024))
         TOTAL_INDICES_SIZE=$((TOTAL_INDICES_SIZE + INDEX_SIZE_KB))
@@ -79,7 +75,7 @@ calculate_total_indices_size() {
 # Function to delete eligible indices
 delete_eligible_indices() {
     while read -r INDEX; do
-        INDEX_NAME=$(echo "$INDEX" | awk '{print $3}')
+        INDEX_NAME=$(echo "$INDEX" | awk '{print $1}')
 
         # Check if the index is the current or next write index
         if [ $(is_write_index "$INDEX_NAME") == "true" ]; then
