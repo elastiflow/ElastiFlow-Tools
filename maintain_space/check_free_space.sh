@@ -12,9 +12,18 @@ ELASTIC_PASSWORD="elastic"
 ELASTIC_ENDPOINT="https://localhost:9200"
 DATA_STREAM="elastiflow-flow-codex-2.3-tsds"
 
+# Colors
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
 # Function to log messages to both the screen and log file with timestamps
 log_message() {
-    echo "$(date): $1" | tee -a $LOG_FILE
+    echo -e "$(date): $1" | tee -a $LOG_FILE
+}
+
+# Function to log error messages in red to both the screen and log file with timestamps
+log_error() {
+    echo -e "$(date): ${RED}$1${NC}" | tee -a $LOG_FILE
 }
 
 # Function to check if an index is the write index for the data stream
@@ -82,9 +91,9 @@ delete_eligible_indices() {
         DELETE_STATUS=$?
 
         if [ $DELETE_STATUS -ne 0 ]; then
-            log_message "Failed to delete index $INDEX_NAME. Curl response: $DELETE_RESPONSE"
+            log_error "Failed to delete index $INDEX_NAME. Curl response: $DELETE_RESPONSE"
         else
-            log_message "Deleted index $INDEX_NAME. Curl response: $DELETE_RESPONSE"
+            log_error "Deleted index $INDEX_NAME. Curl response: $DELETE_RESPONSE"
         fi
     done <<< "$ELIGIBLE_INDICES"
 
@@ -95,7 +104,7 @@ delete_eligible_indices() {
         if [ $? -eq 0 ]; then
             log_message "flowcoll.service restarted successfully."
         else
-            log_message "Failed to restart flowcoll.service."
+            log_error "Failed to restart flowcoll.service."
         fi
     fi
 }
@@ -120,7 +129,7 @@ check_and_delete_indices() {
                 continue
             fi
             calculate_total_indices_size
-            log_message "Deleting eligible indices."
+            log_error "Deleting eligible indices."
             delete_eligible_indices
             USED_SPACE=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
             FREE_SPACE=$((100 - USED_SPACE))
