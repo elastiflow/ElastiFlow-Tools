@@ -45,9 +45,8 @@ get_write_indices() {
     log_message "Next write index: $NEXT_WRITE_INDEX."
 }
 
-# Function to get all eligible indices of the data stream, sorted by creation date
 get_eligible_indices() {
-    ALL_INDICES=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/_cat/indices?h=index,creation.date&format=json" | jq -r '.[] | select(.index | contains("'"$DATA_STREAM"'")) | "\(.index) \(.creation.date)"' | sort -k2)
+    ALL_INDICES=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/_cat/indices?h=index,status,health,creation.date,docs.count,store.size,pri,rep&format=json" | jq -r '.[] | select(.index | contains("'"$DATA_STREAM"'")) | "\(.index) \(.status) \(.health) \(.creation.date) \(.docs.count) \(.store.size) \(.pri) \(.rep)"' | sort -k4)
     log_message "ALL_INDICES content:\n$ALL_INDICES"
     ELIGIBLE_INDICES=$(echo "$ALL_INDICES" | grep -v "$CURRENT_WRITE_INDEX" | grep -v "$NEXT_WRITE_INDEX")
     if [ -z "$ALL_INDICES" ]; then
@@ -60,6 +59,7 @@ get_eligible_indices() {
     log_message "Eligible indices for deletion:\n$ELIGIBLE_INDICES"
     return 0
 }
+
 
 # Function to calculate the total size of all eligible indices
 calculate_total_indices_size() {
