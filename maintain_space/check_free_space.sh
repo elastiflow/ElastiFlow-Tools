@@ -45,8 +45,9 @@ get_write_indices() {
     log_message "Next write index: $NEXT_WRITE_INDEX."
 }
 
+# Function to get all eligible indices of the data stream
 get_eligible_indices() {
-    ALL_INDICES=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/_cat/indices?h=index,status,health,pri,rep,docs.count,store.size,creation.date&format=json" | jq -r '.[] | select(.index | contains("'"$DATA_STREAM"'")) | "\(.index // "null") \(.status // "null") \(.health // "null") \(.pri // "null") \(.rep // "null") \(.docs.count // "null") \(.store.size // "null") \(.creation.date // "null")"' | sort -k8)
+    ALL_INDICES=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/_cat/indices?h=index,status,health,pri,rep,docs.count,store.size,creation.date&format=json" | jq -r '.[] | select(.index | contains("'"$DATA_STREAM"'")) | "\(.index) \(.status) \(.health) \(.pri) \(.rep) \(.docs.count) \(.store.size) \(.creation.date)"' | sort -k8)
     
     log_message "ALL_INDICES content:\nindex status health pri rep docs.count store.size creation.date\n$ALL_INDICES"
     
@@ -64,8 +65,6 @@ get_eligible_indices() {
     
     return 0
 }
-
-
 
 # Function to calculate the total size of all eligible indices
 calculate_total_indices_size() {
