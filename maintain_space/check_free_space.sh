@@ -88,17 +88,6 @@ delete_eligible_indices() {
         fi
     done <<< "$ELIGIBLE_INDICES"
 
-    # Restart flowcoll.service if indices are deleted
-    if [ -n "$ELIGIBLE_INDICES" ]; then
-        log_message "Restarting flowcoll.service."
-        systemctl restart flowcoll.service
-        if [ $? -eq 0 ]; then
-            log_message "flowcoll.service restarted successfully."
-        else
-            log_message "Failed to restart flowcoll.service."
-        fi
-    fi
-}
 
 # Function to check disk space and delete indices if necessary
 check_and_delete_indices() {
