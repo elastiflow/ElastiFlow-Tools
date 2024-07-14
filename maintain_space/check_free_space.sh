@@ -31,20 +31,12 @@ log_important_msg() {
 get_eligible_indices() {
     ALL_INDICES=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/_cat/indices?v&h=index,creation.date.string" | grep "$DATA_STREAM" | sort -k2)
     
-    log_message "ALL_INDICES content:\nindex creation.date.string\n$ALL_INDICES"
-    
-    ELIGIBLE_INDICES=$(echo "$ALL_INDICES")
-    
     if [ -z "$ALL_INDICES" ]; then
         log_message "No indices exist in the data stream."
         return 1
-    elif [ $(echo "$ELIGIBLE_INDICES" | wc -l) -le 2 ]; then
-        log_message "Only two or fewer indices left. No deletion performed."
-        return 1
     fi
     
-    log_message "Eligible indices for deletion:\nindex creation.date.string\n$ELIGIBLE_INDICES"
-    
+    ELIGIBLE_INDICES=$(echo "$ALL_INDICES")
     return 0
 }
 
@@ -89,6 +81,12 @@ check_and_delete_indices() {
             fi
             
             while read -r INDEX; do
+                # Verify that there are at least 3 indices before deletion
+                INDEX_COUNT=$(echo "$ALL_INDICES" | wc -l)
+                if [ $INDEX_COUNT -lt 3 ]; then
+                    log_message "Fewer than three indices left. No deletion performed."
+                    break
+                fi
                 log_important_msg "Deleting eligible index: $INDEX"
                 delete_one_eligible_index "$INDEX"
             done <<< "$ELIGIBLE_INDICES"
