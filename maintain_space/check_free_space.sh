@@ -91,14 +91,11 @@ check_and_delete_indices() {
             while read -r INDEX; do
                 log_important_msg "Deleting eligible index: $INDEX"
                 delete_one_eligible_index "$INDEX"
-                if [ $? -eq 0 ]; then
-                    break
-                fi
             done <<< "$ELIGIBLE_INDICES"
 
             USED_SPACE=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
             FREE_SPACE=$((100 - USED_SPACE))
-            log_message "Deleted eligible index. Free space is now $FREE_SPACE%."
+            log_message "Deleted eligible indices. Free space is now $FREE_SPACE%."
         else
             log_message "Free space is $FREE_SPACE%, which is above the threshold of $THRESHOLD%."
         fi
