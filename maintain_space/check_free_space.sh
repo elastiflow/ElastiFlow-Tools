@@ -26,11 +26,11 @@ log_important_msg() {
     echo -e "$(date): ${RED}****************$1${NC}" | tee -a $LOG_FILE
 }
 
-# Function to get all eligible indices of the data stream
+# Function to get all eligible indices of the data stream and sort them by creation date
 get_eligible_indices() {
-    ALL_INDICES=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/_cat/indices?h=index,creation.date&format=json" | jq -r '.[] | select(.index | contains("'"$DATA_STREAM"'")) | "\(.index) \(.creation.date)"' | sort -k2)
+    ALL_INDICES=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/_cat/indices?v&h=index,creation.date.string" | grep "$DATA_STREAM" | sort -k2)
     
-    log_message "ALL_INDICES content:\nindex creation.date\n$ALL_INDICES"
+    log_message "ALL_INDICES content:\nindex creation.date.string\n$ALL_INDICES"
     
     ELIGIBLE_INDICES=$(echo "$ALL_INDICES")
     
@@ -42,7 +42,7 @@ get_eligible_indices() {
         return 1
     fi
     
-    log_message "Eligible indices for deletion:\nindex creation.date\n$ELIGIBLE_INDICES"
+    log_message "Eligible indices for deletion:\nindex creation.date.string\n$ELIGIBLE_INDICES"
     
     return 0
 }
