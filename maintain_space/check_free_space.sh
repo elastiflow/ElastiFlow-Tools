@@ -1,6 +1,7 @@
 #!/bin/bash
 
-LOG_FILE="/var/log/elastic_cleanup.log"
+SCRIPT_NAME=$(basename "$0")
+LOG_FILE="/var/log/${SCRIPT_NAME%.*}.log"
 THRESHOLD=97
 CHECK_INTERVAL=5
 
@@ -47,7 +48,7 @@ get_eligible_indices() {
     return 0
 }
 
-# Function to delete a single eligible index
+# Function to delete a single eligible index and verify deletion
 delete_one_eligible_index() {
     local index_name=$(echo "$1" | awk '{print $1}')
 
@@ -58,8 +59,15 @@ delete_one_eligible_index() {
         log_important_msg "Failed to delete index $index_name. Curl response: $DELETE_RESPONSE"
         return 1
     else
-        log_important_msg "Deleted index $index_name. Curl response: $DELETE_RESPONSE"
-        return 0
+        # Verify deletion
+        VERIFY_RESPONSE=$(curl -k -u "$ELASTIC_USERNAME:$ELASTIC_PASSWORD" -s "$ELASTIC_ENDPOINT/$index_name")
+        if [[ $VERIFY_RESPONSE == *"index_not_found_exception"* ]]; then
+            log_important_msg "Deleted index $index_name. Curl response: $DELETE_RESPONSE"
+            return 0
+        else
+            log_important_msg "Failed to verify deletion of index $index_name. Curl response: $VERIFY_RESPONSE"
+            return 1
+        fi
     fi
 }
 
