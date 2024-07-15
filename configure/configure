@@ -1422,7 +1422,7 @@ while true; do
       ;;
     6)
       echo "Running support pack..."
-      wget -O /user/support https://drive.google.com/uc?export=download&id=1sjc3zGWlselxuaPtHBUhqlUjwHBpsWoj && chmod +x /user/support
+      wget -O /user/support https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/support_pack/elastiflow_elasticsearch_opensearch_support_pack && chmod +x /user/support
       if [[ ! -f /user/support ]]; then
         if [[ -f /home/user/support ]]; then
           /home/user/support
