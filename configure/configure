@@ -12,7 +12,7 @@ NC='\033[0m' # No Color
 elastiflow_flow_collector_version="7.0.2"
 elastiflow_snmp_collector_version="7.0.2"
 elastic_username="elastic"
-elastic_password2="elastic"
+default_elastic_password="elastic"
 ip_address=""
 dashboard_url=""
 elastiflow_snmp_config_path="/etc/elastiflow/snmpcoll.yml"
@@ -53,7 +53,7 @@ install_snmp_collector() {
     "EF_SNMP_LICENSE_KEY" "EF_SNMP_LICENSE_KEY: \"${elastiflow_snmp_license_key}\""
     "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: \"true\""
     "EF_OUTPUT_ELASTICSEARCH_ADDRESSES" "EF_OUTPUT_ELASTICSEARCH_ADDRESSES: \"127.0.0.1:9200\""
-    "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: \"${elastic_password2}\""
+    "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: \"${default_elastic_password}\""
     "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: \"true\""
     "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION" "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: \"true\""
   )
@@ -93,7 +93,7 @@ install_snmp_collector() {
   # Perform find and replace in the JSON file
   sed -i 's/elastiflow-\*-codex-\*/elastiflow-telemetry_\*-codex-\*/g' "$json_file"
 
-  response=$(curl --silent --show-error --fail --connect-timeout 10 -X POST -u $elastic_username:$elastic_password2 \
+  response=$(curl --silent --show-error --fail --connect-timeout 10 -X POST -u $elastic_username:$default_elastic_password \
     "localhost:5601/api/saved_objects/_import?overwrite=true" \
     -H "kbn-xsrf: true" \
     --form file=@"$json_file" \
@@ -273,6 +273,10 @@ install_docker() {
 
 perform_health_check() {
   clear
+  # Prompt for current Elasticsearch password, default to $default_elastic_password
+  read -s -p "Enter current Elasticsearch password (default: $default_elastic_password): " elastic_password
+  elastic_password=${elastic_password:-$default_elastic_password}
+  echo
 
   # Create a timestamped file
   timestamp=$(date +"%Y%m%d_%H%M%S")
@@ -414,7 +418,7 @@ perform_health_check() {
       print_message "Port 9200 is not open" "$RED"
     fi
 
-    curl_result=$(curl -s -k -u elastic:elastic https://localhost:9200)
+    curl_result=$(curl -s -k -u elastic:$elastic_password https://localhost:9200)
     search_text='cluster_name" : "elasticsearch'
     if echo "$curl_result" | grep -q "$search_text"; then
       print_message "Elastic is ready. Used curl." "$GREEN"
@@ -459,7 +463,6 @@ perform_health_check() {
 }
 
 
-
 get_host_ip() {
   INTERFACE=$(ip -o link show | awk -F': ' '{print $2}' | grep -vE '^(docker|lo)' | head -n 1)
   if [ -z "$INTERFACE" ]; then
@@ -483,7 +486,7 @@ get_dashboard_url() {
   local kibana_url="http://$ip_address:5601"
   local dashboard_title="$1"
   local encoded_title=$(echo "$dashboard_title" | sed 's/ /%20/g' | sed 's/:/%3A/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
-  local response=$(curl -s -u "$elastic_username:$elastic_password2" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
+  local response=$(curl -s -u "$elastic_username:$default_elastic_password" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
   local dashboard_id=$(echo "$response" | jq -r '.saved_objects[] | select(.attributes.title=="'"$dashboard_title"'") | .id')
   if [ -z "$dashboard_id" ]; then
     dashboard_url="Dashboard not found"
