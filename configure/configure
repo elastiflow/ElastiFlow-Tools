@@ -160,13 +160,12 @@ change_elasticsearch_password() {
   fi
 
   # Update password in Elastiflow
+  elastiflow_config_strings=("EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: \"$new_elastic_password\"")
   find_and_replace "$elastiflow_flow_config_path" "${elastiflow_config_strings[@]}"
-#  find_and_replace "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: \"${new_elastic_password}\""
 
   # Restart all services
   reload_and_restart_services "elasticsearch.service" "kibana.service" "flowcoll.service"
 }
-
 
 
 check_for_updates() {
