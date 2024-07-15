@@ -135,7 +135,7 @@ response=$(curl -s -o /dev/null -w "%{http_code}" -u "elastic:$elastic_password"
 
 # Check the response code
 if [ "$response" -eq 200 ]; then
-  print_message "Elastic password in flowcoll.yml is correct. Authentication successful!" "$GREEN"
+  print_message "Elastic password in flowcoll.yml is correct. Authentication successful! - \"$elastic_password\"" "$GREEN"
 else
   print_message "Elastic password in flowcoll.yml not correct. Authentication failed with response code: $response" "$RED"
 fi
