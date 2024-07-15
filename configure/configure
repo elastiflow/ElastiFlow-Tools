@@ -118,24 +118,53 @@ install_snmp_collector() {
 
 change_elasticsearch_password() {
 
-#prompt for current password
+  # Prompt for current password
+  read -s -p "Enter current Elasticsearch password: " old_elastic_password
+  echo
+  
+  # Validate current password is not empty
+  if [ -z "$old_elastic_password" ]; then
+    echo "Current password cannot be empty."
+    exit 1
+  fi
 
-#prompt for new password
+  # Prompt for new password
+  read -s -p "Enter new Elasticsearch password: " new_elastic_password
+  echo
+  read -s -p "Confirm new Elasticsearch password: " confirm_new_elastic_password
+  echo
 
-#change current elasticsearch password
-curl -k -X POST -u "$elastic_username:$old_elastic_password" "https://localhost:9200/_security/user/elastic/_password" -H 'Content-Type: application/json' -d"
+  # Validate new password is not empty and matches confirmation
+  if [ -z "$new_elastic_password" ]; then
+    echo "New password cannot be empty."
+    exit 1
+  fi
+
+  if [ "$new_elastic_password" != "$confirm_new_elastic_password" ]; then
+    echo "Passwords do not match."
+    exit 1
+  fi
+
+  # Change current Elasticsearch password
+  response=$(curl -k -s -o /dev/null -w "%{http_code}" -X POST -u "$elastic_username:$old_elastic_password" "https://localhost:9200/_security/user/elastic/_password" -H 'Content-Type: application/json' -d"
   {
     \"password\": \"$new_elastic_password\"
-  }"
+  }")
 
-#update password in elastiflow
-find_and_replace "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: \"${new_elastic_password}\""
+  if [ "$response" -eq 200 ]; then
+    echo "Password successfully changed."
+  else
+    echo "Failed to change password. HTTP response code: $response"
+    exit 1
+  fi
 
-#restart all services
-reload_and_restart_services "elasticsearch.service" "kibana.service" "flowcoll.service"  
+  # Update password in Elastiflow
+  find_and_replace "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: \"${new_elastic_password}\""
 
-
+  # Restart all services
+  reload_and_restart_services "elasticsearch.service" "kibana.service" "flowcoll.service"
 }
+
 
 
 
