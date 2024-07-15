@@ -1320,7 +1320,7 @@ while true; do
             reload_and_restart_service "flowcoll.service"
             ;;
           3)
-            reload_and_restart_services "flowcoll.service" "elasticsearch.service" "kibana.service"
+            reload_and_restart_services "elasticsearch.service" "kibana.service" "flowcoll.service"  
             ;;
           4)
             backup_existing_flowcoll
