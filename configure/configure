@@ -47,8 +47,10 @@ install_snmp_collector() {
     fi
   done
 
-  # Extract the Elasticsearch password from the flowcoll.yml configuration file
-  elastic_password=$(grep '^EF_OUTPUT_ELASTICSEARCH_PASSWORD: ' "$elastiflow_flow_config_path" | awk -F'"' '{print $2}')
+
+  # Extract the Elasticsearch password from the configuration file
+  elastic_password=$(grep "^EF_OUTPUT_ELASTICSEARCH_PASSWORD: '" "$elastiflow_flow_config_path" | awk -F"'" '{print $2}')
+
 
   if [ -z "$elastic_password" ]; then
     print_message "Failed to extract Elasticsearch password from $elastiflow_flow_config_path" "$RED"
