@@ -117,6 +117,31 @@ install_snmp_collector() {
   fi
 }
 
+
+verify_ef_configured_pw_for_elastic(){
+
+# Extract the Elasticsearch password from the configuration file
+elastic_password=$(grep '^EF_OUTPUT_ELASTICSEARCH_PASSWORD: ' "$elastiflow_flow_config_path" | awk '{print $2}' | tr -d '"')
+
+# Check if the password was successfully extracted
+if [ -z "$elastic_password" ]; then
+  print_message "Failed to extract Elasticsearch password from $elastiflow_flow_config_path" '\033[0;31m'
+  exit 1
+fi
+
+# Verify the password via Kibana
+kibana_url="http://localhost:5601"
+response=$(curl -s -o /dev/null -w "%{http_code}" -u "elastic:$elastic_password" "$kibana_url/api/status")
+
+# Check the response code
+if [ "$response" -eq 200 ]; then
+  print_message "Elastic password in flowcoll.yml is correct. Authentication successful!" "$GREEN"
+else
+  print_message "Elastic password in flowcoll.yml not correct. Authentication failed with response code: $response" "$RED"
+fi
+}
+
+
 change_elasticsearch_password() {
   # Prompt for current password
   read -s -p "Enter current Elasticsearch password: " old_elastic_password
@@ -274,9 +299,9 @@ install_docker() {
 perform_health_check() {
   clear
   # Prompt for current Elasticsearch password, default to $default_elastic_password
-  read -s -p "Enter current Elasticsearch password (default: $default_elastic_password): " elastic_password
-  elastic_password=${elastic_password:-$default_elastic_password}
-  echo
+  #read -s -p "Enter current Elasticsearch password (default: $default_elastic_password): " elastic_password
+  #elastic_password=${elastic_password:-$default_elastic_password}
+  #echo
 
   # Create a timestamped file
   timestamp=$(date +"%Y%m%d_%H%M%S")
@@ -287,6 +312,9 @@ perform_health_check() {
 
   {
     get_host_ip
+    
+    verify_ef_configured_pw_for_elastic
+    
     get_dashboard_url "ElastiFlow (flow): Overview"
 
     print_message "\n\n************* General *************" "$NC"
