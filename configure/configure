@@ -47,13 +47,21 @@ install_snmp_collector() {
     fi
   done
 
+  # Extract the Elasticsearch password from the flowcoll.yml configuration file
+  elastic_password=$(grep '^EF_OUTPUT_ELASTICSEARCH_PASSWORD: ' "$elastiflow_flow_config_path" | awk -F'"' '{print $2}')
+
+  if [ -z "$elastic_password" ]; then
+    print_message "Failed to extract Elasticsearch password from $elastiflow_flow_config_path" "$RED"
+    return
+  fi
+
   elastiflow_snmp_config_strings=(
     "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: \"true\""
     "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: \"${elastiflow_account_id}\""
     "EF_SNMP_LICENSE_KEY" "EF_SNMP_LICENSE_KEY: \"${elastiflow_snmp_license_key}\""
     "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: \"true\""
     "EF_OUTPUT_ELASTICSEARCH_ADDRESSES" "EF_OUTPUT_ELASTICSEARCH_ADDRESSES: \"127.0.0.1:9200\""
-    "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: \"${default_elastic_password}\""
+    "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: \"${elastic_password}\""
     "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: \"true\""
     "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION" "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: \"true\""
   )
@@ -93,7 +101,7 @@ install_snmp_collector() {
   # Perform find and replace in the JSON file
   sed -i 's/elastiflow-\*-codex-\*/elastiflow-telemetry_\*-codex-\*/g' "$json_file"
 
-  response=$(curl --silent --show-error --fail --connect-timeout 10 -X POST -u $elastic_username:$default_elastic_password \
+  response=$(curl --silent --show-error --fail --connect-timeout 10 -X POST -u "$elastic_username:$elastic_password" \
     "localhost:5601/api/saved_objects/_import?overwrite=true" \
     -H "kbn-xsrf: true" \
     --form file=@"$json_file" \
@@ -119,26 +127,25 @@ install_snmp_collector() {
 
 
 verify_ef_configured_pw_for_elastic(){
+  # Extract the Elasticsearch password from the configuration file
+  elastic_password=$(grep '^EF_OUTPUT_ELASTICSEARCH_PASSWORD: ' "$elastiflow_flow_config_path" | awk -F'"' '{print $2}')
 
-# Extract the Elasticsearch password from the configuration file
-elastic_password=$(grep '^EF_OUTPUT_ELASTICSEARCH_PASSWORD: ' "$elastiflow_flow_config_path" | awk '{print $2}' | tr -d '"')
+  # Check if the password was successfully extracted
+  if [ -z "$elastic_password" ]; then
+    print_message "Failed to extract Elasticsearch password from $elastiflow_flow_config_path" '\033[0;31m'
+    exit 1
+  fi
 
-# Check if the password was successfully extracted
-if [ -z "$elastic_password" ]; then
-  print_message "Failed to extract Elasticsearch password from $elastiflow_flow_config_path" '\033[0;31m'
-  exit 1
-fi
+  # Verify the password via Kibana
+  kibana_url="http://localhost:5601"
+  response=$(curl -s -o /dev/null -w "%{http_code}" -u "elastic:$elastic_password" "$kibana_url/api/status")
 
-# Verify the password via Kibana
-kibana_url="http://localhost:5601"
-response=$(curl -s -o /dev/null -w "%{http_code}" -u "elastic:$elastic_password" "$kibana_url/api/status")
-
-# Check the response code
-if [ "$response" -eq 200 ]; then
-  print_message "Elastic password in flowcoll.yml is correct. Authentication successful! - \"$elastic_password\"" "$GREEN"
-else
-  print_message "Elastic password in flowcoll.yml not correct. Authentication failed with response code: $response" "$RED"
-fi
+  # Check the response code
+  if [ "$response" -eq 200 ]; then
+    print_message "Elastic password in flowcoll.yml is correct. Authentication successful! - \"$elastic_password\"" "$GREEN"
+  else
+    print_message "Elastic password in flowcoll.yml not correct. Authentication failed with response code: $response" "$RED"
+  fi
 }
 
 
@@ -506,7 +513,7 @@ get_dashboard_url() {
   
   get_host_ip
   local kibana_url="http://$ip_address:5601"
-  elastic_password=$(grep '^EF_OUTPUT_ELASTICSEARCH_PASSWORD: ' "$elastiflow_flow_config_path" | awk '{print $2}' | tr -d '"')
+  elastic_password=$(grep '^EF_OUTPUT_ELASTICSEARCH_PASSWORD: ' "$elastiflow_flow_config_path" | awk -F'"' '{print $2}')
   local dashboard_title="$1"
   local encoded_title=$(echo "$dashboard_title" | sed 's/ /%20/g' | sed 's/:/%3A/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
   local response=$(curl -s -u "$elastic_username:$elastic_password" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
