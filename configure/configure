@@ -298,11 +298,6 @@ install_docker() {
 
 perform_health_check() {
   clear
-  # Prompt for current Elasticsearch password, default to $default_elastic_password
-  #read -s -p "Enter current Elasticsearch password (default: $default_elastic_password): " elastic_password
-  #elastic_password=${elastic_password:-$default_elastic_password}
-  #echo
-
   # Create a timestamped file
   timestamp=$(date +"%Y%m%d_%H%M%S")
   output_file="healthcheck_$timestamp.log"
@@ -313,10 +308,6 @@ perform_health_check() {
   {
     get_host_ip
     
-    verify_ef_configured_pw_for_elastic
-    
-    get_dashboard_url "ElastiFlow (flow): Overview"
-
     print_message "\n\n************* General *************" "$NC"
     if [ "$dashboard_url" == "Dashboard not found" ]; then
       print_message "Dashboard URL: $dashboard_url" "$RED"
@@ -357,6 +348,10 @@ perform_health_check() {
     fi
 
     print_message "************* Flowcoll ************" "$NC"
+    verify_ef_configured_pw_for_elastic
+    
+    get_dashboard_url "ElastiFlow (flow): Overview"
+
     if systemctl is-active --quiet flowcoll.service; then
       print_message "flowcoll.service is running" "$GREEN"
     else
