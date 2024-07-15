@@ -16,6 +16,7 @@ elastic_password2="elastic"
 ip_address=""
 dashboard_url=""
 elastiflow_snmp_config_path="/etc/elastiflow/snmpcoll.yml"
+elastiflow_flow_config_path="/etc/elastiflow/flowcoll.yml"
 
 
 install_snmp_collector() {
@@ -159,7 +160,8 @@ change_elasticsearch_password() {
   fi
 
   # Update password in Elastiflow
-  find_and_replace "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: \"${new_elastic_password}\""
+  find_and_replace "$elastiflow_flow_config_path" "${elastiflow_config_strings[@]}"
+#  find_and_replace "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: \"${new_elastic_password}\""
 
   # Restart all services
   reload_and_restart_services "elasticsearch.service" "kibana.service" "flowcoll.service"
