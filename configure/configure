@@ -116,6 +116,21 @@ install_snmp_collector() {
   fi
 }
 
+change_elasticsearch_password() {
+  printf "\n\n\n*********Changing Elastic password to \"elastic\"...\n\n"
+  curl -k -X POST -u "$elastic_username:$elastic_password" "https://localhost:9200/_security/user/elastic/_password" -H 'Content-Type: application/json' -d"
+  {
+    \"password\": \"$elastic_password2\"
+  }"
+  elastic_password=$elastic_password2
+}
+
+update_elastic_pw_in_kibana()
+{
+}
+
+
+
 check_for_updates() {
   # Dynamically determine the path to the current script
   local current_script=$(realpath "$0")
