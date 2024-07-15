@@ -309,12 +309,6 @@ perform_health_check() {
     get_host_ip
     
     print_message "\n\n************* General *************" "$NC"
-    if [ "$dashboard_url" == "Dashboard not found" ]; then
-      print_message "Dashboard URL: $dashboard_url" "$RED"
-    else
-      print_message "Dashboard URL: $dashboard_url" "$GREEN"
-    fi
-
     print_message "IP address: $ip_address" "$GREEN"
     netplan_file=$(find /etc/netplan -name "*.yaml" | head -n 1)
     print_message "Netplan file: $netplan_file" "$GREEN"
@@ -351,6 +345,11 @@ perform_health_check() {
     verify_ef_configured_pw_for_elastic
     
     get_dashboard_url "ElastiFlow (flow): Overview"
+    if [ "$dashboard_url" == "Dashboard not found" ]; then
+      print_message "Dashboard URL: $dashboard_url" "$RED"
+    else
+      print_message "Dashboard URL: $dashboard_url" "$GREEN"
+    fi
 
     if systemctl is-active --quiet flowcoll.service; then
       print_message "flowcoll.service is running" "$GREEN"
