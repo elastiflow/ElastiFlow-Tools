@@ -152,46 +152,52 @@ verify_ef_configured_pw_for_elastic(){
 
 
 change_elasticsearch_password() {
-  # Prompt for current password
-  read -s -p "Enter current Elasticsearch password: " old_elastic_password
-  echo
-  
-  # Validate current password is not empty
-  if [ -z "$old_elastic_password" ]; then
-    echo "Current password cannot be empty."
-    exit 1
-  fi
-
-  # Loop until new passwords match
   while true; do
-    # Prompt for new password
-    read -s -p "Enter new Elasticsearch password: " new_elastic_password
+    # Prompt for current password
+    read -s -p "Enter current Elasticsearch password: " old_elastic_password
     echo
-    read -s -p "Confirm new Elasticsearch password: " confirm_new_elastic_password
-    echo
+    
+    # Validate current password is not empty
+    if [ -z "$old_elastic_password" ]; then
+      echo "Current password cannot be empty."
+      continue
+    fi
 
-    # Validate new password is not empty and matches confirmation
-    if [ -z "$new_elastic_password" ]; then
-      echo "New password cannot be empty."
-    elif [ "$new_elastic_password" != "$confirm_new_elastic_password" ]; then
-      echo "Passwords do not match. Please try again."
-    else
+    # Loop until new passwords match
+    while true; do
+      # Prompt for new password
+      read -s -p "Enter new Elasticsearch password: " new_elastic_password
+      echo
+      read -s -p "Confirm new Elasticsearch password: " confirm_new_elastic_password
+      echo
+
+      # Validate new password is not empty and matches confirmation
+      if [ -z "$new_elastic_password" ]; then
+        echo "New password cannot be empty."
+      elif [ "$new_elastic_password" != "$confirm_new_elastic_password" ]; then
+        echo "Passwords do not match. Please try again."
+      else
+        break
+      fi
+    done
+
+    # Change current Elasticsearch password
+    response=$(curl -k -s -o /dev/null -w "%{http_code}" -X POST -u "$elastic_username:$old_elastic_password" "https://localhost:9200/_security/user/elastic/_password" -H 'Content-Type: application/json' -d"
+    {
+      \"password\": \"$new_elastic_password\"
+    }")
+
+    if [ "$response" -eq 200 ]; then
+      echo "Password successfully changed."
       break
+    else
+      echo "Failed to change password. HTTP response code: $response"
+      read -p "Do you want to try again? (y/n): " retry_choice
+      if [[ $retry_choice != "y" ]]; then
+        exit 1
+      fi
     fi
   done
-
-  # Change current Elasticsearch password
-  response=$(curl -k -s -o /dev/null -w "%{http_code}" -X POST -u "$elastic_username:$old_elastic_password" "https://localhost:9200/_security/user/elastic/_password" -H 'Content-Type: application/json' -d"
-  {
-    \"password\": \"$new_elastic_password\"
-  }")
-
-  if [ "$response" -eq 200 ]; then
-    echo "Password successfully changed."
-  else
-    echo "Failed to change password. HTTP response code: $response"
-    exit 1
-  fi
 
   # Update password in Elastiflow
   elastiflow_config_strings=("EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: \"$new_elastic_password\"")
@@ -200,6 +206,7 @@ change_elasticsearch_password() {
   # Restart all services
   reload_and_restart_services "elasticsearch.service" "kibana.service" "flowcoll.service"
 }
+
 
 
 check_for_updates() {
