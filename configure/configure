@@ -130,7 +130,7 @@ install_snmp_collector() {
 
 verify_ef_configured_pw_for_elastic(){
   # Extract the Elasticsearch password from the configuration file
-  elastic_password=$(grep '^EF_OUTPUT_ELASTICSEARCH_PASSWORD: ' "$elastiflow_flow_config_path" | awk -F'"' '{print $2}')
+  elastic_password=$(grep "^EF_OUTPUT_ELASTICSEARCH_PASSWORD: '" "$elastiflow_flow_config_path" | awk -F"'" '{print $2}')
 
   # Check if the password was successfully extracted
   if [ -z "$elastic_password" ]; then
