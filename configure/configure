@@ -125,8 +125,10 @@ change_elasticsearch_password() {
   elastic_password=$elastic_password2
 }
 
-update_elastic_pw_in_kibana()
+update_es_pw_in_es()
 {
+  "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: \"${elastic_password2}\""
+
 }
 
 
