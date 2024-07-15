@@ -117,17 +117,23 @@ install_snmp_collector() {
 }
 
 change_elasticsearch_password() {
-  printf "\n\n\n*********Changing Elastic password to \"elastic\"...\n\n"
-  curl -k -X POST -u "$elastic_username:$elastic_password" "https://localhost:9200/_security/user/elastic/_password" -H 'Content-Type: application/json' -d"
-  {
-    \"password\": \"$elastic_password2\"
-  }"
-  elastic_password=$elastic_password2
-}
 
-update_es_pw_in_es()
-{
-  "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: \"${elastic_password2}\""
+#prompt for current password
+
+#prompt for new password
+
+#change current elasticsearch password
+curl -k -X POST -u "$elastic_username:$old_elastic_password" "https://localhost:9200/_security/user/elastic/_password" -H 'Content-Type: application/json' -d"
+  {
+    \"password\": \"$new_elastic_password\"
+  }"
+
+#update password in elastiflow
+find_and_replace "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: \"${new_elastic_password}\""
+
+#restart all services
+reload_and_restart_services "elasticsearch.service" "kibana.service" "flowcoll.service"  
+
 
 }
 
