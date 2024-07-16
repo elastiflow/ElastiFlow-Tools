@@ -12,7 +12,6 @@ NC='\033[0m' # No Color
 elastiflow_flow_collector_version="7.0.2"
 elastiflow_snmp_collector_version="7.0.2"
 elastic_username="elastic"
-default_elastic_password="elastic"
 ip_address=""
 dashboard_url=""
 elastiflow_snmp_config_path="/etc/elastiflow/snmpcoll.yml"
