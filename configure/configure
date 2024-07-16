@@ -1447,8 +1447,9 @@ while true; do
         echo "16. Watch flowcoll.service log"
         echo "17. Watch kibana.service log"
         echo "18. Install SNMP Collector"
-        echo "19. Back"
-        read -p "Enter your choice (1-19): " utility_choice
+        echo "19. Reset Elasticsearch password"
+        echo "20. Back"
+        read -p "Enter your choice (1-20): " utility_choice
         clear
         case $utility_choice in
           1)
@@ -1458,7 +1459,7 @@ while true; do
             reload_and_restart_service "flowcoll.service"
             ;;
           3)
-            reload_and_restart_services "elasticsearch.service" "kibana.service" "flowcoll.service"  
+            reload_and_restart_services "elasticsearch.service" "kibana.service" "flowcoll.service"
             ;;
           4)
             backup_existing_flowcoll
@@ -1529,10 +1530,13 @@ while true; do
             install_snmp_collector
             ;;
           19)
+            reset_elastic_password
+            ;;
+          20)
             break
             ;;
           *)
-            print_message "Invalid choice. Please enter a number between 1 and 19." "$RED"
+            print_message "Invalid choice. Please enter a number between 1 and 20." "$RED"
             ;;
         esac
       done
@@ -1555,7 +1559,6 @@ while true; do
             print_message "Invalid choice. Please enter 1 or 2." "$RED"
             ;;
         esac
-        
       done
       ;;
     6)
