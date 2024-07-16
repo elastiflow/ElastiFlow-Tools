@@ -128,6 +128,38 @@ install_snmp_collector() {
 }
 
 
+reset_elastic_password() {
+  local new_password="$1"
+  local elasticsearch_service_name="elasticsearch"  # Change this if your Elasticsearch service name is different
+
+  echo "Stopping Elasticsearch service..."
+  sudo systemctl stop "$elasticsearch_service_name"
+
+  if [[ $? -ne 0 ]]; then
+    echo "Failed to stop Elasticsearch service."
+    return
+  fi
+
+  echo "Resetting the elastic user password..."
+  sudo /usr/share/elasticsearch/bin/elasticsearch-users userpasswd elastic -p "$new_password"
+
+  if [[ $? -ne 0 ]]; then
+    echo "Failed to reset the password for user 'elastic'."
+    return
+  fi
+
+  echo "Starting Elasticsearch service..."
+  sudo systemctl start "$elasticsearch_service_name"
+
+  if [[ $? -ne 0 ]]; then
+    echo "Failed to start Elasticsearch service."
+    return
+  fi
+
+  echo "Password for user 'elastic' has been reset successfully."
+}
+
+
 verify_ef_configured_pw_for_elastic(){
   # Extract the Elasticsearch password from the configuration file
   elastic_password=$(grep "^EF_OUTPUT_ELASTICSEARCH_PASSWORD: '" "$elastiflow_flow_config_path" | awk -F"'" '{print $2}')
