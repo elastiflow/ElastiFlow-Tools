@@ -159,7 +159,15 @@ reset_elastic_password() {
     return
   fi
 
+  # Update password in Elastiflow
+  elastiflow_config_strings=("EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: \"$new_password\"")
+  find_and_replace "$elastiflow_flow_config_path" "${elastiflow_config_strings[@]}"
+
+  # Restart all services
+  reload_and_restart_services "flowcoll.service"
+
   echo "Password for user 'elastic' has been reset successfully."
+
 }
 
 
