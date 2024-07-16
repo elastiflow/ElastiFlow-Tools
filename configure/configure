@@ -212,7 +212,7 @@ change_elasticsearch_password() {
 check_for_updates() {
   # Dynamically determine the path to the current script
   local current_script=$(realpath "$0")
-  local new_script_url="https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/configure/configure_script_update"
+  local new_script_url="https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/configure/configure"
   local tmp_script="/tmp/configure_script_update"
 
   echo "Checking for updates..."
