@@ -129,8 +129,11 @@ install_snmp_collector() {
 
 
 reset_elastic_password() {
-  local new_password="$1"
   local elasticsearch_service_name="elasticsearch"  # Change this if your Elasticsearch service name is different
+
+  # Prompt the user for the new password
+  read -sp "Enter new password for 'elastic' user: " new_password
+  echo
 
   echo "Stopping Elasticsearch service..."
   sudo systemctl stop "$elasticsearch_service_name"
