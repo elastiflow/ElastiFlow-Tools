@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ElastiFlow PoC Configurator for installing ElastiFlow Trial and MaxMind enrichment
-# Version: 2.7
+# Version: 2.8
 # Author: O.J. Wolanyk
 
 # Define color codes
@@ -285,8 +285,8 @@ check_for_updates() {
     echo "Remote version $new_version available."
 
     while true; do
-      read -t 10 -p "Do you want to update to the Remote version? (y/n) [y]: " update_choice
-      update_choice=${update_choice:-y}
+      read -t 10 -p "Do you want to update to the Remote version? (y/n) [n]: " update_choice
+      update_choice=${update_choice:-n}
 
       if [[ $update_choice == "y" || $update_choice == "n" ]]; then
         break
