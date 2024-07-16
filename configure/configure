@@ -212,8 +212,8 @@ change_elasticsearch_password() {
 check_for_updates() {
   # Dynamically determine the path to the current script
   local current_script=$(realpath "$0")
-  local new_script_url="https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/configure/configure"
-  local tmp_script="/tmp/configure"
+  local new_script_url="https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/configure/configure_script_update"
+  local tmp_script="/tmp/configure_script_update"
 
   echo "Checking for updates..."
   echo "Current script path: $current_script"
@@ -221,7 +221,7 @@ check_for_updates() {
   wget -q -O "$tmp_script" "$new_script_url"
 
   if [[ $? -ne 0 ]]; then
-    print_message "Failed to check for updates." "$RED"
+    echo "Failed to check for updates."
     return
   fi
 
@@ -234,13 +234,13 @@ check_for_updates() {
   echo "Remote version: $new_version"
 
   if [[ -z "$current_version" ]]; then
-    print_message "Failed to detect the current version." "$RED"
+    echo "Failed to detect the current version."
     return
   fi
 
   if [[ "$new_version" > "$current_version" ]]; then
-    print_message "Remote version $new_version available." "$GREEN"
-    
+    echo "Remote version $new_version available."
+
     while true; do
       echo -n "Do you want to update to the Remote version? (y/n) [y]: "
       for i in {10..1}; do
@@ -248,10 +248,10 @@ check_for_updates() {
         sleep 1
       done
       echo
-      
+
       read -t 1 -n 1 update_choice
       update_choice=${update_choice:-y}
-      
+
       if [[ $update_choice == "y" || $update_choice == "n" ]]; then
         break
       else
@@ -260,16 +260,16 @@ check_for_updates() {
     done
 
     if [[ $update_choice == "y" ]]; then
-      print_message "Updating to version $new_version..." "$GREEN"
+      echo "Updating to version $new_version..."
       cp "$tmp_script" "$current_script"
       chmod +x "$current_script"
-      print_message "Update successful. Restarting script..." "$GREEN"
+      echo "Update successful. Restarting script..."
       exec "$current_script"
     else
-      print_message "Update skipped." "$RED"
+      echo "Update skipped."
     fi
   else
-    print_message "No updates available." "$GREEN"
+    echo "No updates available."
   fi
 
   echo "Cleaning up temporary script."
