@@ -131,35 +131,35 @@ install_snmp_collector() {
 reset_elastic_password() {
   local elasticsearch_service_name="elasticsearch"  # Change this if your Elasticsearch service name is different
 
-  # Prompt the user for the new password
-  read -sp "Enter new password for 'elastic' user: " new_password
-  echo
+#  echo "Stopping Elasticsearch service..."
+#  sudo systemctl stop "$elasticsearch_service_name"
 
-  echo "Stopping Elasticsearch service..."
-  sudo systemctl stop "$elasticsearch_service_name"
-
-  if [[ $? -ne 0 ]]; then
-    echo "Failed to stop Elasticsearch service."
-    return
-  fi
+#  if [[ $? -ne 0 ]]; then
+#    echo "Failed to stop Elasticsearch service."
+#    return
+#  fi
 
   echo "Resetting the elastic user password..."
-  sudo /usr/share/elasticsearch/bin/elasticsearch-users userpasswd elastic -p "$new_password"
+  sudo /usr/share/elasticsearch/bin/elasticsearch-reset-password --username elastic -i -f
 
   if [[ $? -ne 0 ]]; then
     echo "Failed to reset the password for user 'elastic'."
     return
   fi
 
-  echo "Starting Elasticsearch service..."
-  sudo systemctl start "$elasticsearch_service_name"
+#  echo "Starting Elasticsearch service..."
+#  sudo systemctl start "$elasticsearch_service_name"
 
-  if [[ $? -ne 0 ]]; then
-    echo "Failed to start Elasticsearch service."
-    return
-  fi
+#  if [[ $? -ne 0 ]]; then
+#    echo "Failed to start Elasticsearch service."
+#    return
+#  fi
 
-  # Update password in Elastiflow
+  # Update password in Elastiflow (if needed)
+  read -sp "Enter new password for 'elastic' user to update Elastiflow configuration: " new_password
+  echo
+
+   # Update password in Elastiflow
   elastiflow_config_strings=("EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: \"$new_password\"")
   find_and_replace "$elastiflow_flow_config_path" "${elastiflow_config_strings[@]}"
 
@@ -167,7 +167,6 @@ reset_elastic_password() {
   reload_and_restart_services "flowcoll.service"
 
   echo "Password for user 'elastic' has been reset successfully."
-
 }
 
 
