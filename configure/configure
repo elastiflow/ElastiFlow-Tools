@@ -285,14 +285,7 @@ check_for_updates() {
     echo "Remote version $new_version available."
 
     while true; do
-      echo -n "Do you want to update to the Remote version? (y/n) [y]: "
-      for i in {10..1}; do
-        echo -n "$i "
-        sleep 1
-      done
-      echo
-
-      read -t 1 -n 1 update_choice
+      read -t 10 -p "Do you want to update to the Remote version? (y/n) [y]: " update_choice
       update_choice=${update_choice:-y}
 
       if [[ $update_choice == "y" || $update_choice == "n" ]]; then
