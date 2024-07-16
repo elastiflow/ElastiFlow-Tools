@@ -156,11 +156,11 @@ reset_elastic_password() {
 #  fi
 
   # Update password in Elastiflow (if needed)
-  read -sp "Enter new password for 'elastic' user to update Elastiflow configuration: " new_password
+  read -sp "Enter new password for 'elastic' user to update Elastiflow configuration: " new_elastic_password
   echo
 
-   # Update password in Elastiflow
-  elastiflow_config_strings=("EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: \"$new_password\"")
+  # Update password in Elastiflow
+  elastiflow_config_strings=("EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: '$new_elastic_password'")
   find_and_replace "$elastiflow_flow_config_path" "${elastiflow_config_strings[@]}"
 
   # Restart all services
@@ -242,7 +242,8 @@ change_elasticsearch_password() {
   done
 
   # Update password in Elastiflow
-  elastiflow_config_strings=("EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: \"$new_elastic_password\"")
+  elastiflow_config_strings=("EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: '$new_elastic_password'")
+
   find_and_replace "$elastiflow_flow_config_path" "${elastiflow_config_strings[@]}"
 
   # Restart all services
