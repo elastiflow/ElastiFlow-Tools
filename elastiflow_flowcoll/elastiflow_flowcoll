@@ -185,7 +185,7 @@ install_prerequisites() {
   apt-get -qq update > /dev/null 2>&1
 
   # List of packages to be installed
-  packages=(jq net-tools git bc gpg default-jre curl wget unzip apt-transport-https isc-dhcp-client libpcap-dev)
+  packages=(jq net-tools git bc gpg curl wget unzip apt-transport-https libpcap-dev)
 
   # Loop through the list and install each package
   for package in "${packages[@]}"; do
@@ -271,7 +271,7 @@ configure_elastiflow() {
     # Verify Elasticsearch connection
   #  if verify_elasticsearch "$elasticsearch_protocol" "$elasticsearch_ip" "$elasticsearch_port" "$elasticsearch_password"; then
   #    echo "Elasticsearch verification successful."
-  #    break
+      break
   #  else
   #    echo "Elasticsearch verification failed. Please check your inputs and try again."
   #  fi
