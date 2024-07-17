@@ -228,7 +228,7 @@ check_service_health() {
 }
 
 # Function to install ElastiFlow Flow Collector
-install_elastiflow() {
+install_elastiflow_flowcoll() {
   printf "\n\n\n*********Downloading and installing ElastiFlow Flow Collector...\n\n" 
   wget -O flow-collector_"$elastiflow_flowcoll_version"_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_"$elastiflow_flowcoll_version"_linux_amd64.deb
   apt-get -q install ./flow-collector_"$elastiflow_flowcoll_version"_linux_amd64.deb
@@ -249,7 +249,7 @@ verify_elasticsearch() {
 }
 
 # Function to configure ElastiFlow Flow Collector
-configure_elastiflow() {
+configure_elastiflow_flowcoll() {
   while true; do
     read -p "Do you accept the ElastiFlow license? (yes/no): " elastiflow_license_acceptance
     if [[ "$elastiflow_license_acceptance" == "yes" ]]; then
@@ -340,7 +340,7 @@ configure_elastiflow() {
 
   check_service_health
   if [ $? -ne 0 ]; then
-    configure_elastiflow
+    configure_elastiflow_flowcoll
   fi
 }
 
@@ -402,5 +402,5 @@ print_startup_message
 check_for_root
 check_compatibility
 install_prerequisites
-install_elastiflow
-configure_elastiflow
+install_elastiflow_flowcoll
+configure_elastiflow_flowcoll
