@@ -118,18 +118,6 @@ check_for_updates() {
   rm -f "$tmp_script"
 }
 
-download_file() {
-  local url=$1
-  local target_path=$2
-  curl -s -o "$target_path" "$url"
-  if [ $? -eq 0 ]; then
-    chmod +x "$target_path"
-    echo "Downloaded and made $target_path executable."
-  else
-    echo "Failed to download $target_path.\n\n"
-  fi
-}
-
 find_and_replace() {
   local FILE=$1
   shift
