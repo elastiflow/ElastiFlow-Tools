@@ -29,6 +29,28 @@ print_message() {
   echo -e "${color}${message}${NC}"
 }
 
+comment_and_replace_line() {
+  local FILE=$1
+  local FIND=$2
+  local REPLACE=$3
+  FIND_ESCAPED=$(echo "$FIND" | sed 's/[.[\*^$]/\\&/g')
+  REPLACE_ESCAPED=$(echo "$REPLACE" | sed 's/[&/\]/\\&/g')
+
+  if grep -Eq "^[#]*$FIND_ESCAPED" "$FILE"; then
+    sed -i.bak "/^[#]*$FIND_ESCAPED/c\\$REPLACE" "$FILE"
+    print_message "Replaced '$FIND' with '$REPLACE'." "$GREEN"
+  else
+    if grep -q "^#ElastiFlow PoC Configurator" "$FILE"; then
+      sed -i.bak "/^#ElastiFlow PoC Configurator/a $REPLACE" "$FILE"
+      print_message "Added '$REPLACE' under '#ElastiFlow PoC Configurator'." "$GREEN"
+    else
+      echo -e "\n#ElastiFlow PoC Configurator" | tee -a "$FILE" > /dev/null
+      sed -i.bak "/^#ElastiFlow PoC Configurator/a $REPLACE" "$FILE"
+      print_message "Added heading and '$REPLACE'." "$GREEN"
+    fi
+  fi
+}
+
 check_for_updates() {
   # Dynamically determine the path to the current script
   local current_script=$(realpath "$0")
