@@ -16,7 +16,7 @@ flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
 
 #leave blank
 osversion=""
-enable_elasticsearch_connection_check=1
+enable_elasticsearch_connection_check=0
 
 # Colors for messages
 GREEN='\033[0;32m'
