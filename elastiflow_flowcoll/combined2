@@ -467,7 +467,6 @@ configure_maxmind() {
 # Main script
 display_ascii_art
 check_for_updates
-print_startup_message
 check_for_root
 check_compatibility
 
