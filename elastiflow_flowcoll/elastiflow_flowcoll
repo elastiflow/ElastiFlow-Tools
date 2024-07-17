@@ -139,7 +139,7 @@ find_and_replace() {
     exit 1
   fi
   for ((i = 0; i < ${#PAIRS[@]}; i+=2)); do
-    replace_text "$FILE" "${PAIRS[i]}" "${PAIRS[i+1]}"
+    comment_and_replace_line "$FILE" "${PAIRS[i]}" "${PAIRS[i+1]}"
   done
 }
 
