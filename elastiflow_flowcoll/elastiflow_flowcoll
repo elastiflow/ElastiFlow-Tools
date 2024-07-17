@@ -16,6 +16,7 @@ flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
 
 #leave blank
 osversion=""
+enable_elasticsearch_connection_check=1
 
 # Colors for messages
 GREEN='\033[0;32m'
@@ -248,6 +249,7 @@ configure_elastiflow() {
     read -p "Do you accept the ElastiFlow license? (yes/no): " elastiflow_license_acceptance
     if [[ "$elastiflow_license_acceptance" == "yes" ]]; then
       elastiflow_license_accepted="true"
+      elastiflow_account_id="true"
       break
     elif [[ "$elastiflow_license_acceptance" == "no" ]]; then
       echo "You must accept the license to proceed with the installation."
@@ -257,7 +259,6 @@ configure_elastiflow() {
     fi
   done
 
-  read -p "Enter ElastiFlow Account ID: " elastiflow_account_id
   read -p "Enter ElastiFlow Flow License Key: " elastiflow_flow_license_key
 
   while true; do
@@ -268,13 +269,18 @@ configure_elastiflow() {
     elasticsearch_protocol=${elasticsearch_protocol:-http}
     read -p "Enter Elasticsearch Password: " elasticsearch_password
 
-    # Verify Elasticsearch connection
-  #  if verify_elasticsearch "$elasticsearch_protocol" "$elasticsearch_ip" "$elasticsearch_port" "$elasticsearch_password"; then
-  #    echo "Elasticsearch verification successful."
+    if [[ $enable_elasticsearch_connection_check -ne 0 ]]; then
+      # Verify Elasticsearch connection
+      if verify_elasticsearch "$elasticsearch_protocol" "$elasticsearch_ip" "$elasticsearch_port" "$elasticsearch_password"; then
+        echo "Elasticsearch verification successful."
+        break
+      else
+        echo "Elasticsearch verification failed. Please check your inputs and try again."
+      fi
+    else
+      echo "Skipping Elasticsearch connection check."
       break
-  #  else
-  #    echo "Elasticsearch verification failed. Please check your inputs and try again."
-  #  fi
+    fi
   done
 
   read -p "Enable Elasticsearch ECS (true/false, default false): " elasticsearch_ecs_enable
