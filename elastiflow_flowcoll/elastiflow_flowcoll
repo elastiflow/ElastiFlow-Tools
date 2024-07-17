@@ -204,21 +204,6 @@ install_prerequisites() {
   done
 }
 
-
-# Function to verify Elasticsearch connection
-verify_elasticsearch() {
-  local protocol=$1
-  local ip=$2
-  local port=$3
-  local password=$4
-  local response=$(curl -s -o /dev/null -w "%{http_code}" -u "elastic:${password}" "${protocol}://${ip}:${port}")
-  if [ "$response" -eq 200 ]; then
-    return 0
-  else
-    return 1
-  fi
-}
-
 # Function to verify Elasticsearch connection
 verify_elasticsearch() {
   local protocol=$1
@@ -367,57 +352,12 @@ configure_elastiflow() {
 }
 
 # Main script
+check_for_root
+check_compatibility
+install_prerequisites
 install_elastiflow
 configure_elastiflow
 
-
-
-
-
-install_dashboards() {
-printf "\n\n\n*********Downloading and installing ElastiFlow flow dashboards\n\n"
-git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
-  
-response=$(curl --connect-timeout 10 -X POST -u $elastic_username:$elastic_password "localhost:5601/api/saved_objects/_import?overwrite=true" -H "kbn-xsrf: true" --form file=@/etc/elastiflow_for_elasticsearch/kibana/flow/kibana-$kibana_dashboards_version-flow-$kibana_dashboards_codex_ecs.ndjson -H 'kbn-xsrf: true')
-
-  if [ $? -ne 0 ]; then
-    printf "Error: %s\n" "$response"
-    printf "Flow dashboards not installed successfully\n\n"
-  else
-    dashboards_success=$(echo "$response" | jq -r '.success')
-    if [ "$dashboards_success" == "true" ]; then
-        printf "Flow dashboards installed successfully.\n\n"
-    else
-        printf "Flow dashboards not installed successfully\n\n"
-    fi
-  fi
-}
-
-
-check_service_status() {
-  local SERVICE_NAME=$1
-  if systemctl is-active --quiet "$SERVICE_NAME"; then
-    echo -e "\e[32m$SERVICE_NAME is up ✓\e[0m"
-  else
-    echo -e "\e[31m$SERVICE_NAME is not up X\e[0m"
-  fi
-}
-
-
-check_all_services() {
-  SERVICES=("elasticsearch.service" "kibana.service" "flowcoll.service")
-  for SERVICE_NAME in "${SERVICES[@]}"; do
-      check_service_status "$SERVICE_NAME"
-  done
-}
-
-check_dashboards_status() {
-  if [ "$dashboards_success" == "true" ]; then
-       echo -e "\e[32mDashboards are installed ✓\e[0m"
-  else
-       echo -e "\e[31mDashboards are not installed X\e[0m"
-  fi
-}
 
 display_versions() {
   printf "*********************************************\n"
