@@ -179,15 +179,8 @@ check_compatibility() {
   osversion="ubuntu"
 }
 
-print_startup_message() {
-  printf "*********\n"
-  printf "*********\n"
-  printf "*********Setting up ElastiFlow environment...*********\n"
-  printf "*********\n"
-  printf "*********\n"
-}
 
-initial_display() {
+print_startup_message() {
   echo "@@@@@@@@@@@@@@ @@@@@                                @@@@     @@@@  @@@@@@@@@@@@@@@ @@@@"
   echo "@@@@@@@@@@@@@  @@@@@                               @@@@@     @@@@  @@@@@@@@@@@@@@  @@@@"
   echo "@@@@           @@@@@     @@@@@@        @@@@@@    @@@@@@@@@@  @@@@  @@@@@           @@@@     @@@@@@@@   @@@@     @@@@     @@@@"
