@@ -225,8 +225,51 @@ verify_elasticsearch() {
   fi
 }
 
-install_elastiflow_flowcoll() {
-  # Prompting for inputs
+# Function to verify Elasticsearch connection
+verify_elasticsearch() {
+  local protocol=$1
+  local ip=$2
+  local port=$3
+  local password=$4
+  local response=$(curl -s -o /dev/null -w "%{http_code}" -u "elastic:${password}" "${protocol}://${ip}:${port}")
+  if [ "$response" -eq 200 ]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+# Function to check the service health
+check_service_health() {
+  print_message "Checking if flowcoll.service stays running for at least 10 seconds..." "$GREEN"
+  sleep 10
+  if ! systemctl is-active --quiet flowcoll.service; then
+    print_message "flowcoll.service did not stay started." "$RED"
+    if journalctl -u flowcoll.service | grep -q "license error"; then
+      print_message "License error found in logs. Exiting to main menu." "$RED"
+      restore_latest_backup
+      reload_and_restart_service "flowcoll.service"
+    else
+      restore_latest_backup
+      reload_and_restart_service "flowcoll.service"
+      print_message "Rerunning the configuration routine." "$GREEN"
+    fi
+    return 1
+  else
+    print_message "flowcoll.service restarted successfully and stayed running for at least 10 seconds." "$GREEN"
+    return 0
+  fi
+}
+
+# Function to install ElastiFlow Flow Collector
+install_elastiflow() {
+  printf "\n\n\n*********Downloading and installing ElastiFlow Flow Collector...\n\n" 
+  wget -O flow-collector_"$elastiflow_version"_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_"$elastiflow_version"_linux_amd64.deb
+  apt-get -q install ./flow-collector_"$elastiflow_version"_linux_amd64.deb
+}
+
+# Function to configure ElastiFlow Flow Collector
+configure_elastiflow() {
   read -p "Enter ElastiFlow Account ID: " elastiflow_account_id
   read -p "Enter ElastiFlow Flow License Key: " elastiflow_flow_license_key
 
@@ -288,38 +331,20 @@ install_elastiflow_flowcoll() {
     "EF_LOGGER_FILE_LOG_ENABLE" "EF_LOGGER_FILE_LOG_ENABLE: \"${enable_log_file}\""
     "EF_OUTPUT_ELASTICSEARCH_TSDS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TSDS_ENABLE: \"${tsds_enable}\""
   )
-  
-  printf "\n\n\n*********Downloading and installing ElastiFlow Flow Collector...\n\n" 
-  wget -O flow-collector_"$elastiflow_version"_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_"$elastiflow_version"_linux_amd64.deb
-  apt-get -q install ./flow-collector_"$elastiflow_version"_linux_amd64.deb
+
   printf "\n\n\n*********Configuring ElastiFlow Flow Collector...\n\n" 
   find_and_replace "$flowcoll_config_path" "${elastiflow_config_strings[@]}"
   replace_text "/etc/systemd/system/flowcoll.service" "TimeoutStopSec=infinity" "TimeoutStopSec=60" "N/A"
   printf "\n\n\n*********Enabling and starting ElastiFlow service...\n\n"
   systemctl daemon-reload && systemctl enable flowcoll.service && systemctl start flowcoll.service
   sleep_message "Giving ElastiFlow service time to stabilize" 10
-}
 
-check_service_health() {
-  print_message "Checking if flowcoll.service stays running for at least 10 seconds..." "$GREEN"
-  sleep 10
-  if ! systemctl is-active --quiet flowcoll.service; then
-    print_message "flowcoll.service did not stay started." "$RED"
-    if journalctl -u flowcoll.service | grep -q "license error"; then
-      print_message "License error found in logs. Exiting to main menu." "$RED"
-      restore_latest_backup
-      reload_and_restart_service "flowcoll.service"
-    else
-      restore_latest_backup
-      reload_and_restart_service "flowcoll.service"
-      print_message "Rerunning the configuration routine." "$GREEN"
-    fi
-    return 1
-  else
-    print_message "flowcoll.service restarted successfully and stayed running for at least 10 seconds." "$GREEN"
-    return 0
+  check_service_health
+  if [ $? -ne 0 ]; then
+    configure_elastiflow
   fi
 }
+
 
 
 
@@ -396,15 +421,6 @@ download_aux_files(){
   download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/support_pack/elastiflow_elasticsearch_opensearch_support_pack" "/home/user/support"
 }
 
-
-main() {
-  print_startup_message
-  check_for_root
-  check_compatibility
-  install_prerequisites
-  sleep_message "Giving dpkg time to clean up" 10
-  install_elastiflow_flowcoll
-  display_versions
-}
-
-main
+# Main script
+install_elastiflow
+configure_elastiflow
