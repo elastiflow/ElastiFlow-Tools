@@ -409,12 +409,12 @@ perform_health_check() {
       print_message "flowcoll.service is not running" "$RED"
     fi
 
-    if journalctl -u flowcoll.service | grep -q "level=error"; then
-      print_message "Errors found in flowcoll.service logs:" "$RED"
-      journalctl -u flowcoll.service | grep "level=error"
-    else
-      print_message "No errors found in flowcoll.service logs" "$GREEN"
-    fi
+    if journalctl -u flowcoll.service | grep -iq "level=error"; then
+    print_message "Errors found in flowcoll.service logs:" "$RED"
+    journalctl -u flowcoll.service | grep -i "level=error"
+  else
+    print_message "No errors found in flowcoll.service logs" "$GREEN"
+  fi
 
     response=$(curl -s http://localhost:8080/readyz)
     if echo "$response" | grep -q "200"; then
@@ -479,9 +479,9 @@ perform_health_check() {
       print_message "elasticsearch.service is not running" "$RED"
     fi
 
-    if journalctl -u elasticsearch.service | grep -q "level=error"; then
+     if journalctl -u elasticsearch.service | grep -iq "level=error"; then
       print_message "Errors found in elasticsearch.service logs:" "$RED"
-      journalctl -u elasticsearch.service | grep "level=error"
+      journalctl -u elasticsearch.service | grep -i "level=error"
     else
       print_message "No errors found in elasticsearch.service logs" "$GREEN"
     fi
@@ -508,9 +508,9 @@ perform_health_check() {
       print_message "kibana.service is not running" "$RED"
     fi
 
-    if journalctl -u kibana.service | grep -q "level=error"; then
+    if journalctl -u kibana.service | grep -iq "\[error\]"; then
       print_message "Errors found in kibana.service logs:" "$RED"
-      journalctl -u kibana.service | grep "level=error"
+      journalctl -u kibana.service | grep -i "\[error\]"
     else
       print_message "No errors found in kibana.service logs" "$GREEN"
     fi
