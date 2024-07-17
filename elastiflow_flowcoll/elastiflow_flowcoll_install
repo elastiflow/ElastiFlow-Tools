@@ -10,7 +10,6 @@ flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
 
 #leave blank
 osversion=""
-enable_elasticsearch_connection_check=0
 
 # Colors for messages
 GREEN='\033[0;32m'
@@ -275,17 +274,12 @@ configure_elastiflow_flowcoll() {
     elasticsearch_protocol=${elasticsearch_protocol:-http}
     read -p "Enter Elasticsearch Password: " elasticsearch_password
 
-    if [[ $enable_elasticsearch_connection_check -ne 0 ]]; then
-      # Verify Elasticsearch connection
-      if verify_elasticsearch "$elasticsearch_protocol" "$elasticsearch_ip" "$elasticsearch_port" "$elasticsearch_password"; then
-        echo "Elasticsearch verification successful."
-        break
-      else
-        echo "Elasticsearch verification failed. Please check your inputs and try again."
-      fi
-    else
-      echo "Skipping Elasticsearch connection check."
+    # Verify Elasticsearch connection
+    if verify_elasticsearch "$elasticsearch_protocol" "$elasticsearch_ip" "$elasticsearch_port" "$elasticsearch_password"; then
+      echo "Elasticsearch verification successful."
       break
+    else
+      echo "Elasticsearch verification failed. Please check your inputs and try again."
     fi
   done
 
@@ -344,7 +338,6 @@ configure_elastiflow_flowcoll() {
   fi
 }
 
-
 configure_maxmind() {
   FILE_PATH=/etc/elastiflow/flowcoll.yml
   show_maxmind
@@ -393,8 +386,6 @@ configure_maxmind() {
 
   find_and_replace "$FILE_PATH" "${STRINGS_TO_REPLACE[@]}"
 }
-
-
 
 # Main script
 check_for_updates
