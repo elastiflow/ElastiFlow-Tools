@@ -7,8 +7,6 @@
 # If you do not have an ElastiFlow Account ID and ElastiFlow Flow License Key, 
 # please go here: https://elastiflow.com/get-started
 # Paste these values on the corresponding line, between the quotes
-elastiflow_account_id=""
-elastiflow_flow_license_key=""
 ########################################################
 
 elastiflow_version="7.0.2"
@@ -17,8 +15,6 @@ kibana_version="8.14.0"
 kibana_dashboards_version="8.14.x"
 kibana_dashboards_codex_ecs="codex"
 flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
-elastic_username="elastic"
-elastic_password2="elastic"
 ########################################################
 
 #leave blank
@@ -268,8 +264,35 @@ install_elastiflow() {
   apt-get -q install ./flow-collector_"$elastiflow_version"_linux_amd64.deb
 }
 
+# Function to verify Elasticsearch connection
+verify_elasticsearch() {
+  local protocol=$1
+  local ip=$2
+  local port=$3
+  local password=$4
+  local response=$(curl -s -o /dev/null -w "%{http_code}" -u "elastic:${password}" "${protocol}://${ip}:${port}")
+  if [ "$response" -eq 200 ]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
 # Function to configure ElastiFlow Flow Collector
 configure_elastiflow() {
+  while true; do
+    read -p "Do you accept the ElastiFlow license? (yes/no): " elastiflow_license_acceptance
+    if [[ "$elastiflow_license_acceptance" == "yes" ]]; then
+      elastiflow_license_accepted="true"
+      break
+    elif [[ "$elastiflow_license_acceptance" == "no" ]]; then
+      echo "You must accept the license to proceed with the installation."
+      exit 1
+    else
+      echo "Please answer yes or no."
+    fi
+  done
+
   read -p "Enter ElastiFlow Account ID: " elastiflow_account_id
   read -p "Enter ElastiFlow Flow License Key: " elastiflow_flow_license_key
 
@@ -304,7 +327,7 @@ configure_elastiflow() {
   enable_log_file=${enable_log_file:-true}
 
   elastiflow_config_strings=(
-    "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: \"true\""
+    "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: \"${elastiflow_license_accepted}\""
     "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: \"${elastiflow_account_id}\""
     "EF_FLOW_LICENSE_KEY" "EF_FLOW_LICENSE_KEY: \"${elastiflow_flow_license_key}\""
     "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: \"true\""
@@ -344,6 +367,11 @@ configure_elastiflow() {
     configure_elastiflow
   fi
 }
+
+# Main script
+install_elastiflow
+configure_elastiflow
+
 
 
 
@@ -420,7 +448,3 @@ download_aux_files(){
   download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/configure/configure" "/home/user/configure"
   download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/support_pack/elastiflow_elasticsearch_opensearch_support_pack" "/home/user/support"
 }
-
-# Main script
-install_elastiflow
-configure_elastiflow
