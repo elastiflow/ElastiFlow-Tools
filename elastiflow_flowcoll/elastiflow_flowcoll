@@ -255,6 +255,7 @@ configure_elastiflow() {
     fi
   done
 
+  read -p "Enter ElastiFlow Account ID: " elastiflow_account_id
   read -p "Enter ElastiFlow Flow License Key: " elastiflow_flow_license_key
 
   while true; do
@@ -334,6 +335,7 @@ configure_elastiflow() {
 }
 
 # Main script
+print_startup_message
 check_for_root
 check_compatibility
 install_prerequisites
