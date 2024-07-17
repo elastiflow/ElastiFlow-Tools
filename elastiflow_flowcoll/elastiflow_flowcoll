@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 # Version: 1.0
@@ -23,14 +22,11 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-
 print_message() {
   local message=$1
   local color=$2
   echo -e "${color}${message}${NC}"
 }
-
-
 
 check_for_updates() {
   # Dynamically determine the path to the current script
@@ -99,7 +95,6 @@ check_for_updates() {
   rm -f "$tmp_script"
 }
 
-
 download_file() {
   local url=$1
   local target_path=$2
@@ -121,7 +116,7 @@ find_and_replace() {
     exit 1
   fi
   for ((i = 0; i < ${#PAIRS[@]}; i+=2)); do
-    comment_and_replace_line "$FILE" "${PAIRS[i]}" "${PAIRS[i+1]}"
+    replace_text "$FILE" "${PAIRS[i]}" "${PAIRS[i+1]}"
   done
 }
 
@@ -129,7 +124,7 @@ handle_error() {
   local error_msg="$1"
   local line_num="$2"
   echo "Error at line $line_num: $error_msg"
-  read -p "Do you wish to continue? (y/n):" user_decision
+  read -p "Do you wish to continue? (y/n): " user_decision
   if [[ $user_decision != "y" ]]; then
     echo "Exiting..."
     exit 1
@@ -204,7 +199,6 @@ install_prerequisites() {
   done
 }
 
-
 # Function to check the service health
 check_service_health() {
   print_message "Checking if flowcoll.service stays running for at least 10 seconds..." "$GREEN"
@@ -275,12 +269,12 @@ configure_elastiflow() {
     read -p "Enter Elasticsearch Password: " elasticsearch_password
 
     # Verify Elasticsearch connection
-    #if verify_elasticsearch "$elasticsearch_protocol" "$elasticsearch_ip" "$elasticsearch_port" "$elasticsearch_password"; then
-    #  echo "Elasticsearch verification successful."
-    #  break
-    #else
-    #  echo "Elasticsearch verification failed. Please check your inputs and try again."
-    #fi
+  #  if verify_elasticsearch "$elasticsearch_protocol" "$elasticsearch_ip" "$elasticsearch_port" "$elasticsearch_password"; then
+  #    echo "Elasticsearch verification successful."
+  #    break
+  #  else
+  #    echo "Elasticsearch verification failed. Please check your inputs and try again."
+  #  fi
   done
 
   read -p "Enable Elasticsearch ECS (true/false, default false): " elasticsearch_ecs_enable
@@ -345,7 +339,6 @@ install_prerequisites
 install_elastiflow
 configure_elastiflow
 
-
 display_versions_installed() {
   printf "*********************************************\n"
   
@@ -356,7 +349,6 @@ display_versions_installed() {
   display_version "/home/user/configure"
   display_version "/home/user/support"
   display_system_info
-
 }
 
 display_version() {
@@ -369,7 +361,7 @@ display_version() {
   fi
 }
 
-download_aux_files(){
+download_aux_files() {
   download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/configure/configure" "/home/user/configure"
   download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/support_pack/elastiflow_elasticsearch_opensearch_support_pack" "/home/user/support"
 }
