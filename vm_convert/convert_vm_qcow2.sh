@@ -79,7 +79,7 @@ fi
 touch "$input_dir/conversion_in_progress"
 
 # Convert the VMDK file to QCOW2 format
-qemu-img convert -cpf vmdk -O qcow2 "$input_file" "$temp_file"
+qemu-img convert -O qcow2 "$input_file" "$temp_file"
 if [ $? -ne 0 ]; then
   echo "Conversion failed"
   rm -f "$input_dir/conversion_in_progress"
@@ -171,7 +171,7 @@ if [ ! -f "$vm_definition" ]; then
 fi
 
 # Create a tar.gz archive of the XML and QCOW2 files with the lowest compression level
-tar -czf "${input_dir}/${vm_name}.tar.gz" -C "$input_dir" "$output_file" "$vm_definition" --fast
+tar -czf "${input_dir}/${vm_name}.tar.gz" --options gzip:compression-level=1 -C "$input_dir" "$output_file" "$vm_definition"
 
 if [ $? -ne 0 ]; then
   echo "Failed to create tar.gz archive"
