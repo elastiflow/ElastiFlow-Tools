@@ -363,15 +363,10 @@ configure_maxmind() {
   FILE_PATH=/etc/elastiflow/flowcoll.yml
   show_maxmind
 
-  maxmind_asn_configured=$(grep -q '^EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE: ' $FILE_PATH && echo "yes" || echo "no")
-  maxmind_geoip_configured=$(grep -q '^EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE: ' $FILE_PATH && echo "yes" || echo "no")
-
-  if [ "$maxmind_asn_configured" == "yes" ] || [ "$maxmind_geoip_configured" == "yes" ]; then
-    print_message "MaxMind ASN and/or GeoIP enrichment fields are already configured." "$RED"
-    read -p "Do you want to overwrite the existing values? (y/n): " overwrite_choice
-    if [[ $overwrite_choice != "y" ]]; then
-      return
-    fi
+  read -p "Do you want to enable GeoIP enrichment? (yes/no): " enable_geoip
+  if [[ "$enable_geoip" != "yes" ]]; then
+    print_message "GeoIP enrichment will not be enabled." "$RED"
+    return
   fi
 
   read -p "Enter your MaxMind license key (or 'q' to quit): " maxmind_license_key
@@ -402,13 +397,6 @@ configure_maxmind() {
     print_message "Failed to download MaxMind GeoIP City database." "$RED"
   fi
 
-  if ! $asn_download_success || ! $geoip_download_success; then
-    read -p "One or both downloads failed. Do you still want to add the configuration settings to flowcoll.yml? (y/n): " add_config_choice
-    if [[ $add_config_choice != "y" ]]; then
-      return
-    fi
-  fi
-
   STRINGS_TO_REPLACE=(
     "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE: \"true\""
     "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_PATH" "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_PATH: \"/etc/elastiflow/maxmind/GeoLite2-ASN.mmdb\""
@@ -417,17 +405,6 @@ configure_maxmind() {
     "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_VALUES" "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_VALUES: city,country,country_code,location,timezone"
   )
 
-  backup_existing_flowcoll
   find_and_replace "$FILE_PATH" "${STRINGS_TO_REPLACE[@]}"
-
-  if $asn_download_success && $geoip_download_success; then
-    reload_and_restart_service "flowcoll.service"
-    if check_service_health configure_maxmind; then
-      print_message "MaxMind ASN and Geo enrichment enabled with the provided license key." "$GREEN"
-    else
-      print_message "Failed to enable MaxMind ASN and Geo enrichment. Changes reverted. Returning to main menu." "$RED"
-    fi
-  else
-    print_message "Configuration settings added to flowcoll.yml but flowcoll service was not restarted due to download failures." "$YELLOW"
-  fi
 }
+
