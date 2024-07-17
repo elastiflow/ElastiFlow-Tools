@@ -204,19 +204,6 @@ install_prerequisites() {
   done
 }
 
-# Function to verify Elasticsearch connection
-verify_elasticsearch() {
-  local protocol=$1
-  local ip=$2
-  local port=$3
-  local password=$4
-  local response=$(curl -s -o /dev/null -w "%{http_code}" -u "elastic:${password}" "${protocol}://${ip}:${port}")
-  if [ "$response" -eq 200 ]; then
-    return 0
-  else
-    return 1
-  fi
-}
 
 # Function to check the service health
 check_service_health() {
@@ -288,12 +275,12 @@ configure_elastiflow() {
     read -p "Enter Elasticsearch Password: " elasticsearch_password
 
     # Verify Elasticsearch connection
-    if verify_elasticsearch "$elasticsearch_protocol" "$elasticsearch_ip" "$elasticsearch_port" "$elasticsearch_password"; then
-      echo "Elasticsearch verification successful."
-      break
-    else
-      echo "Elasticsearch verification failed. Please check your inputs and try again."
-    fi
+    #if verify_elasticsearch "$elasticsearch_protocol" "$elasticsearch_ip" "$elasticsearch_port" "$elasticsearch_password"; then
+    #  echo "Elasticsearch verification successful."
+    #  break
+    #else
+    #  echo "Elasticsearch verification failed. Please check your inputs and try again."
+    #fi
   done
 
   read -p "Enable Elasticsearch ECS (true/false, default false): " elasticsearch_ecs_enable
