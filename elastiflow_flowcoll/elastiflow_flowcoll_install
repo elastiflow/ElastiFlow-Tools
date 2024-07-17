@@ -61,7 +61,7 @@ comment_and_replace_line() {
 check_for_updates() {
   # Dynamically determine the path to the current script
   local current_script=$(realpath "$0")
-  local new_script_url="https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/elasticsearch/install"
+  local new_script_url="https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/elastiflow_flowcoll/elastiflow_flowcoll_install"
   local tmp_script="/tmp/install"
 
   echo "Checking for updates..."
@@ -403,6 +403,7 @@ configure_maxmind() {
 
 
 # Main script
+check_for_updates
 print_startup_message
 check_for_root
 check_compatibility
