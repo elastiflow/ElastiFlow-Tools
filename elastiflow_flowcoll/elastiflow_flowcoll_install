@@ -2,13 +2,7 @@
 
 # Version: 1.0
 
-########################################################
-# If you do not have an ElastiFlow Account ID and ElastiFlow Flow License Key, 
-# please go here: https://elastiflow.com/get-started
-# Paste these values on the corresponding line, between the quotes
-########################################################
-
-elastiflow_version="7.0.2"
+elastiflow_flowcoll_version="7.0.2"
 kibana_dashboards_version="8.14.x"
 kibana_dashboards_codex_ecs="codex"
 flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
@@ -236,8 +230,8 @@ check_service_health() {
 # Function to install ElastiFlow Flow Collector
 install_elastiflow() {
   printf "\n\n\n*********Downloading and installing ElastiFlow Flow Collector...\n\n" 
-  wget -O flow-collector_"$elastiflow_version"_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_"$elastiflow_version"_linux_amd64.deb
-  apt-get -q install ./flow-collector_"$elastiflow_version"_linux_amd64.deb
+  wget -O flow-collector_"$elastiflow_flowcoll_version"_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_"$elastiflow_flowcoll_version"_linux_amd64.deb
+  apt-get -q install ./flow-collector_"$elastiflow_flowcoll_version"_linux_amd64.deb
 }
 
 # Function to verify Elasticsearch connection
