@@ -211,16 +211,44 @@ install_prerequisites() {
 }
 
 
+# Function to verify Elasticsearch connection
+verify_elasticsearch() {
+  local protocol=$1
+  local ip=$2
+  local port=$3
+  local password=$4
+  local response=$(curl -s -o /dev/null -w "%{http_code}" -u "elastic:${password}" "${protocol}://${ip}:${port}")
+  if [ "$response" -eq 200 ]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
 install_elastiflow() {
   # Prompting for inputs
   read -p "Enter ElastiFlow Account ID: " elastiflow_account_id
   read -p "Enter ElastiFlow Flow License Key: " elastiflow_flow_license_key
-  read -p "Enter Elasticsearch IP: " elasticsearch_ip
-  read -p "Enter Elasticsearch Port (default 9200): " elasticsearch_port
-  elasticsearch_port=${elasticsearch_port:-9200}
+
+  while true; do
+    read -p "Enter Elasticsearch IP: " elasticsearch_ip
+    read -p "Enter Elasticsearch Port (default 9200): " elasticsearch_port
+    elasticsearch_port=${elasticsearch_port:-9200}
+    read -p "Enter Elasticsearch Protocol (http/https, default http): " elasticsearch_protocol
+    elasticsearch_protocol=${elasticsearch_protocol:-http}
+    read -p "Enter Elasticsearch Password: " elasticsearch_password
+
+    # Verify Elasticsearch connection
+    if verify_elasticsearch "$elasticsearch_protocol" "$elasticsearch_ip" "$elasticsearch_port" "$elasticsearch_password"; then
+      echo "Elasticsearch verification successful."
+      break
+    else
+      echo "Elasticsearch verification failed. Please check your inputs and try again."
+    fi
+  done
+
   read -p "Enable Elasticsearch ECS (true/false, default false): " elasticsearch_ecs_enable
   elasticsearch_ecs_enable=${elasticsearch_ecs_enable:-false}
-  read -p "Enter Elasticsearch Password: " elasticsearch_password
   read -p "Enable Elasticsearch TLS (true/false, default true): " elasticsearch_tls_enable
   elasticsearch_tls_enable=${elasticsearch_tls_enable:-true}
   read -p "Skip Elasticsearch TLS Verification (true/false, default true): " elasticsearch_tls_skip_verification
@@ -239,7 +267,7 @@ install_elastiflow() {
     "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: \"true\""
     "EF_OUTPUT_ELASTICSEARCH_ADDRESSES" "EF_OUTPUT_ELASTICSEARCH_ADDRESSES: \"${elasticsearch_ip}:${elasticsearch_port}\""
     "EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE: \"${elasticsearch_ecs_enable}\""
-    "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: \"${elasticsearch_password}\""
+    "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: '${elasticsearch_password}'"
     "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: \"${elasticsearch_tls_enable}\""
     "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION" "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: \"${elasticsearch_tls_skip_verification}\""
     "EF_FLOW_SERVER_UDP_IP" "EF_FLOW_SERVER_UDP_IP: \"0.0.0.0\""
