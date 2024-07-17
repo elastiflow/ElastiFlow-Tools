@@ -489,4 +489,6 @@ echo -e "\n\n********* Service Status *********"
 systemctl status flowcoll.service | head -n 10
 systemctl status snmpcoll.service | head -n 10
 
+echo -e "******************************"
+echo -e "\nInstallation complete."
 echo -e "\nFor advanced configuration, edit /etc/elastiflow/flowcoll.yml and /etc/elastiflow/snmpcoll.yml"
