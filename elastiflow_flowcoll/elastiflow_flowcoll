@@ -1,1 +1,340 @@
 
+#!/bin/bash
+
+# Version: 1.0
+
+########################################################
+# If you do not have an ElastiFlow Account ID and ElastiFlow Flow License Key, 
+# please go here: https://elastiflow.com/get-started
+# Paste these values on the corresponding line, between the quotes
+elastiflow_account_id=""
+elastiflow_flow_license_key=""
+########################################################
+
+elastiflow_version="7.0.2"
+elasticsearch_version="8.14.0"
+kibana_version="8.14.0"
+kibana_dashboards_version="8.14.x"
+kibana_dashboards_codex_ecs="codex"
+flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
+elastic_username="elastic"
+elastic_password2="elastic"
+########################################################
+
+#leave blank
+osversion=""
+
+# Colors for messages
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+
+print_message() {
+  local message=$1
+  local color=$2
+  echo -e "${color}${message}${NC}"
+}
+
+
+
+check_for_updates() {
+  # Dynamically determine the path to the current script
+  local current_script=$(realpath "$0")
+  local new_script_url="https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/elasticsearch/install"
+  local tmp_script="/tmp/install"
+
+  echo "Checking for updates..."
+  echo "Current script path: $current_script"
+
+  wget -q -O "$tmp_script" "$new_script_url"
+
+  if [[ $? -ne 0 ]]; then
+    print_message "Failed to check for updates." "$RED"
+    return
+  fi
+
+  echo "Downloaded new script to $tmp_script."
+
+  local new_version=$(grep -m 1 '^# Version: ' "$tmp_script" | awk '{print $3}')
+  local current_version=$(grep -m 1 '^# Version: ' "$current_script" | awk '{print $3}')
+
+  echo "Current version: $current_version"
+  echo "Remote version: $new_version"
+
+  if [[ -z "$current_version" ]]; then
+    print_message "Failed to detect the current version." "$RED"
+    return
+  fi
+
+  if [[ "$new_version" > "$current_version" ]]; then
+    print_message "Remote version $new_version available." "$GREEN"
+    
+    while true; do
+      echo -n "Do you want to update to the Remote version? (y/n) [y]: "
+      for i in {10..1}; do
+        echo -n "$i "
+        sleep 1
+      done
+      echo
+      
+      read -t 1 -n 1 update_choice
+      update_choice=${update_choice:-y}
+      
+      if [[ $update_choice == "y" || $update_choice == "n" ]]; then
+        break
+      else
+        echo "Invalid input. Please enter 'y' or 'n'."
+      fi
+    done
+
+    if [[ $update_choice == "y" ]]; then
+      print_message "Updating to version $new_version..." "$GREEN"
+      cp "$tmp_script" "$current_script"
+      chmod +x "$current_script"
+      print_message "Update successful. Restarting script..." "$GREEN"
+      exec "$current_script"
+    else
+      print_message "Update skipped." "$RED"
+    fi
+  else
+    print_message "No updates available." "$GREEN"
+  fi
+
+  echo "Cleaning up temporary script."
+  rm -f "$tmp_script"
+}
+
+
+download_file() {
+  local url=$1
+  local target_path=$2
+  curl -s -o "$target_path" "$url"
+  if [ $? -eq 0 ]; then
+    chmod +x "$target_path"
+    echo "Downloaded and made $target_path executable."
+  else
+    echo "Failed to download $target_path.\n\n"
+  fi
+}
+
+find_and_replace() {
+  local FILE=$1
+  shift
+  local PAIRS=("$@")
+  if [ ! -f "$FILE" ]; then
+    print_message "File not found!" "$RED"
+    exit 1
+  fi
+  for ((i = 0; i < ${#PAIRS[@]}; i+=2)); do
+    comment_and_replace_line "$FILE" "${PAIRS[i]}" "${PAIRS[i+1]}"
+  done
+}
+
+handle_error() {
+  local error_msg="$1"
+  local line_num="$2"
+  echo "Error at line $line_num: $error_msg"
+  read -p "Do you wish to continue? (y/n):" user_decision
+  if [[ $user_decision != "y" ]]; then
+    echo "Exiting..."
+    exit 1
+  fi
+}
+
+replace_text() {
+  local file_path="$1"
+  local old_text="$2"
+  local new_text="$3"
+  local line_num="$4"
+  sed -i.bak "s|$old_text|$new_text|g" "$file_path" || handle_error "Failed to replace text in $file_path." "$line_num"
+}
+
+check_for_root() {
+  if [ "$(id -u)" -ne 0 ]; then
+    echo "This script must be run as root" 1>&2
+    exit 1
+  fi
+}
+
+check_compatibility() {
+  . /etc/os-release
+  ID_LOWER=$(echo "$ID" | tr '[:upper:]' '[:lower:]')
+  if [[ "$ID_LOWER" != "ubuntu" ]]; then
+    echo "This script only supports Ubuntu" 1>&2
+    exit 1
+  fi
+  osversion="ubuntu"
+}
+
+sleep_message() {
+  local message=$1
+  local duration=$2
+  printf "\n\n\n********* %s...\n" "$message"
+  
+  while [ $duration -gt 0 ]; do
+    printf "\rTime remaining: %02d seconds" $duration
+    sleep 1
+    ((duration--))
+  done
+  
+  printf "\n\n"
+}
+
+print_startup_message() {
+  printf "*********\n"
+  printf "*********\n"
+  printf "*********Setting up ElastiFlow environment...*********\n"
+  printf "*********\n"
+  printf "*********\n"
+}
+
+install_prerequisites() {
+  printf "\n\n\n*********Installing prerequisites...\n\n"
+
+  echo "Updating package list..."
+  apt-get -qq update > /dev/null 2>&1
+
+  # List of packages to be installed
+  packages=(jq net-tools git bc gpg default-jre curl wget unzip apt-transport-https isc-dhcp-client libpcap-dev)
+
+  # Loop through the list and install each package
+  for package in "${packages[@]}"; do
+    echo "Installing $package..."
+    apt-get -qq install -y "$package" > /dev/null 2>&1
+    if [ $? -eq 0 ]; then
+      echo "$package installed successfully."
+    else
+      echo "Failed to install $package."
+    fi
+  done
+}
+
+
+install_elastiflow() {
+  elastiflow_config_strings=(
+  "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: \"true\""
+  "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: \"${elastiflow_account_id}\""
+  "EF_FLOW_LICENSE_KEY" "EF_FLOW_LICENSE_KEY: \"${elastiflow_flow_license_key}\""
+  "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: \"true\""
+  "EF_OUTPUT_ELASTICSEARCH_ADDRESSES" "EF_OUTPUT_ELASTICSEARCH_ADDRESSES: \"127.0.0.1:9200\""
+  "EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE: \"false\""
+  "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: \"${elastic_password2}\""
+  "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: \"true\""
+  "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION" "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: \"true\""
+  "EF_FLOW_SERVER_UDP_IP" "EF_FLOW_SERVER_UDP_IP: \"0.0.0.0\""
+  "EF_FLOW_SERVER_UDP_PORT" "EF_FLOW_SERVER_UDP_PORT: \"2055,4739,6343,9995\""
+  "EF_FLOW_SERVER_UDP_READ_BUFFER_MAX_SIZE" "EF_FLOW_SERVER_UDP_READ_BUFFER_MAX_SIZE: \"33554432\""
+  "EF_PROCESSOR_DECODE_IPFIX_ENABLE" "EF_PROCESSOR_DECODE_IPFIX_ENABLE: \"true\""
+  "EF_PROCESSOR_DECODE_MAX_RECORDS_PER_PACKET" "EF_PROCESSOR_DECODE_MAX_RECORDS_PER_PACKET: \"64\""
+  "EF_PROCESSOR_DECODE_NETFLOW1_ENABLE" "EF_PROCESSOR_DECODE_NETFLOW1_ENABLE: \"true\""
+  "EF_PROCESSOR_DECODE_NETFLOW5_ENABLE" "EF_PROCESSOR_DECODE_NETFLOW5_ENABLE: \"true\""
+  "EF_PROCESSOR_DECODE_NETFLOW6_ENABLE" "EF_PROCESSOR_DECODE_NETFLOW6_ENABLE: \"true\""
+  "EF_PROCESSOR_DECODE_NETFLOW7_ENABLE" "EF_PROCESSOR_DECODE_NETFLOW7_ENABLE: \"true\""
+  "EF_PROCESSOR_DECODE_NETFLOW9_ENABLE" "EF_PROCESSOR_DECODE_NETFLOW9_ENABLE: \"true\""
+  "EF_PROCESSOR_DECODE_SFLOW5_ENABLE" "EF_PROCESSOR_DECODE_SFLOW5_ENABLE: \"true\""
+  "EF_PROCESSOR_DECODE_SFLOW_COUNTERS_ENABLE" "EF_PROCESSOR_DECODE_SFLOW_COUNTERS_ENABLE: \"true\""
+  "EF_PROCESSOR_DECODE_SFLOW_FLOWS_ENABLE" "EF_PROCESSOR_DECODE_SFLOW_FLOWS_ENABLE: \"true\""
+  "EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE: \"true\""
+  "EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE: \"true\""
+  "EF_LOGGER_FILE_LOG_ENABLE" "EF_LOGGER_FILE_LOG_ENABLE: \"true\""
+  "EF_OUTPUT_ELASTICSEARCH_TSDS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TSDS_ENABLE: \"true\""
+  )
+  
+  printf "\n\n\n*********Downloading and installing ElastiFlow Flow Collector...\n\n" 
+  wget -O flow-collector_"$elastiflow_version"_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_"$elastiflow_version"_linux_amd64.deb
+  apt-get -q install ./flow-collector_"$elastiflow_version"_linux_amd64.deb
+  change_elasticsearch_password
+  printf "\n\n\n*********Configuring ElastiFlow Flow Collector...\n\n" 
+  find_and_replace "$flowcoll_config_path" "${elastiflow_config_strings[@]}"
+  replace_text "/etc/systemd/system/flowcoll.service" "TimeoutStopSec=infinity" "TimeoutStopSec=60" "N/A"
+  printf "\n\n\n*********Enabling and starting ElastiFlow service...\n\n"
+  systemctl daemon-reload && systemctl enable flowcoll.service && systemctl start flowcoll.service
+  sleep_message "Giving ElastiFlow service time to stabilize" 10
+}
+
+install_dashboards() {
+printf "\n\n\n*********Downloading and installing ElastiFlow flow dashboards\n\n"
+git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
+  
+response=$(curl --connect-timeout 10 -X POST -u $elastic_username:$elastic_password "localhost:5601/api/saved_objects/_import?overwrite=true" -H "kbn-xsrf: true" --form file=@/etc/elastiflow_for_elasticsearch/kibana/flow/kibana-$kibana_dashboards_version-flow-$kibana_dashboards_codex_ecs.ndjson -H 'kbn-xsrf: true')
+
+  if [ $? -ne 0 ]; then
+    printf "Error: %s\n" "$response"
+    printf "Flow dashboards not installed successfully\n\n"
+  else
+    dashboards_success=$(echo "$response" | jq -r '.success')
+    if [ "$dashboards_success" == "true" ]; then
+        printf "Flow dashboards installed successfully.\n\n"
+    else
+        printf "Flow dashboards not installed successfully\n\n"
+    fi
+  fi
+}
+
+
+check_service_status() {
+  local SERVICE_NAME=$1
+  if systemctl is-active --quiet "$SERVICE_NAME"; then
+    echo -e "\e[32m$SERVICE_NAME is up ✓\e[0m"
+  else
+    echo -e "\e[31m$SERVICE_NAME is not up X\e[0m"
+  fi
+}
+
+
+check_all_services() {
+  SERVICES=("elasticsearch.service" "kibana.service" "flowcoll.service")
+  for SERVICE_NAME in "${SERVICES[@]}"; do
+      check_service_status "$SERVICE_NAME"
+  done
+}
+
+check_dashboards_status() {
+  if [ "$dashboards_success" == "true" ]; then
+       echo -e "\e[32mDashboards are installed ✓\e[0m"
+  else
+       echo -e "\e[31mDashboards are not installed X\e[0m"
+  fi
+}
+
+display_versions() {
+  printf "*********************************************\n"
+  
+  version=$(/usr/share/elastiflow/bin/flowcoll -version)
+  printf "Installed ElastiFlow version: $version\n"
+  version=$(lsb_release -d | awk -F'\t' '{print $2}')
+  printf "Operating System: $version\n"
+  display_version "/home/user/configure"
+  display_version "/home/user/support"
+  display_system_info
+
+}
+
+display_version() {
+  local file="$1"
+  local version=$(grep -m 1 '^# Version: ' "$file" | awk '{print $3}')
+  if [[ -z "$version" ]]; then
+    echo "Failed to detect the version in $file"
+  else
+    echo "Version of $(basename "$file") script: $version"
+  fi
+}
+
+download_aux_files(){
+  download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/configure/configure" "/home/user/configure"
+  download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/support_pack/elastiflow_elasticsearch_opensearch_support_pack" "/home/user/support"
+}
+
+
+main() {
+  print_startup_message
+  check_for_root
+  check_compatibility
+  install_prerequisites
+  sleep_message "Giving dpkg time to clean up" 10
+  install_elastiflow
+  display_versions
+}
+
+main
