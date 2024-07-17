@@ -29,6 +29,13 @@ print_message() {
   echo -e "${color}${message}${NC}"
 }
 
+show_maxmind() {
+  print_message "** Configure MaxMind Enrichment **" "$GREEN"
+  print_message "Obtain Maxmind license key from: https://www.maxmind.com/en/geolite2/signup" "$GREEN"
+  print_message "Log in to Maxmind.com, click 'My Account', and then 'Manage License Keys'" "$GREEN"
+  print_message "**********************************" "$GREEN"
+}
+
 comment_and_replace_line() {
   local FILE=$1
   local FIND=$2
