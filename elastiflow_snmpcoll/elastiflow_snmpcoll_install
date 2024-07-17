@@ -235,15 +235,7 @@ install_snmp_collector() {
   # Install the package
   dpkg -i elastiflow-snmpcollector.deb
 
-  # Remove the existing directory if it exists
-  if [ -d "/etc/elastiflow_for_elasticsearch" ]; then
-    rm -rf /etc/elastiflow_for_elasticsearch
-  fi
-  
-  # Clone the repository
-  git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
-
-  # Check the status of the service
+   # Check the status of the service
   if systemctl is-active --quiet snmpcoll.service; then
     print_message "ElastiFlow Unified SNMP Collector installed." "$GREEN"
   else
@@ -276,14 +268,7 @@ configure_snmp_collector() {
     fi
   done
 
-  # Extract the Elasticsearch password from the configuration file
-  elastic_password=$(grep "^EF_OUTPUT_ELASTICSEARCH_PASSWORD: '" "$elastiflow_flow_config_path" | awk -F"'" '{print $2}')
-
-  if [ -z "$elastic_password" ]; then
-    print_message "Failed to extract Elasticsearch password from $elastiflow_flow_config_path" "$RED"
-    return
-  fi
-
+ 
   elastiflow_snmp_config_strings=(
     "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: \"true\""
     "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: \"${elastiflow_account_id}\""
