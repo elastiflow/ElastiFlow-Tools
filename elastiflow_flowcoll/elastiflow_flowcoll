@@ -346,7 +346,7 @@ install_elastiflow
 configure_elastiflow
 
 
-display_versions() {
+display_versions_installed() {
   printf "*********************************************\n"
   
   version=$(/usr/share/elastiflow/bin/flowcoll -version)
