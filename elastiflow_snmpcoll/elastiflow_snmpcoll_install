@@ -275,7 +275,6 @@ install_snmp_collector() {
   # Update package list and install prerequisites
   apt-get update -qq
 
-  
   # Download the ElastiFlow SNMP collector package
   wget -q -O elastiflow-snmpcollector.deb "https://elastiflow-releases.s3.us-east-2.amazonaws.com/snmp-collector/snmp-collector_${elastiflow_snmp_collector_version}_linux_amd64.deb"
 
