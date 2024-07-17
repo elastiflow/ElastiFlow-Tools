@@ -340,6 +340,7 @@ configure_elastiflow() {
   printf "\n\n\n*********Configuring ElastiFlow Flow Collector...\n\n" 
   find_and_replace "$flowcoll_config_path" "${elastiflow_config_strings[@]}"
   replace_text "/etc/systemd/system/flowcoll.service" "TimeoutStopSec=infinity" "TimeoutStopSec=60" "N/A"
+  configure_maxmind  
   printf "\n\n\n*********Enabling and starting ElastiFlow service...\n\n"
   systemctl daemon-reload && systemctl enable flowcoll.service && systemctl start flowcoll.service
 
