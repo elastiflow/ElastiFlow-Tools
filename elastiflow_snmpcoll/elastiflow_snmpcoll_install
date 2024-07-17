@@ -175,7 +175,7 @@ install_prerequisites() {
   apt-get -qq update > /dev/null 2>&1
 
   # List of packages to be installed
-  packages=(jq net-tools git bc gpg curl wget unzip apt-transport-https libpcap-dev)
+  packages=(snmp snmpd snmp-mibs-downloader jq net-tools git bc gnupg gpg curl wget unzip apt-transport-https libpcap-dev)
 
   # Loop through the list and install each package
   for package in "${packages[@]}"; do
@@ -274,7 +274,7 @@ install_snmp_collector() {
   
   # Update package list and install prerequisites
   apt-get update -qq
-  apt-get install -qq -y snmp snmpd snmp-mibs-downloader curl apt-transport-https gnupg
+
   
   # Download the ElastiFlow SNMP collector package
   wget -q -O elastiflow-snmpcollector.deb "https://elastiflow-releases.s3.us-east-2.amazonaws.com/snmp-collector/snmp-collector_${elastiflow_snmp_collector_version}_linux_amd64.deb"
