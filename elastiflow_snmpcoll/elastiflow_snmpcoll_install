@@ -29,13 +29,6 @@ print_message() {
   echo -e "${color}${message}${NC}"
 }
 
-show_maxmind() {
-  print_message "** Configure MaxMind Enrichment **" "$GREEN"
-  print_message "Obtain Maxmind license key from: https://www.maxmind.com/en/geolite2/signup" "$GREEN"
-  print_message "Log in to Maxmind.com, click 'My Account', and then 'Manage License Keys'" "$GREEN"
-  print_message "**********************************" "$GREEN"
-}
-
 comment_and_replace_line() {
   local FILE=$1
   local FIND=$2
@@ -125,17 +118,6 @@ check_for_updates() {
   rm -f "$tmp_script"
 }
 
-download_file() {
-  local url=$1
-  local target_path=$2
-  curl -s -o "$target_path" "$url"
-  if [ $? -eq 0 ]; then
-    chmod +x "$target_path"
-    echo "Downloaded and made $target_path executable."
-  else
-    echo "Failed to download $target_path.\n\n"
-  fi
-}
 
 find_and_replace() {
   local FILE=$1
@@ -233,12 +215,6 @@ check_service_health() {
   fi
 }
 
-# Function to install ElastiFlow Flow Collector
-install_elastiflow() {
-  printf "\n\n\n*********Downloading and installing ElastiFlow Flow Collector...\n\n" 
-  wget -O flow-collector_"$elastiflow_version"_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_"$elastiflow_version"_linux_amd64.deb
-  apt-get -q install ./flow-collector_"$elastiflow_version"_linux_amd64.deb
-}
 
 # Function to verify Elasticsearch connection
 verify_elasticsearch() {
@@ -254,150 +230,111 @@ verify_elasticsearch() {
   fi
 }
 
-# Function to configure ElastiFlow Flow Collector
-configure_elastiflow() {
+
+install_snmp_collector() {
+  # Prompt the user for the ElastiFlow Account ID
   while true; do
-    read -p "Do you accept the ElastiFlow license? (yes/no): " elastiflow_license_acceptance
-    if [[ "$elastiflow_license_acceptance" == "yes" ]]; then
-      elastiflow_license_accepted="true"
-      elastiflow_account_id="true"
-      break
-    elif [[ "$elastiflow_license_acceptance" == "no" ]]; then
-      echo "You must accept the license to proceed with the installation."
-      exit 1
+    read -p "Enter your ElastiFlow Account ID (or 'q' to quit): " elastiflow_account_id
+    if [[ $elastiflow_account_id == "q" ]]; then
+      return
+    elif [[ -z $elastiflow_account_id ]]; then
+      print_message "ElastiFlow Account ID cannot be empty. Please enter a valid ID." "$RED"
     else
-      echo "Please answer yes or no."
-    fi
-  done
-
-  read -p "Enter ElastiFlow Account ID: " elastiflow_account_id
-  read -p "Enter ElastiFlow Flow License Key: " elastiflow_flow_license_key
-
-  while true; do
-    read -p "Enter Elasticsearch IP: " elasticsearch_ip
-    read -p "Enter Elasticsearch Port (default 9200): " elasticsearch_port
-    elasticsearch_port=${elasticsearch_port:-9200}
-    read -p "Enter Elasticsearch Protocol (http/https, default http): " elasticsearch_protocol
-    elasticsearch_protocol=${elasticsearch_protocol:-http}
-    read -p "Enter Elasticsearch Password: " elasticsearch_password
-
-    if [[ $enable_elasticsearch_connection_check -ne 0 ]]; then
-      # Verify Elasticsearch connection
-      if verify_elasticsearch "$elasticsearch_protocol" "$elasticsearch_ip" "$elasticsearch_port" "$elasticsearch_password"; then
-        echo "Elasticsearch verification successful."
-        break
-      else
-        echo "Elasticsearch verification failed. Please check your inputs and try again."
-      fi
-    else
-      echo "Skipping Elasticsearch connection check."
       break
     fi
   done
 
-  read -p "Enable Elasticsearch ECS (true/false, default false): " elasticsearch_ecs_enable
-  elasticsearch_ecs_enable=${elasticsearch_ecs_enable:-false}
-  read -p "Enable Elasticsearch TLS (true/false, default true): " elasticsearch_tls_enable
-  elasticsearch_tls_enable=${elasticsearch_tls_enable:-true}
-  read -p "Skip Elasticsearch TLS Verification (true/false, default true): " elasticsearch_tls_skip_verification
-  elasticsearch_tls_skip_verification=${elasticsearch_tls_skip_verification:-true}
-  read -p "Enable TSDS (true/false, default true): " tsds_enable
-  tsds_enable=${tsds_enable:-true}
-  read -p "Enable DNS Enrichment (true/false, default true): " dns_enrichment
-  dns_enrichment=${dns_enrichment:-true}
-  read -p "Enable Log File (true/false, default true): " enable_log_file
-  enable_log_file=${enable_log_file:-true}
+  # Prompt the user for the SNMP flow key
+  while true; do
+    read -p "Enter your ElastiFlow SNMP License Key (or 'q' to quit): " elastiflow_snmp_license_key
+    if [[ $elastiflow_snmp_license_key == "q" ]]; then
+      return
+    elif [[ -z $elastiflow_snmp_license_key ]]; then
+      print_message "ElastiFlow SNMP License Key cannot be empty. Please enter a valid key." "$RED"
+    else
+      break
+    fi
+  done
 
-  elastiflow_config_strings=(
-    "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: \"${elastiflow_license_accepted}\""
+
+  # Extract the Elasticsearch password from the configuration file
+  elastic_password=$(grep "^EF_OUTPUT_ELASTICSEARCH_PASSWORD: '" "$elastiflow_flow_config_path" | awk -F"'" '{print $2}')
+
+
+  if [ -z "$elastic_password" ]; then
+    print_message "Failed to extract Elasticsearch password from $elastiflow_flow_config_path" "$RED"
+    return
+  fi
+
+  elastiflow_snmp_config_strings=(
+    "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: \"true\""
     "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: \"${elastiflow_account_id}\""
-    "EF_FLOW_LICENSE_KEY" "EF_FLOW_LICENSE_KEY: \"${elastiflow_flow_license_key}\""
+    "EF_SNMP_LICENSE_KEY" "EF_SNMP_LICENSE_KEY: \"${elastiflow_snmp_license_key}\""
     "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: \"true\""
-    "EF_OUTPUT_ELASTICSEARCH_ADDRESSES" "EF_OUTPUT_ELASTICSEARCH_ADDRESSES: \"${elasticsearch_ip}:${elasticsearch_port}\""
-    "EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE: \"${elasticsearch_ecs_enable}\""
-    "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: '${elasticsearch_password}'"
-    "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: \"${elasticsearch_tls_enable}\""
-    "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION" "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: \"${elasticsearch_tls_skip_verification}\""
-    "EF_FLOW_SERVER_UDP_IP" "EF_FLOW_SERVER_UDP_IP: \"0.0.0.0\""
-    "EF_FLOW_SERVER_UDP_PORT" "EF_FLOW_SERVER_UDP_PORT: \"2055,4739,6343,9995\""
-    "EF_FLOW_SERVER_UDP_READ_BUFFER_MAX_SIZE" "EF_FLOW_SERVER_UDP_READ_BUFFER_MAX_SIZE: \"33554432\""
-    "EF_PROCESSOR_DECODE_IPFIX_ENABLE" "EF_PROCESSOR_DECODE_IPFIX_ENABLE: \"true\""
-    "EF_PROCESSOR_DECODE_MAX_RECORDS_PER_PACKET" "EF_PROCESSOR_DECODE_MAX_RECORDS_PER_PACKET: \"64\""
-    "EF_PROCESSOR_DECODE_NETFLOW1_ENABLE" "EF_PROCESSOR_DECODE_NETFLOW1_ENABLE: \"true\""
-    "EF_PROCESSOR_DECODE_NETFLOW5_ENABLE" "EF_PROCESSOR_DECODE_NETFLOW5_ENABLE: \"true\""
-    "EF_PROCESSOR_DECODE_NETFLOW6_ENABLE" "EF_PROCESSOR_DECODE_NETFLOW6_ENABLE: \"true\""
-    "EF_PROCESSOR_DECODE_NETFLOW7_ENABLE" "EF_PROCESSOR_DECODE_NETFLOW7_ENABLE: \"true\""
-    "EF_PROCESSOR_DECODE_NETFLOW9_ENABLE" "EF_PROCESSOR_DECODE_NETFLOW9_ENABLE: \"true\""
-    "EF_PROCESSOR_DECODE_SFLOW5_ENABLE" "EF_PROCESSOR_DECODE_SFLOW5_ENABLE: \"true\""
-    "EF_PROCESSOR_DECODE_SFLOW_COUNTERS_ENABLE" "EF_PROCESSOR_DECODE_SFLOW_COUNTERS_ENABLE: \"true\""
-    "EF_PROCESSOR_DECODE_SFLOW_FLOWS_ENABLE" "EF_PROCESSOR_DECODE_SFLOW_FLOWS_ENABLE: \"true\""
-    "EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE: \"${dns_enrichment}\""
-    "EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE: \"true\""
-    "EF_LOGGER_FILE_LOG_ENABLE" "EF_LOGGER_FILE_LOG_ENABLE: \"${enable_log_file}\""
-    "EF_OUTPUT_ELASTICSEARCH_TSDS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TSDS_ENABLE: \"${tsds_enable}\""
+    "EF_OUTPUT_ELASTICSEARCH_ADDRESSES" "EF_OUTPUT_ELASTICSEARCH_ADDRESSES: \"127.0.0.1:9200\""
+    "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: '$elastic_password'"
+    "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: \"true\""
+    "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION" "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: \"true\""
   )
 
-  printf "\n\n\n*********Configuring ElastiFlow Flow Collector...\n\n" 
-  find_and_replace "$flowcoll_config_path" "${elastiflow_config_strings[@]}"
-  replace_text "/etc/systemd/system/flowcoll.service" "TimeoutStopSec=infinity" "TimeoutStopSec=60" "N/A"
-  configure_maxmind  
-  printf "\n\n\n*********Enabling and starting ElastiFlow service...\n\n"
-  systemctl daemon-reload && systemctl enable flowcoll.service && systemctl start flowcoll.service
 
-  check_service_health
-  if [ $? -ne 0 ]; then
-    configure_elastiflow
+  print_message "Installing ElastiFlow Unified SNMP Collector..." "$GREEN"
+  
+  # Update package list and install prerequisites
+  apt-get update -qq
+  apt-get install -qq -y snmp snmpd snmp-mibs-downloader curl apt-transport-https gnupg
+  
+  # Download the ElastiFlow SNMP collector package
+  wget -q -O elastiflow-snmpcollector.deb "https://elastiflow-releases.s3.us-east-2.amazonaws.com/snmp-collector/snmp-collector_${elastiflow_snmp_collector_version}_linux_amd64.deb"
+
+  # Install the package
+  dpkg -i elastiflow-snmpcollector.deb
+
+  find_and_replace "$elastiflow_snmp_config_path" "${elastiflow_snmp_config_strings[@]}"
+
+  # Enable and start the SNMP collector service
+  systemctl enable snmpcoll.service
+  systemctl start snmpcoll.service
+
+  # Install SNMP dashboards
+  printf "\n\n\n*********Downloading and installing ElastiFlow SNMP dashboards\n\n"
+
+  # Remove the existing directory if it exists
+  if [ -d "/etc/elastiflow_for_elasticsearch" ]; then
+    rm -rf /etc/elastiflow_for_elasticsearch
   fi
-}
+  
+  # Clone the repository
+  git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
 
+  # Path to the downloaded JSON file
+  json_file="/etc/elastiflow_for_elasticsearch/kibana/snmp/kibana-$kibana_dashboards_version-snmp-$kibana_dashboards_codex_ecs.ndjson"
+  
+  # Perform find and replace in the JSON file
+  sed -i 's/elastiflow-\*-codex-\*/elastiflow-telemetry_\*-codex-\*/g' "$json_file"
 
-configure_maxmind() {
-  FILE_PATH=/etc/elastiflow/flowcoll.yml
-  show_maxmind
+  response=$(curl --silent --show-error --fail --connect-timeout 10 -X POST -u "$elastic_username:$elastic_password" \
+    "localhost:5601/api/saved_objects/_import?overwrite=true" \
+    -H "kbn-xsrf: true" \
+    --form file=@"$json_file" \
+    -H 'kbn-xsrf: true')
 
-  read -p "Do you want to enable GeoIP enrichment? (yes/no): " enable_geoip
-  if [[ "$enable_geoip" != "yes" ]]; then
-    print_message "GeoIP enrichment will not be enabled." "$RED"
-    return
-  fi
+  dashboards_success=$(echo "$response" | jq -r '.success')
 
-  read -p "Enter your MaxMind license key (or 'q' to quit): " maxmind_license_key
-  if [[ $maxmind_license_key == "q" ]]; then
-    return
-  fi
-
-  mkdir -p /etc/elastiflow/maxmind/
-
-  asn_download_success=false
-  geoip_download_success=false
-
-  if wget -O ./Geolite2-ASN.tar.gz "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-ASN&license_key=$maxmind_license_key&suffix=tar.gz"; then
-    tar -xvzf Geolite2-ASN.tar.gz --strip-components 1 -C /etc/elastiflow/maxmind/
-    rm -f ./Geolite2-ASN.tar.gz
-    print_message "MaxMind ASN database downloaded and extracted successfully." "$GREEN"
-    asn_download_success=true
+  if [ "$dashboards_success" == "true" ]; then
+    print_message "SNMP dashboards installed successfully." "$GREEN"
   else
-    print_message "Failed to download MaxMind ASN database." "$RED"
+    print_message "SNMP dashboards not installed successfully." "$RED"
+    echo "Debug: API response:"
+    echo "$response"
   fi
 
-  if wget -O ./Geolite2-City.tar.gz "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=$maxmind_license_key&suffix=tar.gz"; then
-    tar -xvzf Geolite2-City.tar.gz --strip-components 1 -C /etc/elastiflow/maxmind/
-    rm -f ./Geolite2-City.tar.gz
-    print_message "MaxMind GeoIP City database downloaded and extracted successfully." "$GREEN"
-    geoip_download_success=true
+  # Check the status of the service
+  if systemctl is-active --quiet snmpcoll.service; then
+    print_message "ElastiFlow Unified SNMP Collector installed and running." "$GREEN"
   else
-    print_message "Failed to download MaxMind GeoIP City database." "$RED"
+    print_message "Failed to start ElastiFlow Unified SNMP Collector." "$RED"
   fi
-
-  STRINGS_TO_REPLACE=(
-    "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE: \"true\""
-    "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_PATH" "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_PATH: \"/etc/elastiflow/maxmind/GeoLite2-ASN.mmdb\""
-    "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE: \"true\""
-    "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_PATH" "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_PATH: \"/etc/elastiflow/maxmind/GeoLite2-City.mmdb\""
-    "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_VALUES" "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_VALUES: city,country,country_code,location,timezone"
-  )
-
-  find_and_replace "$FILE_PATH" "${STRINGS_TO_REPLACE[@]}"
 }
 
 
