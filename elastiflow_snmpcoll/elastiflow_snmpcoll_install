@@ -2,15 +2,7 @@
 
 # Version: 1.0
 
-########################################################
-# If you do not have an ElastiFlow Account ID and ElastiFlow Flow License Key, 
-# please go here: https://elastiflow.com/get-started
-# Paste these values on the corresponding line, between the quotes
-########################################################
-
 elastiflow_version="7.0.2"
-kibana_dashboards_version="8.14.x"
-kibana_dashboards_codex_ecs="codex"
 flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
 ########################################################
 
