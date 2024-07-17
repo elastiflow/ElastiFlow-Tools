@@ -10,6 +10,7 @@ fi
 input_file="$1"
 input_dir=$(dirname "$input_file")
 input_base=$(basename "$input_file")
+temp_dir=$(mktemp -d)
 output_file="${input_base%.vmdk}.qcow2"
 temp_file="${input_file}.qcow2.temp"
 vm_name="${input_base%.vmdk}"
@@ -28,6 +29,52 @@ for i in {1..3}; do
   mac="$mac:${hexchars:$(( $RANDOM % 16 )):1}${hexchars:$(( $RANDOM % 16 )):1}"
 done
 
+# Function to unpack the archive
+unpack_archive() {
+  case "$input_base" in
+    *.zip)
+      unzip "$input_file" -d "$temp_dir"
+      ;;
+    *.tar.gz | *.tgz)
+      tar -xzf "$input_file" -C "$temp_dir"
+      ;;
+    *.tar)
+      tar -xf "$input_file" -C "$temp_dir"
+      ;;
+    *.gz)
+      gunzip -c "$input_file" > "$temp_dir/${input_base%.gz}"
+      ;;
+    *)
+      echo "Unsupported file format"
+      exit 1
+      ;;
+  esac
+
+  if [ $? -ne 0 ]; then
+    echo "Failed to unpack archive"
+    rm -rf "$temp_dir"
+    exit 1
+  fi
+
+  # Find the VMDK file in the extracted contents
+  input_file=$(find "$temp_dir" -name "*.vmdk" | head -n 1)
+  if [ -z "$input_file" ]; then
+    echo "No VMDK file found in the archive"
+    rm -rf "$temp_dir"
+    exit 1
+  fi
+
+  input_base=$(basename "$input_file")
+  output_file="${input_base%.vmdk}.qcow2"
+  temp_file="${input_file}.qcow2.temp"
+  vm_name="${input_base%.vmdk}"
+}
+
+# Unpack if the input file is an archive
+if [[ "$input_base" == *.zip || "$input_base" == *.tar.gz || "$input_base" == *.tgz || "$input_base" == *.tar || "$input_base" == *.gz ]]; then
+  unpack_archive
+fi
+
 # Create a conversion in progress indicator
 touch "$input_dir/conversion_in_progress"
 
@@ -36,6 +83,7 @@ qemu-img convert -cpf vmdk -O qcow2 "$input_file" "$temp_file"
 if [ $? -ne 0 ]; then
   echo "Conversion failed"
   rm -f "$input_dir/conversion_in_progress"
+  rm -rf "$temp_dir"
   exit 1
 fi
 
@@ -44,6 +92,7 @@ mv "$temp_file" "$input_dir/$output_file"
 if [ $? -ne 0 ]; then
   echo "Renaming temp file failed"
   rm -f "$input_dir/conversion_in_progress"
+  rm -rf "$temp_dir"
   exit 1
 fi
 
@@ -117,14 +166,22 @@ EOF
 
 if [ ! -f "$vm_definition" ]; then
   echo "Failed to create VM definition file"
+  rm -rf "$temp_dir"
   exit 1
 fi
 
-# Define the VM using virsh
-sudo virsh define "$vm_definition"
+# Create a tar.gz archive of the XML and QCOW2 files with the lowest compression level
+tar -czf "${input_dir}/${vm_name}.tar.gz" -C "$input_dir" "$output_file" "$vm_definition" --fast
+
 if [ $? -ne 0 ]; then
-  echo "Failed to define VM"
+  echo "Failed to create tar.gz archive"
+  rm -rf "$temp_dir"
   exit 1
 fi
 
-echo "Conversion and VM definition complete. VM is defined as '${vm_name}' with configuration file '${vm_definition}'."
+# Clean up temporary directory if it was used
+if [[ "$input_base" == *.zip || "$input_base" == *.tar.gz || "$input_base" == *.tgz || "$input_base" == *.tar || "$input_base" == *.gz ]]; then
+  rm -rf "$temp_dir"
+fi
+
+echo "Conversion and VM definition complete. VM configuration file '${vm_definition}' and QCOW2 file have been archived as '${vm_name}.tar.gz'."
