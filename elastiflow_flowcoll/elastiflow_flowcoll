@@ -225,7 +225,7 @@ verify_elasticsearch() {
   fi
 }
 
-install_elastiflow() {
+install_elastiflow_flowcoll() {
   # Prompting for inputs
   read -p "Enter ElastiFlow Account ID: " elastiflow_account_id
   read -p "Enter ElastiFlow Flow License Key: " elastiflow_flow_license_key
@@ -381,7 +381,7 @@ main() {
   check_compatibility
   install_prerequisites
   sleep_message "Giving dpkg time to clean up" 10
-  install_elastiflow
+  install_elastiflow_flowcoll
   display_versions
 }
 
