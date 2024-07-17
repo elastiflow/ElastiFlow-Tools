@@ -364,29 +364,77 @@ install_prerequisites
 install_elastiflow
 configure_elastiflow
 
-display_versions_installed() {
-  printf "*********************************************\n"
-  
-  version=$(/usr/share/elastiflow/bin/flowcoll -version)
-  printf "Installed ElastiFlow version: $version\n"
-  version=$(lsb_release -d | awk -F'\t' '{print $2}')
-  printf "Operating System: $version\n"
-  display_version "/home/user/configure"
-  display_version "/home/user/support"
-  display_system_info
-}
 
-display_version() {
-  local file="$1"
-  local version=$(grep -m 1 '^# Version: ' "$file" | awk '{print $3}')
-  if [[ -z "$version" ]]; then
-    echo "Failed to detect the version in $file"
-  else
-    echo "Version of $(basename "$file") script: $version"
+
+configure_maxmind() {
+  FILE_PATH=/etc/elastiflow/flowcoll.yml
+  show_maxmind
+
+  maxmind_asn_configured=$(grep -q '^EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE: ' $FILE_PATH && echo "yes" || echo "no")
+  maxmind_geoip_configured=$(grep -q '^EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE: ' $FILE_PATH && echo "yes" || echo "no")
+
+  if [ "$maxmind_asn_configured" == "yes" ] || [ "$maxmind_geoip_configured" == "yes" ]; then
+    print_message "MaxMind ASN and/or GeoIP enrichment fields are already configured." "$RED"
+    read -p "Do you want to overwrite the existing values? (y/n): " overwrite_choice
+    if [[ $overwrite_choice != "y" ]]; then
+      return
+    fi
   fi
-}
 
-download_aux_files() {
-  download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/configure/configure" "/home/user/configure"
-  download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/support_pack/elastiflow_elasticsearch_opensearch_support_pack" "/home/user/support"
+  read -p "Enter your MaxMind license key (or 'q' to quit): " maxmind_license_key
+  if [[ $maxmind_license_key == "q" ]]; then
+    return
+  fi
+
+  mkdir -p /etc/elastiflow/maxmind/
+
+  asn_download_success=false
+  geoip_download_success=false
+
+  if wget -O ./Geolite2-ASN.tar.gz "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-ASN&license_key=$maxmind_license_key&suffix=tar.gz"; then
+    tar -xvzf Geolite2-ASN.tar.gz --strip-components 1 -C /etc/elastiflow/maxmind/
+    rm -f ./Geolite2-ASN.tar.gz
+    print_message "MaxMind ASN database downloaded and extracted successfully." "$GREEN"
+    asn_download_success=true
+  else
+    print_message "Failed to download MaxMind ASN database." "$RED"
+  fi
+
+  if wget -O ./Geolite2-City.tar.gz "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=$maxmind_license_key&suffix=tar.gz"; then
+    tar -xvzf Geolite2-City.tar.gz --strip-components 1 -C /etc/elastiflow/maxmind/
+    rm -f ./Geolite2-City.tar.gz
+    print_message "MaxMind GeoIP City database downloaded and extracted successfully." "$GREEN"
+    geoip_download_success=true
+  else
+    print_message "Failed to download MaxMind GeoIP City database." "$RED"
+  fi
+
+  if ! $asn_download_success || ! $geoip_download_success; then
+    read -p "One or both downloads failed. Do you still want to add the configuration settings to flowcoll.yml? (y/n): " add_config_choice
+    if [[ $add_config_choice != "y" ]]; then
+      return
+    fi
+  fi
+
+  STRINGS_TO_REPLACE=(
+    "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE: \"true\""
+    "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_PATH" "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_PATH: \"/etc/elastiflow/maxmind/GeoLite2-ASN.mmdb\""
+    "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE: \"true\""
+    "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_PATH" "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_PATH: \"/etc/elastiflow/maxmind/GeoLite2-City.mmdb\""
+    "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_VALUES" "EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_VALUES: city,country,country_code,location,timezone"
+  )
+
+  backup_existing_flowcoll
+  find_and_replace "$FILE_PATH" "${STRINGS_TO_REPLACE[@]}"
+
+  if $asn_download_success && $geoip_download_success; then
+    reload_and_restart_service "flowcoll.service"
+    if check_service_health configure_maxmind; then
+      print_message "MaxMind ASN and Geo enrichment enabled with the provided license key." "$GREEN"
+    else
+      print_message "Failed to enable MaxMind ASN and Geo enrichment. Changes reverted. Returning to main menu." "$RED"
+    fi
+  else
+    print_message "Configuration settings added to flowcoll.yml but flowcoll service was not restarted due to download failures." "$YELLOW"
+  fi
 }
