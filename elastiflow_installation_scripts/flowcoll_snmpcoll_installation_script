@@ -69,7 +69,7 @@ comment_and_replace_line() {
 check_for_updates() {
   # Dynamically determine the path to the current script
   local current_script=$(realpath "$0")
-  local new_script_url="https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/elastiflow_flowcoll/elastiflow_flowcoll_install"
+  local new_script_url="https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/elastiflow_installation_scripts/flowcoll_snmpcoll_installation_script"
   local tmp_script="/tmp/install"
 
   echo "Checking for updates..."
