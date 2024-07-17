@@ -350,15 +350,6 @@ configure_elastiflow() {
   fi
 }
 
-# Main script
-print_startup_message
-check_for_root
-check_compatibility
-install_prerequisites
-install_elastiflow
-configure_elastiflow
-
-
 
 configure_maxmind() {
   FILE_PATH=/etc/elastiflow/flowcoll.yml
@@ -409,3 +400,12 @@ configure_maxmind() {
   find_and_replace "$FILE_PATH" "${STRINGS_TO_REPLACE[@]}"
 }
 
+
+
+# Main script
+print_startup_message
+check_for_root
+check_compatibility
+install_prerequisites
+install_elastiflow
+configure_elastiflow
