@@ -208,11 +208,7 @@ check_service_health() {
     print_message "flowcoll.service did not stay started." "$RED"
     if journalctl -u flowcoll.service | grep -q "license error"; then
       print_message "License error found in logs. Exiting to main menu." "$RED"
-      restore_latest_backup
-      reload_and_restart_service "flowcoll.service"
     else
-      restore_latest_backup
-      reload_and_restart_service "flowcoll.service"
       print_message "Rerunning the configuration routine." "$GREEN"
     fi
     return 1
@@ -330,7 +326,6 @@ configure_elastiflow() {
   replace_text "/etc/systemd/system/flowcoll.service" "TimeoutStopSec=infinity" "TimeoutStopSec=60" "N/A"
   printf "\n\n\n*********Enabling and starting ElastiFlow service...\n\n"
   systemctl daemon-reload && systemctl enable flowcoll.service && systemctl start flowcoll.service
-  sleep_message "Giving ElastiFlow service time to stabilize" 10
 
   check_service_health
   if [ $? -ne 0 ]; then
