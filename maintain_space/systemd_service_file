@@ -1,0 +1,10 @@
+[Unit]
+Description=Low Watermark Monitoring Service
+After=network.target
+
+[Service]
+ExecStart=/path/to/your/script.sh
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
