@@ -181,11 +181,11 @@ check_for_root() {
 check_compatibility() {
   . /etc/os-release
   ID_LOWER=$(echo "$ID" | tr '[:upper:]' '[:lower:]')
-  if [[ "$ID_LOWER" != "rhel" && "$ID_LOWER" != "centos" ]]; then
-    echo "This script only supports Red Hat Enterprise Linux or CentOS" 1>&2
+  if [[ "$ID_LOWER" != "ubuntu" ]]; then
+    echo "This script only supports Ubuntu" 1>&2
     exit 1
   fi
-  osversion="rhel"
+  osversion="ubuntu"
 }
 
 # Function to prompt for Elasticsearch connection information
@@ -228,15 +228,15 @@ install_prerequisites_flowcoll() {
   printf "\n\n\n*********Installing prerequisites for ElastiFlow Flow Collector...\n\n"
 
   echo "Updating package list..."
-  yum -q makecache fast > /dev/null 2>&1
+  apt-get -qq update > /dev/null 2>&1
 
   # List of packages to be installed
-  packages=(jq net-tools git bc gnupg2 curl wget unzip epel-release libpcap-devel)
+  packages=(jq net-tools git bc gpg curl wget unzip apt-transport-https libpcap-dev)
 
   # Loop through the list and install each package
   for package in "${packages[@]}"; do
     echo "Installing $package..."
-    yum -q install -y "$package" > /dev/null 2>&1
+    apt-get -qq install -y "$package" > /dev/null 2>&1
     if [ $? -eq 0 ]; then
       echo "$package installed successfully."
     else
@@ -249,15 +249,15 @@ install_prerequisites_snmpcoll() {
   printf "\n\n\n*********Installing prerequisites for ElastiFlow SNMP Collector...\n\n"
 
   echo "Updating package list..."
-  yum -q makecache fast > /dev/null 2>&1
+  apt-get -qq update > /dev/null 2>&1
 
   # List of packages to be installed
-  packages=(net-snmp net-snmp-utils jq net-tools git bc gnupg2 curl wget unzip epel-release libpcap-devel)
+  packages=(snmp snmpd snmp-mibs-downloader jq net-tools git bc gpg curl wget unzip apt-transport-https libpcap-dev)
 
   # Loop through the list and install each package
   for package in "${packages[@]}"; do
     echo "Installing $package..."
-    yum -q install -y "$package" > /dev/null 2>&1
+    apt-get -qq install -y "$package" > /dev/null 2>&1
     if [ $? -eq 0 ]; then
       echo "$package installed successfully."
     else
