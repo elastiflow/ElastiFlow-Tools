@@ -5,6 +5,8 @@ LOG_FILE="/var/log/monitor_low_watermark.log"
 MAX_LOG_AGE=30
 SERVICE_NAME="flowcoll.service"
 ES_HOST="http://localhost:9200"
+ES_USER="your_elastic_username"
+ES_PASSWORD="your_elastic_password"
 
 # Function to log messages
 log() {
@@ -16,7 +18,7 @@ check_low_watermark() {
     log "Checking low watermark setting from Elasticsearch."
 
     # Get the low watermark setting from Elasticsearch
-    LOW_WATERMARK=$(curl -s -X GET "$ES_HOST/_cluster/settings?include_defaults=true" \
+    LOW_WATERMARK=$(curl -s -u $ES_USER:$ES_PASSWORD -X GET "$ES_HOST/_cluster/settings?include_defaults=true" \
         | jq -r '.defaults["cluster.routing.allocation.disk.watermark.low"]')
     
     # Get the current free disk space and Elasticsearch index usage
