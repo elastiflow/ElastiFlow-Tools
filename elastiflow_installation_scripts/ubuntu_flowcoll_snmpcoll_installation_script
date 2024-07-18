@@ -150,11 +150,17 @@ handle_error() {
   local error_msg="$1"
   local line_num="$2"
   echo "Error at line $line_num: $error_msg"
-  read -p "Do you wish to continue? (y/n): " user_decision
-  if [[ $user_decision != "y" ]]; then
-    echo "Exiting..."
-    exit 1
-  fi
+  while true; do
+    read -p "Do you wish to retry? (yes/no): " user_decision
+    if [[ "$user_decision" == "yes" ]]; then
+      return 1
+    elif [[ "$user_decision" == "no" ]]; then
+      echo "Exiting..."
+      exit 1
+    else
+      echo "Invalid input. Please enter 'yes' or 'no'."
+    fi
+  done
 }
 
 replace_text() {
@@ -175,11 +181,11 @@ check_for_root() {
 check_compatibility() {
   . /etc/os-release
   ID_LOWER=$(echo "$ID" | tr '[:upper:]' '[:lower:]')
-  if [[ "$ID_LOWER" != "ubuntu" ]]; then
-    echo "This script only supports Ubuntu" 1>&2
+  if [[ "$ID_LOWER" != "rhel" && "$ID_LOWER" != "centos" ]]; then
+    echo "This script only supports Red Hat Enterprise Linux or CentOS" 1>&2
     exit 1
   fi
-  osversion="ubuntu"
+  osversion="rhel"
 }
 
 # Function to prompt for Elasticsearch connection information
@@ -222,15 +228,15 @@ install_prerequisites_flowcoll() {
   printf "\n\n\n*********Installing prerequisites for ElastiFlow Flow Collector...\n\n"
 
   echo "Updating package list..."
-  apt-get -qq update > /dev/null 2>&1
+  yum -q makecache fast > /dev/null 2>&1
 
   # List of packages to be installed
-  packages=(jq net-tools git bc gpg curl wget unzip apt-transport-https libpcap-dev)
+  packages=(jq net-tools git bc gnupg2 curl wget unzip epel-release libpcap-devel)
 
   # Loop through the list and install each package
   for package in "${packages[@]}"; do
     echo "Installing $package..."
-    apt-get -qq install -y "$package" > /dev/null 2>&1
+    yum -q install -y "$package" > /dev/null 2>&1
     if [ $? -eq 0 ]; then
       echo "$package installed successfully."
     else
@@ -243,15 +249,15 @@ install_prerequisites_snmpcoll() {
   printf "\n\n\n*********Installing prerequisites for ElastiFlow SNMP Collector...\n\n"
 
   echo "Updating package list..."
-  apt-get -qq update > /dev/null 2>&1
+  yum -q makecache fast > /dev/null 2>&1
 
   # List of packages to be installed
-  packages=(snmp snmpd snmp-mibs-downloader jq net-tools git bc gpg curl wget unzip apt-transport-https libpcap-dev)
+  packages=(net-snmp net-snmp-utils jq net-tools git bc gnupg2 curl wget unzip epel-release libpcap-devel)
 
   # Loop through the list and install each package
   for package in "${packages[@]}"; do
     echo "Installing $package..."
-    apt-get -qq install -y "$package" > /dev/null 2>&1
+    yum -q install -y "$package" > /dev/null 2>&1
     if [ $? -eq 0 ]; then
       echo "$package installed successfully."
     else
@@ -281,16 +287,66 @@ check_service_health() {
 
 # Function to install ElastiFlow Flow Collector
 install_elastiflow_flowcoll() {
-  printf "\n\n\n*********Downloading and installing ElastiFlow Flow Collector...\n\n" 
-  wget -O flow-collector_"$elastiflow_flowcoll_version"_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_"$elastiflow_flowcoll_version"_linux_amd64.deb
-  apt-get -q install ./flow-collector_"$elastiflow_flowcoll_version"_linux_amd64.deb
+  local downloaded=false
+  local file_path="flow-collector_${elastiflow_flowcoll_version}_linux_amd64.deb"
+
+  while ! $downloaded; do
+    printf "\n\n\n*********Downloading and installing ElastiFlow Flow Collector...\n\n"
+    wget -O $file_path https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_"$elastiflow_flowcoll_version"_linux_amd64.deb
+    
+    if [[ $? -eq 0 ]]; then
+      print_message "Download successful." "$GREEN"
+      apt-get -q install ./$file_path
+      downloaded=true
+    else
+      print_message "Failed to download ElastiFlow Flow Collector." "$RED"
+      read -p "Do you want to retry the download or specify the location of the downloaded file? (retry/specify/quit): " user_decision
+      if [[ "$user_decision" == "specify" ]]; then
+        read -p "Enter the full path to the downloaded file: " specified_path
+        if [[ -f "$specified_path" ]]; then
+          file_path=$specified_path
+          apt-get -q install ./$file_path
+          downloaded=true
+        else
+          print_message "Specified file not found." "$RED"
+        fi
+      elif [[ "$user_decision" == "quit" ]]; then
+        exit 1
+      fi
+    fi
+  done
 }
 
 # Function to install ElastiFlow SNMP Collector
 install_elastiflow_snmpcoll() {
-  printf "\n\n\n*********Downloading and installing ElastiFlow SNMP Collector...\n\n" 
-  wget -q -O elastiflow-snmpcollector.deb "https://elastiflow-releases.s3.us-east-2.amazonaws.com/snmp-collector/snmp-collector_${elastiflow_snmpcoll_version}_linux_amd64.deb"
-  dpkg -i elastiflow-snmpcollector.deb
+  local downloaded=false
+  local file_path="elastiflow-snmpcollector.deb"
+
+  while ! $downloaded; do
+    printf "\n\n\n*********Downloading and installing ElastiFlow SNMP Collector...\n\n"
+    wget -q -O $file_path "https://elastiflow-releases.s3.us-east-2.amazonaws.com/snmp-collector/snmp-collector_${elastiflow_snmpcoll_version}_linux_amd64.deb"
+    
+    if [[ $? -eq 0 ]]; then
+      print_message "Download successful." "$GREEN"
+      dpkg -i $file_path
+      downloaded=true
+    else
+      print_message "Failed to download ElastiFlow SNMP Collector." "$RED"
+      read -p "Do you want to retry the download or specify the location of the downloaded file? (retry/specify/quit): " user_decision
+      if [[ "$user_decision" == "specify" ]]; then
+        read -p "Enter the full path to the downloaded file: " specified_path
+        if [[ -f "$specified_path" ]]; then
+          file_path=$specified_path
+          dpkg -i $file_path
+          downloaded=true
+        else
+          print_message "Specified file not found." "$RED"
+        fi
+      elif [[ "$user_decision" == "quit" ]]; then
+        exit 1
+      fi
+    fi
+  done
 }
 
 # Function to verify Elasticsearch connection
@@ -300,7 +356,7 @@ verify_elasticsearch() {
   local port=$3
   local password=$4
   local response=$(curl -s -o /dev/null -w "%{http_code}" -u "elastic:${password}" "${protocol}://${ip}:${port}")
-  if [ "$response" -eq 200]; then
+  if [ "$response" -eq 200 ]; then
     return 0
   else
     return 1
