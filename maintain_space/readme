@@ -1,0 +1,3 @@
+sudo systemctl daemon-reload
+sudo systemctl enable low_watermark_monitor.service
+sudo systemctl start low_watermark_monitor.service
