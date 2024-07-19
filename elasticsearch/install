@@ -86,15 +86,7 @@ EOF
 
   # Write the new content to /etc/issue
   echo "$banner_content" > /etc/issue
-
-  # Create the SSH banner file
-  ssh_banner_content=$(cat << EOF
-Welcome to ElastiFlow Virtual Appliance
-
-Unauthorized access is strictly prohibited.
-EOF
-  )
-
+  
   # Write the SSH banner content to /etc/ssh/ssh_banner
   echo "$ssh_banner_content" > /etc/ssh/ssh_banner
 
