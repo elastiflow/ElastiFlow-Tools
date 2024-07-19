@@ -104,7 +104,7 @@ EOF
   fi
 
   # Restart the SSH service to apply the changes
-  sudo systemctl restart sshd
+  sudo systemctl restart ssh.service
 }
 
 
