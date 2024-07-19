@@ -681,7 +681,7 @@ main() {
   resize_part_to_max
   display_versions
   display_dashboard_url
-  backup_and_create_issue_text
+  create_banner
   cleanup
 }
 
