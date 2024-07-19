@@ -88,7 +88,7 @@ EOF
   echo "$banner_content" > /etc/issue
   
   # Write the SSH banner content to /etc/ssh/ssh_banner
-  echo "$ssh_banner_content" > /etc/ssh/ssh_banner
+  echo "$banner_content" > /etc/ssh/ssh_banner
 
   # Update the SSH configuration to use the banner
   if ! grep -q "^Banner /etc/ssh/ssh_banner" /etc/ssh/sshd_config; then
