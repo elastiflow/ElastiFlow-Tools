@@ -636,6 +636,8 @@ cleanup (){
   #release DHCP address
   dhclient -r
 
+  rm /etc/update-motd.d/*
+
   #delete self and any deb files
   rm -f "$current_script"
   rm -f *.deb
