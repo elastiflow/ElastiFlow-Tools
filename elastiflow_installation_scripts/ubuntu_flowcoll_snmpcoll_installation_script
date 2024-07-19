@@ -519,8 +519,8 @@ configure_maxmind() {
 }
 
 # Main script
-display_ascii_art
 check_for_updates
+display_ascii_art
 check_for_root
 check_compatibility
 
