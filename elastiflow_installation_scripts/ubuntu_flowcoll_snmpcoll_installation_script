@@ -370,6 +370,8 @@ configure_elastiflow_flowcoll() {
   elasticsearch_ecs_enable=${elasticsearch_ecs_enable:-false}
   read -p "Enable TSDS (true/false, default true): " elasticsearch_tsds
   elasticsearch_tsds=${elasticsearch_tsds:-true}
+  read -p "Enrich with DNS (true/false, default true): " dns_enrichment
+  dns_enrichment=${dns_enrichment:-true}
 
   prompt_elasticsearch_connection
 
