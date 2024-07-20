@@ -222,6 +222,8 @@ prompt_elasticsearch_connection() {
   elasticsearch_tls_enable=${elasticsearch_tls_enable:-true}
   read -p "Skip Elasticsearch TLS Verification (true/false, default true): " elasticsearch_tls_skip_verification
   elasticsearch_tls_skip_verification=${elasticsearch_tls_skip_verification:-true}
+  read -p "Enable TSDS (true/false, default true): " elasticsearch_tsds
+  elasticsearch_tsds=${elasticsearch_tsds:-true}
 }
 
 install_prerequisites_flowcoll() {
