@@ -523,8 +523,8 @@ fi
 
 wrapup(){
 echo -e "\n\n********* Service Status *********"
-systemctl status flowcoll.service | head -n 10
-systemctl status snmpcoll.service | head -n 10
+systemctl status flowcoll.service | head -n 5
+systemctl status snmpcoll.service | head -n 5
 
 echo -e "******************************"
 echo -e "\nInstallation complete."
