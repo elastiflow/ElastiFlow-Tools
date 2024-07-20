@@ -371,6 +371,10 @@ configure_elastiflow_flowcoll() {
   read -p "Do you accept the ElastiFlow license? true or false: " license_acceptance
   read -p "Enter ElastiFlow Account ID: " elastiflow_account_id
   read -p "Enter ElastiFlow Flow License Key: " elastiflow_flow_license_key
+  read -p "Enable Elasticsearch ECS (true/false, default false): " elasticsearch_ecs_enable
+  elasticsearch_ecs_enable=${elasticsearch_ecs_enable:-false}
+  read -p "Enable TSDS (true/false, default true): " elasticsearch_tsds
+  elasticsearch_tsds=${elasticsearch_tsds:-true}
 
   prompt_elasticsearch_connection
 
@@ -399,7 +403,7 @@ configure_elastiflow_flowcoll() {
     "EF_PROCESSOR_DECODE_SFLOW_FLOWS_ENABLE" "EF_PROCESSOR_DECODE_SFLOW_FLOWS_ENABLE: \"true\""
     "EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE: \"${dns_enrichment}\""
     "EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE: \"true\""
-    "EF_LOGGER_FILE_LOG_ENABLE" "EF_LOGGER_FILE_LOG_ENABLE: \"${enable_log_file}\""
+    "EF_LOGGER_FILE_LOG_ENABLE" "EF_LOGGER_FILE_LOG_ENABLE: \"true\""
     "EF_OUTPUT_ELASTICSEARCH_TSDS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TSDS_ENABLE: \"${tsds_enable}\""
   )
 
