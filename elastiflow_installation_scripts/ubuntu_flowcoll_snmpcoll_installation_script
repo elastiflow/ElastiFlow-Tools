@@ -3,7 +3,7 @@
 # Version: 1.01
 
 elastiflow_flowcoll_version="7.1.1"
-elastiflow_snmpcoll_version="7.1.1"
+elastiflow_snmpcoll_version="7.0.0"
 flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
 snmpcoll_config_path="/etc/elastiflow/snmpcoll.yml"
 ########################################################
