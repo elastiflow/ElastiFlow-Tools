@@ -347,6 +347,19 @@ install_elastiflow_snmpcoll() {
       fi
     fi
   done
+
+ while true; do
+    read -p "Do you accept the ElastiFlow license? (yes/no): " elastiflow_license_acceptance
+    if [[ "$elastiflow_license_acceptance" =~ ^[Yy]([Ee][Ss])?$ ]]; then
+      elastiflow_license_accepted="true"
+      break
+    elif [[ "$elastiflow_license_acceptance" =~ ^[Nn]([Oo])?$ ]]; then
+      echo "You must accept the license to proceed with the installation. SNMP Collector installation will be skipped."
+      return
+    else
+      echo "Please answer yes or no."
+    fi
+  done
 }
 
 # Function to verify Elasticsearch connection
