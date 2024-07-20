@@ -530,27 +530,25 @@ configure_maxmind() {
 
   find_and_replace "$FILE_PATH" "${STRINGS_TO_REPLACE[@]}"
 }
-
-# Main script
-check_for_updates
-display_ascii_art
-check_for_root
-check_compatibility
-
+prompt_install_flowcoll(){
 read -p "Do you want to install ElastiFlow Flow Collector? (yes/no): " install_flowcoll
 if [[ "$install_flowcoll" =~ ^[Yy]([Ee][Ss])?$ ]]; then
   install_prerequisites_flowcoll
   install_elastiflow_flowcoll
   configure_elastiflow_flowcoll
 fi
+}
 
+prompt_install_snmpcoll(){
 read -p "Do you want to install ElastiFlow SNMP Collector? (yes/no): " install_snmpcoll
 if [[ "$install_snmpcoll" =~ ^[Yy]([Ee][Ss])?$ ]]; then
   install_prerequisites_snmpcoll
   install_elastiflow_snmpcoll
   configure_elastiflow_snmpcoll
 fi
+}
 
+wrapup(){
 echo -e "\n\n********* Service Status *********"
 systemctl status flowcoll.service | head -n 10
 systemctl status snmpcoll.service | head -n 10
@@ -558,3 +556,14 @@ systemctl status snmpcoll.service | head -n 10
 echo -e "******************************"
 echo -e "\nInstallation complete."
 echo -e "\nFor advanced configuration, edit /etc/elastiflow/flowcoll.yml and /etc/elastiflow/snmpcoll.yml"
+}
+
+
+# Main script
+check_for_updates
+display_ascii_art
+check_for_root
+check_compatibility
+prompt_install_flowcoll
+prompt_install_snmpcoll
+wrapup
