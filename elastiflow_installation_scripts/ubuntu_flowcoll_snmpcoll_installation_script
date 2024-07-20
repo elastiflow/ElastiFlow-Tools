@@ -525,14 +525,14 @@ check_for_root
 check_compatibility
 
 read -p "Do you want to install ElastiFlow Flow Collector? (yes/no): " install_flowcoll
-if [[ "$install_flowcoll" == "yes" ]]; then
+if [[ "$install_flowcoll" =~ ^[Yy]([Ee][Ss])?$ ]]; then
   install_prerequisites_flowcoll
   install_elastiflow_flowcoll
   configure_elastiflow_flowcoll
 fi
 
 read -p "Do you want to install ElastiFlow SNMP Collector? (yes/no): " install_snmpcoll
-if [[ "$install_snmpcoll" == "yes" ]]; then
+if [[ "$install_snmpcoll" =~ ^[Yy]([Ee][Ss])?$ ]]; then
   install_prerequisites_snmpcoll
   install_elastiflow_snmpcoll
   configure_elastiflow_snmpcoll
