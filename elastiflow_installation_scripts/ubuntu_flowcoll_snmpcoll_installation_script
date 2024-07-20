@@ -366,7 +366,7 @@ verify_elasticsearch() {
 # Function to configure ElastiFlow Flow Collector
 configure_elastiflow_flowcoll() {
 
-  read -p "Do you accept the ElastiFlow license? True or False" license_acceptance
+  read -p "Do you accept the ElastiFlow license? true or false: " license_acceptance
   read -p "Enter ElastiFlow Account ID: " elastiflow_account_id
   read -p "Enter ElastiFlow Flow License Key: " elastiflow_flow_license_key
 
@@ -416,7 +416,7 @@ configure_elastiflow_flowcoll() {
 
 # Function to configure ElastiFlow SNMP Collector
 configure_elastiflow_snmpcoll() {
-  read -p "Do you accept the ElastiFlow license? True or False" license_acceptance
+  read -p "Do you accept the ElastiFlow license? true or false: " license_acceptance
   read -p "Enter ElastiFlow Account ID: " elastiflow_account_id
   read -p "Enter ElastiFlow SNMP License Key: " elastiflow_snmp_license_key
 
