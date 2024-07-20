@@ -344,6 +344,10 @@ install_elastiflow_snmpcoll() {
       fi
     fi
   done
+
+cd /etc/elastiflow
+git clone https://github.com/elastiflow/snmp.git
+
 }
 
 # Function to verify Elasticsearch connection
