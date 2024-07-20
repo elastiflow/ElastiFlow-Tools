@@ -200,14 +200,14 @@ prompt_elasticsearch_connection() {
 
     while true; do
       read -p "Do you want to test the Elasticsearch connection? (yes/no): " test_es_connection
-      if [[ "$test_es_connection" == "yes" ]]; then
+      if [[ "$test_es_connection" =~ ^[Yy]([Ee][Ss])?$ ]]; then
         if verify_elasticsearch "$elasticsearch_protocol" "$elasticsearch_ip" "$elasticsearch_port" "$elasticsearch_password"; then
           echo "Elasticsearch verification successful."
           break 2
         else
           echo "Elasticsearch verification failed. Please check your inputs and try again."
         fi
-      elif [[ "$test_es_connection" == "no" ]]; then
+      elif [[ "$test_es_connection" =~ ^[Nn]([Oo])?$ ]]; then
         echo "Skipping Elasticsearch connection test."
         break 2
       else
