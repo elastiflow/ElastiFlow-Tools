@@ -368,8 +368,8 @@ configure_elastiflow_flowcoll() {
   read -p "Enter ElastiFlow Flow License Key: " elastiflow_flow_license_key
   read -p "Enable Elasticsearch ECS (true/false, default false): " elasticsearch_ecs_enable
   elasticsearch_ecs_enable=${elasticsearch_ecs_enable:-false}
-  read -p "Enable TSDS (true/false, default true): " elasticsearch_tsds
-  elasticsearch_tsds=${elasticsearch_tsds:-true}
+  read -p "Enable TSDS (true/false, default true): " tsds_enable
+  tsds_enable=${tsds_enable:-true}
   read -p "Enrich with DNS (true/false, default true): " dns_enrichment
   dns_enrichment=${dns_enrichment:-true}
 
@@ -422,6 +422,10 @@ configure_elastiflow_snmpcoll() {
   read -p "Do you accept the ElastiFlow license? true or false: " license_acceptance
   read -p "Enter ElastiFlow Account ID: " elastiflow_account_id
   read -p "Enter ElastiFlow SNMP License Key: " elastiflow_snmp_license_key
+  read -p "Enable Elasticsearch ECS (true/false, default false): " elasticsearch_ecs_enable
+  elasticsearch_ecs_enable=${elasticsearch_ecs_enable:-false}
+  read -p "Enable TSDS (true/false, default true): " tsds_enable
+  tsds_enable=${tsds_enable:-true}
 
   prompt_elasticsearch_connection
 
@@ -435,6 +439,8 @@ configure_elastiflow_snmpcoll() {
     "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: '${elasticsearch_password}'"
     "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: \"${elasticsearch_tls_enable}\""
     "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION" "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: \"${elasticsearch_tls_skip_verification}\""
+    "EF_OUTPUT_ELASTICSEARCH_TSDS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TSDS_ENABLE: \"${tsds_enable}\""
+
   )
 
   printf "\n\n\n*********Configuring ElastiFlow SNMP Collector...\n\n" 
