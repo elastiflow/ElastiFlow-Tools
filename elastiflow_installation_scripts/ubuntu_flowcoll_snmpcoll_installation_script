@@ -429,10 +429,10 @@ configure_elastiflow_flowcoll() {
 configure_elastiflow_snmpcoll() {
   while true; do
     read -p "Do you accept the ElastiFlow license? (yes/no): " elastiflow_license_acceptance
-    if [[ "$elastiflow_license_acceptance" == "yes" ]]; then
+    if [[ "$elastiflow_license_acceptance" =~ ^[Yy]([Ee][Ss])?$ ]]; then
       elastiflow_license_accepted="true"
       break
-    elif [[ "$elastiflow_license_acceptance" == "no" ]]; then
+    elif [[ "$elastiflow_license_acceptance" =~ ^[Nn]([Oo])?$ ]]; then
       echo "You must accept the license to proceed with the installation."
       exit 1
     else
