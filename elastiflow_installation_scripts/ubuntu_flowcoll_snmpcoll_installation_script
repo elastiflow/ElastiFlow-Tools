@@ -347,19 +347,6 @@ install_elastiflow_snmpcoll() {
       fi
     fi
   done
-
- while true; do
-    read -p "Do you accept the ElastiFlow license? (yes/no): " elastiflow_license_acceptance
-    if [[ "$elastiflow_license_acceptance" =~ ^[Yy]([Ee][Ss])?$ ]]; then
-      elastiflow_license_accepted="true"
-      break
-    elif [[ "$elastiflow_license_acceptance" =~ ^[Nn]([Oo])?$ ]]; then
-      echo "You must accept the license to proceed with the installation. SNMP Collector installation will be skipped."
-      return
-    else
-      echo "Please answer yes or no."
-    fi
-  done
 }
 
 # Function to verify Elasticsearch connection
@@ -378,26 +365,15 @@ verify_elasticsearch() {
 
 # Function to configure ElastiFlow Flow Collector
 configure_elastiflow_flowcoll() {
-  while true; do
-    read -p "Do you accept the ElastiFlow license? (yes/no): " elastiflow_license_acceptance
-    if [[ "$elastiflow_license_acceptance" =~ ^[Yy]([Ee][Ss])?$ ]]; then
-      elastiflow_license_accepted="true"
-      break
-    elif [[ "$elastiflow_license_acceptance" =~ ^[Nn]([Oo])?$ ]]; then
-      echo "You must accept the license to proceed with the installation."
-      exit 1
-    else
-      echo "Please answer yes or no."
-    fi
-  done
 
+  read -p "Do you accept the ElastiFlow license? True or False" license_acceptance
   read -p "Enter ElastiFlow Account ID: " elastiflow_account_id
   read -p "Enter ElastiFlow Flow License Key: " elastiflow_flow_license_key
 
   prompt_elasticsearch_connection
 
   elastiflow_config_strings=(
-    "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: \"${elastiflow_license_accepted}\""
+    "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: \"${license_acceptance}\""
     "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: \"${elastiflow_account_id}\""
     "EF_FLOW_LICENSE_KEY" "EF_FLOW_LICENSE_KEY: \"${elastiflow_flow_license_key}\""
     "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: \"true\""
@@ -440,26 +416,14 @@ configure_elastiflow_flowcoll() {
 
 # Function to configure ElastiFlow SNMP Collector
 configure_elastiflow_snmpcoll() {
-  while true; do
-    read -p "Do you accept the ElastiFlow license? (yes/no): " elastiflow_license_acceptance
-    if [[ "$elastiflow_license_acceptance" =~ ^[Yy]([Ee][Ss])?$ ]]; then
-      elastiflow_license_accepted="true"
-      break
-    elif [[ "$elastiflow_license_acceptance" =~ ^[Nn]([Oo])?$ ]]; then
-      echo "You must accept the license to proceed with the installation."
-      exit 1
-    else
-      echo "Please answer yes or no."
-    fi
-  done
-
+  read -p "Do you accept the ElastiFlow license? True or False" license_acceptance
   read -p "Enter ElastiFlow Account ID: " elastiflow_account_id
   read -p "Enter ElastiFlow SNMP License Key: " elastiflow_snmp_license_key
 
   prompt_elasticsearch_connection
 
   elastiflow_config_strings=(
-    "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: \"${elastiflow_license_accepted}\""
+    "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: \"${license_acceptance}\""
     "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: \"${elastiflow_account_id}\""
     "EF_SNMP_LICENSE_KEY" "EF_SNMP_LICENSE_KEY: \"${elastiflow_snmp_license_key}\""
     "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: \"true\""
