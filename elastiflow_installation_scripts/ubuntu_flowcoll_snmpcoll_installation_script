@@ -152,9 +152,9 @@ handle_error() {
   echo "Error at line $line_num: $error_msg"
   while true; do
     read -p "Do you wish to retry? (yes/no): " user_decision
-    if [[ "$user_decision" == "yes" ]]; then
+    if [[ "$user_decision" =~ ^[Yy][Ee][Ss]?$ ]]; then
       return 1
-    elif [[ "$user_decision" == "no" ]]; then
+    elif [[ "$user_decision" =~ ^[Nn][Oo]?$ ]]; then
       echo "Exiting..."
       exit 1
     else
