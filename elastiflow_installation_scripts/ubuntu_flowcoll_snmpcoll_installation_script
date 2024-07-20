@@ -474,7 +474,7 @@ configure_maxmind() {
   show_maxmind
 
   read -p "Do you want to enable GeoIP enrichment? (yes/no): " enable_geoip
-  if [[ "$enable_geoip" != "yes" ]]; then
+  if [[ "$enable_geoip" =~ ^[Nn]([Oo])?$ ]]; then
     print_message "GeoIP enrichment will not be enabled." "$RED"
     return
   fi
