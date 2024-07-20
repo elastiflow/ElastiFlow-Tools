@@ -194,9 +194,13 @@ prompt_elasticsearch_connection() {
     read -p "Enter Elasticsearch IP: " elasticsearch_ip
     read -p "Enter Elasticsearch Port (default 9200): " elasticsearch_port
     elasticsearch_port=${elasticsearch_port:-9200}
-    read -p "Enter Elasticsearch Protocol (http/https, default http): " elasticsearch_protocol
+    read -p "Enter Elasticsearch protocol (http/https, default http): " elasticsearch_protocol
     elasticsearch_protocol=${elasticsearch_protocol:-http}
     read -p "Enter Elasticsearch Password: " elasticsearch_password
+    read -p "Enable Elasticsearch TLS (true/false, default true): " elasticsearch_tls_enable
+    elasticsearch_tls_enable=${elasticsearch_tls_enable:-true}
+    read -p "Skip Elasticsearch TLS Verification (true/false, default true): " elasticsearch_tls_skip_verification
+    elasticsearch_tls_skip_verification=${elasticsearch_tls_skip_verification:-true}
 
     while true; do
       read -p "Do you want to test the Elasticsearch connection? (yes/no): " test_es_connection
@@ -215,15 +219,6 @@ prompt_elasticsearch_connection() {
       fi
     done
   done
-
-  read -p "Enable Elasticsearch ECS (true/false, default false): " elasticsearch_ecs_enable
-  elasticsearch_ecs_enable=${elasticsearch_ecs_enable:-false}
-  read -p "Enable Elasticsearch TLS (true/false, default true): " elasticsearch_tls_enable
-  elasticsearch_tls_enable=${elasticsearch_tls_enable:-true}
-  read -p "Skip Elasticsearch TLS Verification (true/false, default true): " elasticsearch_tls_skip_verification
-  elasticsearch_tls_skip_verification=${elasticsearch_tls_skip_verification:-true}
-  read -p "Enable TSDS (true/false, default true): " elasticsearch_tsds
-  elasticsearch_tsds=${elasticsearch_tsds:-true}
 }
 
 install_prerequisites_flowcoll() {
