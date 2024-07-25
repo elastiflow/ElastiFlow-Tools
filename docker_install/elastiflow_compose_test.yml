@@ -1,0 +1,40 @@
+version: '3'
+services:
+  # ElastiFlow NetObserv Flow
+  flow-collector:
+    image: elastiflow/flow-collector:7.1.1
+    container_name: flow-collector
+    restart: 'unless-stopped'
+    network_mode: 'host'
+    volumes:
+      - /etc/elastiflow:/etc/elastiflow
+    environment:
+      EF_LICENSE_ACCEPTED: 'true'
+      EF_FLOW_SERVER_UDP_IP: '0.0.0.0'
+      EF_FLOW_SERVER_UDP_PORT: 9995
+      EF_OUTPUT_ELASTICSEARCH_ENABLE: 'true'
+      EF_OUTPUT_ELASTICSEARCH_ADDRESSES: '127.0.0.1:9200'
+      EF_OUTPUT_ELASTICSEARCH_USERNAME: 'elastic'
+      EF_OUTPUT_ELASTICSEARCH_PASSWORD: '${ELASTIC_PASSWORD}'
+      EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: 'true'
+      EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: 'true'
+    command: /bin/sh -c "
+      printf '\n\n\n*********Downloading and installing ElastiFlow flow dashboards\n\n';
+      git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/;
+      response=\$(curl --connect-timeout 10 -X POST -u \$EF_OUTPUT_ELASTICSEARCH_USERNAME:\$EF_OUTPUT_ELASTICSEARCH_PASSWORD 'localhost:5601/api/saved_objects/_import?overwrite=true' -H 'kbn-xsrf: true' --form file=@/etc/elastiflow_for_elasticsearch/kibana/flow/kibana-\$kibana_dashboards_version-flow-\$kibana_dashboards_codex_ecs.ndjson -H 'kbn-xsrf: true');
+      if [ \$? -ne 0 ]; then
+        printf 'Error: %s\n' '\$response';
+        printf 'Flow dashboards not installed successfully\n\n';
+      else
+        dashboards_success=\$(echo '\$response' | jq -r '.success');
+        if [ '\$dashboards_success' = 'true' ]; then
+          printf 'Flow dashboards installed successfully.\n\n';
+        else
+          printf 'Flow dashboards not installed successfully\n\n';
+        fi;
+      fi;
+    "
+
+volumes:
+  elastiflow:
+    driver: local
