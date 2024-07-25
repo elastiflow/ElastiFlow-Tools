@@ -318,7 +318,7 @@ services:
     command: /bin/sh -c "
       printf '\n\n\n*********Downloading and installing ElastiFlow flow dashboards\n\n';
       git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/;
-      response=\$(curl --connect-timeout 10 -X POST -u elastic:'{ELASTIC_PASSWORD}' 'localhost:5601/api/saved_objects/_import?overwrite=true' -H 'kbn-xsrf: true' --form file=@/etc/elastiflow_for_elasticsearch/kibana/flow/kibana-\$kibana_dashboards_version-flow-\$kibana_dashboards_codex_ecs.ndjson -H 'kbn-xsrf: true');
+      response=\$(curl --connect-timeout 10 -X POST -u elastic:'{ELASTIC_PASSWORD}' 'localhost:5601/api/saved_objects/_import?overwrite=true' -H 'kbn-xsrf: true' --form file=@/etc/elastiflow_for_elasticsearch/kibana/flow/kibana-8.14.x-flow-codex.ndjson -H 'kbn-xsrf: true');
       if [ \$? -ne 0 ]; then
         printf 'Error: %s\n' '\$response';
         printf 'Flow dashboards not installed successfully\n\n';
