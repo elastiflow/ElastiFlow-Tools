@@ -26,4 +26,4 @@ These instructions will install ElasticSearch 8.14.0, Kibana 8.14.0, and ElastiF
 7) Send netflow to IP_of_your_host 9995
 
 8) Visualize netflow
-     Kibana, do a global search (at the top) for the dashboard "ElastiFlow (flow): Overview"
+     In Kibana, do a global search (at the top) for the dashboard "ElastiFlow (flow): Overview"
