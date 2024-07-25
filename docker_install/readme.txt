@@ -6,7 +6,7 @@ These instructions will install ElasticSearch 8.14.0, Kibana 8.14.0, and ElastiF
 
 1) Download all files to a new directory.
 
-2) Edit the .env file to set your desired Kibana and Elastic passwords and Elastic stack version
+2) Edit the .env file to set your desired Kibana and Elastic passwords, Elastic stack version, and ElastiFlow version to deploy
 
       # Password for the 'elastic' user (at least 6 characters)
       ELASTIC_PASSWORD={elastic_password}
