@@ -17,6 +17,9 @@ These instructions will install ElasticSearch 8.14.0, Kibana 8.14.0, and ElastiF
       # Version of Elastic products
       STACK_VERSION={version}
 
+      # Elastiflow Version
+      ELASTIFLOW_VERSION={version}
+
 3) Run "sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_compose.yml up -d".
 
 4) After a few minutes, browse to http://IP_of_your_host:5601. Username: "elastic", Password: your Elastic password you set in step 2
