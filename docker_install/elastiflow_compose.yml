@@ -9,7 +9,7 @@ services:
     volumes:
       - /etc/elastiflow:/etc/elastiflow
     environment:
-      EF_LICENSE_ACCEPTED: 'false'
+      EF_LICENSE_ACCEPTED: 'true'
       #EF_ACCOUNT_ID: ''
 
       #EF_FLOW_LICENSE_KEY: ''
@@ -165,7 +165,7 @@ services:
       #EF_OUTPUT_MONITOR_INTERVAL: 300
 
       # Elasticsearch
-      EF_OUTPUT_ELASTICSEARCH_ENABLE: 'false'
+      EF_OUTPUT_ELASTICSEARCH_ENABLE: 'true'
       EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE: 'false'
       #EF_OUTPUT_ELASTICSEARCH_BATCH_DEADLINE: 2000
       #EF_OUTPUT_ELASTICSEARCH_BATCH_MAX_BYTES: 8388608
