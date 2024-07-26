@@ -25,7 +25,7 @@ To easily install ElasticSearch 8.14.0, Kibana 8.14.0, and ElastiFlow 7.1.1 with
 4) After a few minutes, browse to http://IP_of_your_host:5601. Username: "elastic", Password: your Elastic password you set in step 2
 
 5) Install ElastiFlow dashboards:
-      Download https://github.com/elastiflow/elastiflow_for_elasticsearch/blob/master/kibana/flow/kibana-8.2.x-flow-codex.ndjson
+      Download https://github.com/elastiflow/elastiflow_for_elasticsearch/blob/master/kibana/flow/kibana-8.14.x-flow-codex.ndjson
       In Kibana, do a global search (at the top) for "Saved Objects". Choose import and overwrite.
 
 7) Send netflow to IP_of_your_host 9995
