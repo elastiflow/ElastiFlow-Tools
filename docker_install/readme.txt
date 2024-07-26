@@ -2,7 +2,7 @@
 Code in this folder may contain code from https://github.com/elastic/elasticsearch/tree/8.11/docs/reference/setup/install/docker
 
 Purpose:
-To easily install ElasticSearch 8.14.0, Kibana 8.14.0, and ElastiFlow 7.1.1 with Docker Compose.
+To easily install ElasticSearch, Kibana, and ElastiFlow with Docker Compose. Tested with Elastic / Kibana 8.14.0 and ElastiFlow 7.1.1.
 
 1) Download all files to a new directory.
 
