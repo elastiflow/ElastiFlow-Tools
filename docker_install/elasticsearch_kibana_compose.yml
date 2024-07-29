@@ -64,7 +64,8 @@ services:
       - node.name=es01
       - cluster.name=${CLUSTER_NAME}
       - cluster.initial_master_nodes=es01
-      - discovery.seed_hosts=es01
+      # disabled unless there is more than 1 node in the cluster
+      #- discovery.seed_hosts=es01
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - bootstrap.memory_lock=true
       - xpack.security.enabled=true
