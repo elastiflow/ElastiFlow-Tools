@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ElastiFlow PoC Configurator for installing ElastiFlow Trial and MaxMind enrichment
-# Version: 2.8.1
+# Version: 2.8.2
 # Author: O.J. Wolanyk
 
 # Define color codes
@@ -460,13 +460,13 @@ perform_health_check() {
       print_message "MaxMind enrichment is not active" "$RED"
     fi
 
-    if grep -q '^EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE: "true"' /etc/elastiflow/flowcoll.yml; then
+    if grep -q '^EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE: ["'"'"']true["'"'"']' /etc/elastiflow/flowcoll.yml; then
       print_message "DNS enrichment is active" "$GREEN"
     else
       print_message "DNS enrichment is not active" "$RED"
     fi
 
-    if grep -q '^EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE: "true"' /etc/elastiflow/flowcoll.yml; then
+    if grep -q '^EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE: ["'"'"']true["'"'"']' /etc/elastiflow/flowcoll.yml; then
       print_message "NetIntel enrichment is active" "$GREEN"
     else
       print_message "NetIntel enrichment is not active" "$RED"
