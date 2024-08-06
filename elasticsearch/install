@@ -160,13 +160,13 @@ display_system_info() {
 }
 
 check_for_updates() {
-  # Dynamically determine the path to the current script
-  local current_script=$(realpath "$0")
+  # Dynamically determine the path to the installed script
+  local installed_script=$(realpath "$0")
   local new_script_url="https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/elasticsearch/install"
   local tmp_script="/tmp/install"
 
   echo "Checking for updates..."
-  echo "Current script path: $current_script"
+  echo "installed script path: $installed_script"
 
   wget -q -O "$tmp_script" "$new_script_url"
 
@@ -175,21 +175,21 @@ check_for_updates() {
     return
   fi
 
-  echo "Downloaded new script to $tmp_script."
+  echo "Downloaded remote script to $tmp_script."
 
-  local new_version=$(grep -m 1 '^# Version: ' "$tmp_script" | awk '{print $3}')
-  local current_version=$(grep -m 1 '^# Version: ' "$current_script" | awk '{print $3}')
+  local remote_version=$(grep -m 1 '^# Version: ' "$tmp_script" | awk '{print $3}')
+  local installed_version=$(grep -m 1 '^# Version: ' "$installed_script" | awk '{print $3}')
 
-  echo "Current version: $current_version"
-  echo "Remote version: $new_version"
+  echo "Installed version: $installed_version"
+  echo "Remote version: $remote_version"
 
-  if [[ -z "$current_version" ]]; then
-    print_message "Failed to detect the current version." "$RED"
+  if [[ -z "$installed_version" ]]; then
+    print_message "Failed to detect the installed version." "$RED"
     return
   fi
 
-  if [[ "$new_version" > "$current_version" ]]; then
-    print_message "Remote version $new_version available." "$GREEN"
+  if [[ "$remote_version" > "$installed_version" ]]; then
+    print_message "Remote version $remote_version available." "$GREEN"
     
     while true; do
       echo -n "Do you want to update to the Remote version? (y/n) [y]: "
@@ -210,11 +210,11 @@ check_for_updates() {
     done
 
     if [[ $update_choice == "y" ]]; then
-      print_message "Updating to version $new_version..." "$GREEN"
-      cp "$tmp_script" "$current_script"
-      chmod +x "$current_script"
+      print_message "Updating to version $remote_version..." "$GREEN"
+      cp "$tmp_script" "$installed_script"
+      chmod +x "$installed_script"
       print_message "Update successful. Restarting script..." "$GREEN"
-      exec "$current_script"
+      exec "$installed_script"
     else
       print_message "Update skipped." "$RED"
     fi
@@ -479,32 +479,38 @@ change_elasticsearch_password() {
 
 install_elastiflow() {
   elastiflow_config_strings=(
-  "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: \"true\""
-  "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: \"${elastiflow_account_id}\""
-  "EF_FLOW_LICENSE_KEY" "EF_FLOW_LICENSE_KEY: \"${elastiflow_flow_license_key}\""
-  "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: \"true\""
-  "EF_OUTPUT_ELASTICSEARCH_ADDRESSES" "EF_OUTPUT_ELASTICSEARCH_ADDRESSES: \"127.0.0.1:9200\""
-  "EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE: \"false\""
+  "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: 'true'"
+  "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: '${elastiflow_account_id}'"
+  "EF_FLOW_LICENSE_KEY" "EF_FLOW_LICENSE_KEY: '${elastiflow_flow_license_key}'"
+  "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: 'true'"
+  "EF_OUTPUT_ELASTICSEARCH_ADDRESSES" "EF_OUTPUT_ELASTICSEARCH_ADDRESSES: '127.0.0.1:9200'"
+  "EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE: 'false'"
   "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: '${elastic_password2}'"
-  "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: \"true\""
-  "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION" "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: \"true\""
-  "EF_FLOW_SERVER_UDP_IP" "EF_FLOW_SERVER_UDP_IP: \"0.0.0.0\""
-  "EF_FLOW_SERVER_UDP_PORT" "EF_FLOW_SERVER_UDP_PORT: \"2055,4739,6343,9995\""
-  "EF_FLOW_SERVER_UDP_READ_BUFFER_MAX_SIZE" "EF_FLOW_SERVER_UDP_READ_BUFFER_MAX_SIZE: \"33554432\""
-  "EF_PROCESSOR_DECODE_IPFIX_ENABLE" "EF_PROCESSOR_DECODE_IPFIX_ENABLE: \"true\""
-  "EF_PROCESSOR_DECODE_MAX_RECORDS_PER_PACKET" "EF_PROCESSOR_DECODE_MAX_RECORDS_PER_PACKET: \"64\""
-  "EF_PROCESSOR_DECODE_NETFLOW1_ENABLE" "EF_PROCESSOR_DECODE_NETFLOW1_ENABLE: \"true\""
-  "EF_PROCESSOR_DECODE_NETFLOW5_ENABLE" "EF_PROCESSOR_DECODE_NETFLOW5_ENABLE: \"true\""
-  "EF_PROCESSOR_DECODE_NETFLOW6_ENABLE" "EF_PROCESSOR_DECODE_NETFLOW6_ENABLE: \"true\""
-  "EF_PROCESSOR_DECODE_NETFLOW7_ENABLE" "EF_PROCESSOR_DECODE_NETFLOW7_ENABLE: \"true\""
-  "EF_PROCESSOR_DECODE_NETFLOW9_ENABLE" "EF_PROCESSOR_DECODE_NETFLOW9_ENABLE: \"true\""
-  "EF_PROCESSOR_DECODE_SFLOW5_ENABLE" "EF_PROCESSOR_DECODE_SFLOW5_ENABLE: \"true\""
-  "EF_PROCESSOR_DECODE_SFLOW_COUNTERS_ENABLE" "EF_PROCESSOR_DECODE_SFLOW_COUNTERS_ENABLE: \"true\""
-  "EF_PROCESSOR_DECODE_SFLOW_FLOWS_ENABLE" "EF_PROCESSOR_DECODE_SFLOW_FLOWS_ENABLE: \"true\""
-  "EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE: \"true\""
-  "EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE: \"true\""
-  "EF_LOGGER_FILE_LOG_ENABLE" "EF_LOGGER_FILE_LOG_ENABLE: \"true\""
-  "EF_OUTPUT_ELASTICSEARCH_TSDS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TSDS_ENABLE: \"true\""
+  "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: 'true'"
+  "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION" "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: 'true'"
+  "EF_FLOW_SERVER_UDP_IP" "EF_FLOW_SERVER_UDP_IP: '0.0.0.0'"
+  "EF_FLOW_SERVER_UDP_PORT" "EF_FLOW_SERVER_UDP_PORT: '2055,4739,6343,9995'"
+  "EF_FLOW_SERVER_UDP_READ_BUFFER_MAX_SIZE" "EF_FLOW_SERVER_UDP_READ_BUFFER_MAX_SIZE: '33554432'"
+  "EF_PROCESSOR_DECODE_IPFIX_ENABLE" "EF_PROCESSOR_DECODE_IPFIX_ENABLE: 'true'"
+  "EF_PROCESSOR_DECODE_MAX_RECORDS_PER_PACKET" "EF_PROCESSOR_DECODE_MAX_RECORDS_PER_PACKET: '64'"
+  "EF_PROCESSOR_DECODE_NETFLOW1_ENABLE" "EF_PROCESSOR_DECODE_NETFLOW1_ENABLE: 'true'"
+  "EF_PROCESSOR_DECODE_NETFLOW5_ENABLE" "EF_PROCESSOR_DECODE_NETFLOW5_ENABLE: 'true'"
+  "EF_PROCESSOR_DECODE_NETFLOW6_ENABLE" "EF_PROCESSOR_DECODE_NETFLOW6_ENABLE: 'true'"
+  "EF_PROCESSOR_DECODE_NETFLOW7_ENABLE" "EF_PROCESSOR_DECODE_NETFLOW7_ENABLE: 'true'"
+  "EF_PROCESSOR_DECODE_NETFLOW9_ENABLE" "EF_PROCESSOR_DECODE_NETFLOW9_ENABLE: 'true'"
+  "EF_PROCESSOR_DECODE_SFLOW5_ENABLE" "EF_PROCESSOR_DECODE_SFLOW5_ENABLE: 'true'"
+  "EF_PROCESSOR_DECODE_SFLOW_COUNTERS_ENABLE" "EF_PROCESSOR_DECODE_SFLOW_COUNTERS_ENABLE: 'true'"
+  "EF_PROCESSOR_DECODE_SFLOW_FLOWS_ENABLE" "EF_PROCESSOR_DECODE_SFLOW_FLOWS_ENABLE: 'true'"
+  "EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE: 'true'"
+  "EF_LOGGER_FILE_LOG_ENABLE" "EF_LOGGER_FILE_LOG_ENABLE: 'true'"
+  "EF_OUTPUT_ELASTICSEARCH_TSDS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TSDS_ENABLE: 'true'"
+  "EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE: 'true'"
+  "EF_PROCESSOR_ENRICH_IPADDR_METADATA_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_METADATA_ENABLE: 'true'"  
+  "EF_PROCESSOR_ENRICH_IPADDR_METADATA_USERDEF_PATH" "EF_PROCESSOR_ENRICH_IPADDR_METADATA_USERDEF_PATH: '/etc/elastiflow/metadata/ipaddrs.yml'"
+  "EF_PROCESSOR_ENRICH_IPADDR_METADATA_REFRESH_RATE" "EF_PROCESSOR_ENRICH_IPADDR_METADATA_REFRESH_RATE: 15"
+  "EF_PROCESSOR_ENRICH_NETIF_METADATA_ENABLE" "EF_PROCESSOR_ENRICH_NETIF_METADATA_ENABLE: 'true'"
+  "EF_PROCESSOR_ENRICH_NETIF_METADATA_USERDEF_PATH" "EF_PROCESSOR_ENRICH_NETIF_METADATA_USERDEF_PATH: '/etc/elastiflow/metadata/ipaddrs.yml'"
+  "EF_PROCESSOR_ENRICH_NETIF_METADATA_REFRESH_RATE"  "EF_PROCESSOR_ENRICH_NETIF_METADATA_REFRESH_RATE: 15"
   )
   
   printf "\n\n\n*********Downloading and installing ElastiFlow Flow Collector...\n\n" 
@@ -632,14 +638,14 @@ append_to_bashrc() {
 }
 
 cleanup (){
-  local current_script=$(realpath "$0")  
+  local installed_script=$(realpath "$0")  
   #release DHCP address
   dhclient -r
 
   rm /etc/update-motd.d/*
 
   #delete self and any deb files
-  rm -f "$current_script"
+  rm -f "$installed_script"
   rm -f *.deb
 
 }
