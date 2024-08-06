@@ -460,13 +460,13 @@ perform_health_check() {
       print_message "MaxMind enrichment is not active" "$RED"
     fi
 
-    if grep -q '^EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE: "true"' /etc/elastiflow/flowcoll.yml; then
+    if grep -q '^EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE: \'true\'' /etc/elastiflow/flowcoll.yml; then
       print_message "DNS enrichment is active" "$GREEN"
     else
       print_message "DNS enrichment is not active" "$RED"
     fi
 
-    if grep -q '^EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE: "true"' /etc/elastiflow/flowcoll.yml; then
+    if grep -q '^EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE: \'true\'' /etc/elastiflow/flowcoll.yml; then
       print_message "NetIntel enrichment is active" "$GREEN"
     else
       print_message "NetIntel enrichment is not active" "$RED"
@@ -596,21 +596,21 @@ comment_and_add_line() {
   fi
 }
 
-dns_enrichment() {
-  local file_path=/etc/elastiflow/flowcoll.yml
-  print_message "Enabling DNS enrichment..." "$GREEN"
-  comment_and_add_line "$file_path" "EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE" 'EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE: "true"'
-  print_message "DNS enrichment enabled." "$GREEN"
-  reload_and_restart_service "flowcoll.service"
-}
+#dns_enrichment() {
+#  local file_path=/etc/elastiflow/flowcoll.yml
+#  print_message "Enabling DNS enrichment..." "$GREEN"
+#  comment_and_add_line "$file_path" "EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE" 'EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE: "true"'
+#  print_message "DNS enrichment enabled." "$GREEN"
+#  reload_and_restart_service "flowcoll.service"
+#}
 
-netintel_enrichment() {
-  local file_path=/etc/elastiflow/flowcoll.yml
-  print_message "Enabling NetIntel enrichment..." "$GREEN"
-  comment_and_add_line "$file_path" "EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE" 'EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE: "true"'
-  print_message "NetIntel enrichment enabled." "$GREEN"
-  reload_and_restart_service "flowcoll.service"
-}
+#netintel_enrichment() {
+#  local file_path=/etc/elastiflow/flowcoll.yml
+#  print_message "Enabling NetIntel enrichment..." "$GREEN"
+#  comment_and_add_line "$file_path" "EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE" 'EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE: "true"'
+#  print_message "NetIntel enrichment enabled." "$GREEN"
+#  reload_and_restart_service "flowcoll.service"
+#}
 
 find_and_replace() {
   local FILE=$1
@@ -1426,9 +1426,9 @@ while true; do
         echo "2. Daemon reload and restart flowcoll.service"
         echo "3. Daemon reload and restart flowcoll.service, elasticsearch.service, and kibana.service"
         echo "4. Edit flowcoll.yml using nano"
-        echo "5. Enable DNS enrichment"
+        #echo "5. Enable DNS enrichment"
         echo "6. Enable FPS monitor"
-        echo "7. Enable NetIntel enrichment"
+        #echo "7. Enable NetIntel enrichment"
         echo "8. Generate sample flow"
         echo "9. Health check"
         echo "10. Install/Uninstall flow generator (pmacct)"
