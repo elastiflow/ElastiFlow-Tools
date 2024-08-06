@@ -9,8 +9,8 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-elastiflow_flow_collector_version="7.0.2"
-elastiflow_snmp_collector_version="7.0.2"
+elastiflow_flow_collector_version="7.1.1"
+elastiflow_snmp_collector_version="7.1.1"
 elastic_username="elastic"
 ip_address=""
 dashboard_url=""
