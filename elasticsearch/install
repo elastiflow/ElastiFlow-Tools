@@ -421,8 +421,9 @@ start_elasticsearch() {
   printf "\n\n\n*********Enabling and starting ElasticSearch service...\n\n"
   systemctl daemon-reload && systemctl enable elasticsearch.service && systemctl start elasticsearch.service
   sleep_message "Giving ElasticSearch service time to stabilize" 10
+  printf "\n\n\n*********Checking if Elastic service is up...\n\n"
   if systemctl is-active --quiet elasticsearch.service; then
-    printf "\n\n\n*********\e[32mElasticsearch service is up\e[0m\n\n"
+    printf "\n\n\n\e[32mElasticsearch service is up\e[0m\n\n"
   else
     echo "Elasticsearch is not running."
   fi
