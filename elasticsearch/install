@@ -11,8 +11,8 @@ elastiflow_flow_license_key=""
 ########################################################
 
 elastiflow_version="7.1.1"
-elasticsearch_version="8.14.0"
-kibana_version="8.14.0"
+elasticsearch_version="8.15.0"
+kibana_version="8.15.0"
 kibana_dashboards_version="8.14.x"
 kibana_dashboards_codex_ecs="codex"
 flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
