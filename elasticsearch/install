@@ -18,6 +18,7 @@ kibana_dashboards_codex_ecs="codex"
 flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
 elastic_username="elastic"
 elastic_password2="elastic"
+fpus="4"
 ########################################################
 
 #leave blank
