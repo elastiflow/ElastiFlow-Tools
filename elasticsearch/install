@@ -1,8 +1,9 @@
 #!/bin/bash
 
-# Version: 3.0.1
+# Version: 3.0.2
 
 ########################################################
+# vm specs 64 gigs ram, 16 vcpus, 2 TB disk, license for up to 64k FPS, fpus 4 - so there's a 16k FPS limit
 # If you do not have an ElastiFlow Account ID and ElastiFlow Flow License Key, 
 # please go here: https://elastiflow.com/get-started
 # Paste these values on the corresponding line, between the quotes
@@ -487,6 +488,7 @@ install_elastiflow() {
   "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: 'true'"
   "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: '${elastiflow_account_id}'"
   "EF_FLOW_LICENSE_KEY" "EF_FLOW_LICENSE_KEY: '${elastiflow_flow_license_key}'"
+  "EF_FLOW_LICENSED_UNITS" "EF_FLOW_LICENSED_UNITS: $fpus"
   "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: 'true'"
   "EF_OUTPUT_ELASTICSEARCH_ADDRESSES" "EF_OUTPUT_ELASTICSEARCH_ADDRESSES: '127.0.0.1:9200'"
   "EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE: 'false'"
