@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ElastiFlow PoC Configurator for installing ElastiFlow Trial and MaxMind enrichment
-# Version: 2.8.3.3
+# Version: 2.8.3.4
 # Author: O.J. Wolanyk
 
 # Define color codes
@@ -748,7 +748,7 @@ start_elasticsearch_trial() {
   elastic_password=$(grep "^EF_OUTPUT_ELASTICSEARCH_PASSWORD: '" "$elastiflow_flow_config_path" | awk -F"'" '{print $2}')
   
   # Run the curl command and capture the output
-    curl_result=$(curl -s -k -u elastic:elastic_password "https://localhost:9200/_license/start_trial?acknowledge=true&pretty")
+    curl_result=$(curl -s -k -u "$elastic_username:$elastic_password" "https://localhost:9200/_license/start_trial?acknowledge=true&pretty")
     # Expected output
     expected_output='{
   "trial_was_started": true,
