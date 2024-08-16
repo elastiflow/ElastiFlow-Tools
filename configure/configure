@@ -744,9 +744,11 @@ start_elasticsearch_trial
 }
 
 start_elasticsearch_trial() {
-    # Run the curl command and capture the output
-    curl_result=$(curl -s -k -u elastic:$1 https://localhost:9200/_license/start_trial?acknowledge=true&pretty)
-
+  # Extract the Elasticsearch password from the configuration file
+  elastic_password=$(grep "^EF_OUTPUT_ELASTICSEARCH_PASSWORD: '" "$elastiflow_flow_config_path" | awk -F"'" '{print $2}')
+  
+  # Run the curl command and capture the output
+    curl_result=$(curl -s -k -u elastic:elastic_password https://localhost:9200/_license/start_trial?acknowledge=true&pretty)
     # Expected output
     expected_output='{
   "trial_was_started": true,
