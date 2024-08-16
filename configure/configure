@@ -749,21 +749,6 @@ configure_trial() {
   fi
 
 start_elasticsearch_trial
-resize_part_to_max
-
-}
-
-
-resize_part_to_max() {
-    # Display the partition size before resizing
-    echo "Partition size before resizing:"
-    lsblk -o NAME,SIZE | grep 'ubuntu-lv'
-
-    # Extend the logical volume to use all free space
-    lvextend -l +100%FREE /dev/ubuntu-vg/ubuntu-lv
-
-    # Resize the filesystem
-    resize2fs -p /dev/mapper/ubuntu--vg-ubuntu--lv
 }
 
 start_elasticsearch_trial() {
