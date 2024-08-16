@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ElastiFlow PoC Configurator for installing ElastiFlow Trial and MaxMind enrichment
-# Version: 2.8.3.8
+# Version: 2.8.3.9
 # Author: O.J. Wolanyk
 
 # Define color codes
@@ -411,7 +411,7 @@ perform_health_check() {
 
     if journalctl -u flowcoll.service | grep -iq "level=error"; then
     print_message "Errors found in flowcoll.service logs:" "$RED"
-    journalctl -u flowcoll.service | grep -i "level=error"
+    #journalctl -u flowcoll.service | grep -i "level=error"
   else
     print_message "No errors found in flowcoll.service logs" "$GREEN"
   fi
@@ -481,7 +481,7 @@ perform_health_check() {
 
      if journalctl -u elasticsearch.service | grep -iq "level=error"; then
       print_message "Errors found in elasticsearch.service logs:" "$RED"
-      journalctl -u elasticsearch.service | grep -i "level=error"
+      #journalctl -u elasticsearch.service | grep -i "level=error"
     else
       print_message "No errors found in elasticsearch.service logs" "$GREEN"
     fi
@@ -510,7 +510,7 @@ perform_health_check() {
 
     if journalctl -u kibana.service | grep -iq "\[error\]"; then
       print_message "Errors found in kibana.service logs:" "$RED"
-      journalctl -u kibana.service | grep -i "\[error\]"
+      #journalctl -u kibana.service | grep -i "\[error\]"
     else
       print_message "No errors found in kibana.service logs" "$GREEN"
     fi
