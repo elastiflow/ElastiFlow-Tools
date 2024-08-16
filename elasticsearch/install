@@ -3,7 +3,7 @@
 # Version: 3.0.2
 
 ########################################################
-# vm specs 64 gigs ram, 16 vcpus, 2 TB disk, license for up to 64k FPS, fpus 4 - so there's a 16k FPS limit
+# vm specs 64 gigs ram, 16 vcpus, 2 TB disk, license for up to 64k FPS, fpus 4 - so there's a 16k FPS limit, 1 week retention
 # If you do not have an ElastiFlow Account ID and ElastiFlow Flow License Key, 
 # please go here: https://elastiflow.com/get-started
 # Paste these values on the corresponding line, between the quotes
