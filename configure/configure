@@ -626,6 +626,7 @@ reload_and_restart_service() {
   local service=$1
   printf "Performing daemon-reload\n"
   systemctl daemon-reload
+  sleep 5 
   printf "Restarting service $service\n"
   systemctl restart "$service"
   echo "done"
