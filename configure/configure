@@ -9,8 +9,8 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-elastiflow_flow_collector_version="7.1.1"
-elastiflow_snmp_collector_version="7.1.1"
+elastiflow_flow_collector_version="7.2.0"
+elastiflow_snmp_collector_version="7.2.0"
 elastic_username="elastic"
 ip_address=""
 dashboard_url=""
@@ -747,7 +747,31 @@ configure_trial() {
   else
     print_message "Failed to enable fully featured trial. Changes reverted. Returning to main menu." "$RED"
   fi
+
+start_elasticsearch_trial()
+
 }
+
+
+start_elasticsearch_trial() {
+    # Run the curl command and capture the output
+    curl_result=$(curl -s -k -u elastic:$1 https://localhost:9200/_license/start_trial?acknowledge=true&pretty)
+
+    # Expected output
+    expected_output='{
+  "trial_was_started": true,
+  "acknowledged": true
+}'
+
+    # Check if the curl result matches the expected output
+    if [[ "$curl_result" == "$expected_output" ]]; then
+        echo "Trial license was successfully started and acknowledged."
+    else
+        echo "Failed to start trial license or acknowledgment was not successful."
+        echo "Curl output: $curl_result"
+    fi
+}
+
 
 configure_maxmind() {
   FILE_PATH=/etc/elastiflow/flowcoll.yml
