@@ -703,15 +703,7 @@ configure_trial() {
   ef_account_id=$(grep '^EF_ACCOUNT_ID: ' $FILE_PATH | awk '{print $2}' | tr -d '"')
   ef_flow_license_key=$(grep '^EF_FLOW_LICENSE_KEY: ' $FILE_PATH | awk '{print $2}' | tr -d '"')
 
-  if [[ -n "$ef_account_id" && "$ef_account_id" != "" ]] && [[ -n "$ef_flow_license_key" && "$ef_flow_license_key" != "" ]]; then
-    print_message "ElastiFlow account ID and flow license key are already configured." "$RED"
-    read -p "Do you want to overwrite the existing values? (y/n): " overwrite_choice
-    if [[ $overwrite_choice != "y" ]]; then
-      return
-    fi
-  fi
-
-  while true; do
+ while true; do
     read -p "Enter your ElastiFlow account ID (or 'q' to quit): " elastiflow_account_id
     if [[ $elastiflow_account_id == "q" ]]; then
       return
