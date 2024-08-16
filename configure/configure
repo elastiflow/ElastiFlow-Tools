@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ElastiFlow PoC Configurator for installing ElastiFlow Trial and MaxMind enrichment
-# Version: 2.8.3.5
+# Version: 2.8.3.6
 # Author: O.J. Wolanyk
 
 # Define color codes
@@ -749,11 +749,16 @@ start_elasticsearch_trial() {
   
   # Run the curl command and capture the output
   curl_result=$(curl -s -k -u "$elastic_username:$elastic_password" -X POST "https://localhost:9200/_license/start_trial?acknowledge=true&pretty")
-    # Expected output
-    expected_output='{
-  "trial_was_started": true,
-  "acknowledged": true
-}'
+  
+  # Check if the response contains "trial_was_started": true
+  if echo "$curl_result" | grep -q '"trial_was_started": true'; then
+    echo "Trial license was successfully started."
+  else
+    echo "Failed to start trial license."
+    echo "Curl output: $curl_result"
+  fi
+}
+
 
     # Check if the curl result matches the expected output
     if [[ "$curl_result" == "$expected_output" ]]; then
