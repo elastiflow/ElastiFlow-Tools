@@ -23,8 +23,8 @@ install_flow_collector() {
     local SHA256_URL=$(curl -sL $DOC_URL | grep -oP 'https://[^\"]+flow-collector_[0-9]+\.[0-9]+\.[0-9]+_linux_amd64\.deb\.sha256' | head -n 1)
     SHA256_URL=$(validate_url "$SHA256_URL")
 
-    # Scrape and validate the first valid URL for the .asc GPG signature file
-    local GPG_SIG_URL=$(curl -sL $DOC_URL | grep -oP 'https://[^\"]+flow-collector_[0-9]+\.[0-9]+\.[0-9]+_linux_amd64\.deb\.asc' | head -n 1)
+   # Scrape and validate the first valid URL for the GPG signature file (elastiflow.pgp)
+    local GPG_SIG_URL=$(curl -sL $DOC_URL | grep -oP 'https://[^\"]+elastiflow\.pgp' | head -n 1)
     GPG_SIG_URL=$(validate_url "$GPG_SIG_URL")
 
     # Scrape for the GPG key ID
