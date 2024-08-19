@@ -11,9 +11,6 @@ install_flow_collector() {
         local CHECKSUM=$(curl -sL $DOC_URL | grep -oP 'SHA256: \K[0-9a-f]{64}')
         local GPG_URL=$(curl -sL $DOC_URL | grep -oP 'https://[^\"]+\.asc')
 
-        printf "outputting deb url\n\n"
-        echo $DEB_URL
-
         # Check if the variables are populated
         if [ -z "$DEB_URL" ]; then
             echo "Error: Could not find the .deb file URL in $DOC_URL."
