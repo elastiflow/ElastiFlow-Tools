@@ -28,7 +28,7 @@ install_flow_collector() {
     GPG_SIG_URL=$(validate_url "$GPG_SIG_URL")
 
     # Scrape for the GPG key ID
-    local GPG_KEY_ID=$(curl -sL $DOC_URL | grep -oP 'echo "[A-F0-9]{16}:[0-9]:"' | grep -oP '[A-F0-9]{16}')
+    local GPG_KEY_ID=$(curl -sL $DOC_URL | grep -oP 'class="token plain">echo &quot;\K[A-F0-9]{40}' | head -n 1)
 
     # Check if the DEB_URL was found and is valid
     if [ -z "$DEB_URL" ]; then
