@@ -23,12 +23,16 @@ install_flow_collector() {
     local SHA256_URL=$(curl -sL $DOC_URL | grep -oP 'https://[^\"]+flow-collector_[0-9]+\.[0-9]+\.[0-9]+_linux_amd64\.deb\.sha256' | head -n 1)
     SHA256_URL=$(validate_url "$SHA256_URL")
 
-   # Scrape and validate the first valid URL for the GPG signature file (elastiflow.pgp)
-    local GPG_SIG_URL=$(curl -sL $DOC_URL | grep -oP 'https://[^\"]+elastiflow\.pgp' | head -n 1)
+    # Scrape and validate the first valid URL for the GPG signature file (.deb.sig)
+    local GPG_SIG_URL=$(curl -sL $DOC_URL | grep -oP 'https://[^\"]+flow-collector_[0-9]+\.[0-9]+\.[0-9]+_linux_amd64\.deb\.sig' | head -n 1)
     GPG_SIG_URL=$(validate_url "$GPG_SIG_URL")
 
     # Scrape for the GPG key ID
     local GPG_KEY_ID=$(curl -sL $DOC_URL | grep -oP 'class="token plain">echo &quot;\K[A-F0-9]{40}' | head -n 1)
+
+    # Scrape and validate the URL for the public key (.pgp)
+    local GPG_PUBKEY_URL=$(curl -sL $DOC_URL | grep -oP 'https://[^\"]+elastiflow\.pgp' | head -n 1)
+    GPG_PUBKEY_URL=$(validate_url "$GPG_PUBKEY_URL")
 
     # Check if the DEB_URL was found and is valid
     if [ -z "$DEB_URL" ]; then
@@ -40,6 +44,8 @@ install_flow_collector() {
     echo "Found SHA256 URL: $SHA256_URL"
     echo "Found GPG Signature URL: $GPG_SIG_URL"
     echo "Found GPG Key ID: $GPG_KEY_ID"
+    echo "Found GPG public key URL: $GPG_PUBKEY_URL"
+
 
     # Extract the filename from the URL
     local FILENAME=$(basename "$DEB_URL")
@@ -98,10 +104,43 @@ install_flow_collector() {
         }
     fi
 
+
+# Attempt to download the GPG public key file
+if [ -n "$GPG_PUBKEY_URL" ]; then
+    GPG_PUBKEY_FILE="$DOWNLOAD_DIR/$(basename $GPG_PUBKEY_URL)"
+    wget -O "$GPG_PUBKEY_FILE" "$GPG_PUBKEY_URL" || {
+        echo "Warning: Failed to download GPG public key file."
+        read -p "Do you want to continue without the GPG public key? [y/N]: " CONFIRM
+        if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+            echo "Installation aborted by user."
+            exit 1
+        fi
+        GPG_PUBKEY_URL=""
+    }
+fi
+
+# Import GPG public key
+if [ -n "$GPG_PUBKEY_FILE" ] && [ -f "$GPG_PUBKEY_FILE" ]; then
+    echo "Importing GPG public key..."
+    gpg --import "$GPG_PUBKEY_FILE" || {
+        echo "Warning: Failed to import GPG public key."
+        read -p "Do you want to continue without importing the GPG public key? [y/N]: " CONFIRM
+        if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+            echo "Installation aborted by user."
+            exit 1
+        fi
+    }
+else
+    echo "No GPG public key file found. Skipping GPG key import."
+fi
+
+
+
+
     # Import and trust the GPG key
     if [ -n "$GPG_KEY_ID" ]; then
         echo "Importing and trusting the GPG key..."
-        gpg --keyserver keyserver.ubuntu.com --recv-keys "$GPG_KEY_ID" || {
+        echo "$GPG_KEY_ID:6:" | gpg --import-ownertrust || {
             echo "Warning: Failed to import GPG key."
             read -p "Do you want to continue without GPG key import? [y/N]: " CONFIRM
             if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
@@ -110,11 +149,6 @@ install_flow_collector() {
             fi
         }
 
-        echo "Trusting the GPG key..."
-        echo "$GPG_KEY_ID:6:" | gpg --import-ownertrust || {
-            echo "Warning: Failed to trust the GPG key."
-            exit 1
-        }
     else
         echo "No GPG key ID found. Skipping GPG key import."
     fi
