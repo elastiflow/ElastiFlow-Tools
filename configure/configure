@@ -1624,7 +1624,7 @@ while true; do
         echo "17. Reset Elasticsearch password"
         echo "18. Back"
         echo "19. Update ElastiFlow NetObserv"
-        read -p "Enter your choice (1-20): " utility_choice
+        read -p "Enter your choice (1-19): " utility_choice
         clear
         case $utility_choice in
           1)
@@ -1708,7 +1708,7 @@ while true; do
             install_flow_collector
             ;;
           *)
-            print_message "Invalid choice. Please enter a number between 1 and 20." "$RED"
+            print_message "Invalid choice. Please enter a number between 1 and 19." "$RED"
             ;;
         esac
       done
