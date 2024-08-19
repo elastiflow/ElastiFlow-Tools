@@ -192,13 +192,43 @@ verify_ef_configured_pw_for_elastic(){
   fi
 }
 
+display_system_info() {
+  # Main partition size in GB
+  main_partition_size=$(df -h / | awk 'NR==2 {print $2}')
+  echo "Main partition size: $main_partition_size"
+
+  # Used partition space in GB
+  used_partition_space=$(df -h / | awk 'NR==2 {print $3}')
+  echo "Used partition space: $used_partition_space"
+
+  # Free partition space in percentage and GB
+  free_partition_space_percent=$(df -h / | awk 'NR==2 {print $5}')
+  free_partition_space_gb=$(df -h / | awk 'NR==2 {print $4}')
+  echo "Free partition space: $free_partition_space_gb ($free_partition_space_percent)"
+
+  # Installed RAM in GB
+  installed_ram_gb=$(free -g | awk '/^Mem:/{print $2}')
+  echo "Installed RAM: ${installed_ram_gb}GB"
+
+  # Number of physical CPUs
+  physical_cpus=$(lscpu | awk '/^Socket\(s\):/{print $2}')
+  echo "Number of physical CPUs: $physical_cpus"
+
+  # Number of physical cores per CPU
+  cores_per_cpu=$(lscpu | awk '/^Core\(s\) per socket:/{print $4}')
+  echo "Number of physical cores per CPU: $cores_per_cpu"
+
+  # Total number of cores
+  total_cores=$((physical_cpus * cores_per_cpu))
+  echo "Total number of cores: $total_cores"
+}
+
 display_versions() {
   printf "*********************************************\n"
-  
   version=$(/usr/share/elastiflow/bin/flowcoll -version)
   printf "Installed ElastiFlow version: $version\n"
-  version=$kibana_dashboards_version
-  printf "Installed ElastiFlow Dashboards version: $kibana_dashboards_codex_ecs $version\n"
+  #version=$kibana_dashboards_version
+  #printf "Installed ElastiFlow Dashboards version: $kibana_dashboards_codex_ecs $version\n"
   version=$(/usr/share/kibana/bin/kibana --version --allow-root | jq -r '.config.serviceVersion.value' 2>/dev/null)
   printf "Installed Kibana version: $version\n"
   version=$(/usr/share/elasticsearch/bin/elasticsearch --version | grep -oP 'Version: \K[\d.]+')
@@ -212,6 +242,153 @@ display_versions() {
   display_system_info
 }
 
+#!/bin/bash
+
+# Function to install ElastiFlow Flow Collector from a dynamically scraped URL with verification
+install_flow_collector() {
+    local DOC_URL="https://docs.elastiflow.com/docs/flowcoll/install_linux"
+    
+    while true; do
+        # Scrape the URL for the .deb file, checksum, and GPG signature
+        echo "Scraping $DOC_URL for download details..."
+        local DEB_URL=$(curl -s $DOC_URL | grep -oP 'https://[^\"]+\.deb')
+        local CHECKSUM=$(curl -s $DOC_URL | grep -oP 'SHA256: \K[0-9a-f]{64}')
+        local GPG_URL=$(curl -s $DOC_URL | grep -oP 'https://[^\"]+\.asc')
+        local REMOTE_VERSION=$(basename $DEB_URL | grep -oP 'flow-collector_\K[0-9\.]+')
+
+        if [ -z "$DEB_URL" ] || [ -z "$CHECKSUM" ] || [ -z "$GPG_URL" ] || [ -z "$REMOTE_VERSION" ]; then
+            echo "Error: Could not retrieve necessary information from $DOC_URL."
+            read -p "Do you want to retry? [y/N]: " RETRY
+            if [[ ! "$RETRY" =~ ^[Yy]$ ]]; then
+                echo "Operation aborted by user."
+                return 1
+            fi
+            continue
+        fi
+
+        # Check the currently installed version of ElastiFlow Flow Collector
+        local CURRENT_VERSION=$(dpkg -s flow-collector 2>/dev/null | grep '^Version:' | awk '{print $2}')
+
+        echo "Current installed version: ${CURRENT_VERSION:-None}"
+        echo "Remote available version: $REMOTE_VERSION"
+
+        # Prompt the user to confirm if they want to install the remote version
+        read -p "Do you want to install the remote version $REMOTE_VERSION? [y/N]: " CONFIRM
+        if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+            echo "Installation aborted by user."
+            return 0
+        fi
+
+        # Set the temporary download directory
+        local DOWNLOAD_DIR="/tmp"
+        local DEB_FILE="$DOWNLOAD_DIR/$(basename $DEB_URL)"
+        local GPG_FILE="$DOWNLOAD_DIR/$(basename $GPG_URL)"
+
+        # Download the .deb file
+        echo "Downloading .deb file from $DEB_URL to $DOWNLOAD_DIR..."
+        wget -O $DEB_FILE $DEB_URL || {
+            echo "Error: Failed to download .deb file."
+            read -p "Do you want to retry? [y/N]: " RETRY
+            if [[ ! "$RETRY" =~ ^[Yy]$ ]]; then
+                echo "Operation aborted by user."
+                return 1
+            fi
+            continue
+        }
+
+        # Download the GPG signature file
+        echo "Downloading GPG signature from $GPG_URL to $DOWNLOAD_DIR..."
+        wget -O $GPG_FILE $GPG_URL || {
+            echo "Error: Failed to download GPG signature file."
+            read -p "Do you want to retry? [y/N]: " RETRY
+            if [[ ! "$RETRY" =~ ^[Yy]$ ]]; then
+                echo "Operation aborted by user."
+                return 1
+            fi
+            continue
+        }
+
+        # Verify the checksum
+        echo "Verifying checksum..."
+        local ACTUAL_CHECKSUM=$(sha256sum $DEB_FILE | awk '{print $1}')
+        if [ "$ACTUAL_CHECKSUM" != "$CHECKSUM" ]; then
+            echo "Error: Checksum verification failed."
+            rm -f $DEB_FILE $GPG_FILE
+            read -p "Do you want to retry? [y/N]: " RETRY
+            if [[ ! "$RETRY" =~ ^[Yy]$ ]]; then
+                echo "Operation aborted by user."
+                return 1
+            fi
+            continue
+        else
+            echo "Checksum verification passed."
+        fi
+
+        # Import the GPG key
+        echo "Importing GPG key..."
+        gpg --keyserver keyserver.ubuntu.com --recv-keys "YOUR_ELASTIFLOW_PUBLIC_KEY_ID" || {
+            echo "Error: Failed to import GPG key."
+            read -p "Do you want to retry? [y/N]: " RETRY
+            if [[ ! "$RETRY" =~ ^[Yy]$ ]]; then
+                echo "Operation aborted by user."
+                return 1
+            fi
+            continue
+        }
+
+        # Verify the GPG signature
+        echo "Verifying GPG signature..."
+        gpg --verify $GPG_FILE $DEB_FILE
+        if [ $? -ne 0 ]; then
+            echo "Error: GPG verification failed."
+            rm -f $DEB_FILE $GPG_FILE
+            read -p "Do you want to retry? [y/N]: " RETRY
+            if [[ ! "$RETRY" =~ ^[Yy]$ ]]; then
+                echo "Operation aborted by user."
+                return 1
+            fi
+            continue
+        else
+            echo "GPG verification passed."
+        fi
+
+        # Install the .deb package using apt-get
+        echo "Installing the downloaded .deb file using apt-get..."
+        apt-get install -y $DEB_FILE || {
+            echo "Error: Failed to install the package."
+            read -p "Do you want to retry? [y/N]: " RETRY
+            if [[ ! "$RETRY" =~ ^[Yy]$ ]]; then
+                echo "Operation aborted by user."
+                return 1
+            fi
+            continue
+        }
+
+        # Enable the service to start on boot and start it immediately
+        local SERVICE_NAME="flow-collector"
+        echo "Enabling and starting the $SERVICE_NAME service..."
+        systemctl enable $SERVICE_NAME && systemctl start $SERVICE_NAME || {
+            echo "Error: Failed to enable or start the service."
+            read -p "Do you want to retry? [y/N]: " RETRY
+            if [[ ! "$RETRY" =~ ^[Yy]$ ]]; then
+                echo "Operation aborted by user."
+                return 1
+            fi
+            continue
+        }
+
+        # Check the status of the service
+        echo "Checking the status of the $SERVICE_NAME service..."
+        systemctl status $SERVICE_NAME
+
+        # Clean up the downloaded files
+        echo "Cleaning up..."
+        rm -f $DEB_FILE $GPG_FILE
+
+        echo "Installation completed successfully."
+        break
+    done
+}
 
 change_elasticsearch_password() {
   while true; do
@@ -1448,6 +1625,7 @@ while true; do
         echo "16. Install SNMP Collector"
         echo "17. Reset Elasticsearch password"
         echo "18. Back"
+        echo "19. Update ElastiFlow NetObserv"
         read -p "Enter your choice (1-20): " utility_choice
         clear
         case $utility_choice in
@@ -1527,6 +1705,9 @@ while true; do
             ;;
           18)
             break
+            ;;
+          19)
+            install_flow_collector
             ;;
           *)
             print_message "Invalid choice. Please enter a number between 1 and 20." "$RED"
