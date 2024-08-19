@@ -242,8 +242,6 @@ display_versions() {
   display_system_info
 }
 
-#!/bin/bash
-
 # Function to install ElastiFlow Flow Collector from a dynamically scraped URL with verification
 install_flow_collector() {
     local DOC_URL="https://docs.elastiflow.com/docs/flowcoll/install_linux"
@@ -286,7 +284,7 @@ install_flow_collector() {
 
         # Download the .deb file
         echo "Downloading .deb file from $DEB_URL to $DOWNLOAD_DIR..."
-        wget -O $DEB_FILE $DEB_URL || {
+        wget -P /tmp -O $DEB_FILE $DEB_URL || {
             echo "Error: Failed to download .deb file."
             read -p "Do you want to retry? [y/N]: " RETRY
             if [[ ! "$RETRY" =~ ^[Yy]$ ]]; then
@@ -298,7 +296,7 @@ install_flow_collector() {
 
         # Download the GPG signature file
         echo "Downloading GPG signature from $GPG_URL to $DOWNLOAD_DIR..."
-        wget -O $GPG_FILE $GPG_URL || {
+        wget -P /tmp -O $GPG_FILE $GPG_URL || {
             echo "Error: Failed to download GPG signature file."
             read -p "Do you want to retry? [y/N]: " RETRY
             if [[ ! "$RETRY" =~ ^[Yy]$ ]]; then
@@ -881,7 +879,7 @@ restore_latest_backup() {
 }
 
 download_default_conf() {
-  wget -O flow-collector_"$elastiflow_flow_collector_version"_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_"$elastiflow_flow_collector_version"_linux_amd64.deb
+  wget -P /tmp -O flow-collector_"$elastiflow_flow_collector_version"_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_"$elastiflow_flow_collector_version"_linux_amd64.deb
   dpkg-deb -xv flow-collector_"$elastiflow_flow_collector_version"_linux_amd64.deb /tmp/elastiflow > /dev/null
   mkdir -p /etc/elastiflow/
   cp /tmp/elastiflow/etc/elastiflow/flowcoll.yml /etc/elastiflow/
