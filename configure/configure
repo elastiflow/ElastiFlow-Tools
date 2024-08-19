@@ -192,6 +192,26 @@ verify_ef_configured_pw_for_elastic(){
   fi
 }
 
+display_versions() {
+  printf "*********************************************\n"
+  
+  version=$(/usr/share/elastiflow/bin/flowcoll -version)
+  printf "Installed ElastiFlow version: $version\n"
+  version=$kibana_dashboards_version
+  printf "Installed ElastiFlow Dashboards version: $kibana_dashboards_codex_ecs $version\n"
+  version=$(/usr/share/kibana/bin/kibana --version --allow-root | jq -r '.config.serviceVersion.value' 2>/dev/null)
+  printf "Installed Kibana version: $version\n"
+  version=$(/usr/share/elasticsearch/bin/elasticsearch --version | grep -oP 'Version: \K[\d.]+')
+  printf "Installed Elasticsearch version: $version\n" 
+  version=$(java -version 2>&1)
+  printf "Installed Java version: $version\n"
+  version=$(lsb_release -d | awk -F'\t' '{print $2}')
+  printf "Operating System: $version\n"
+  display_version "/home/user/configure"
+  display_version "/home/user/support"
+  display_system_info
+}
+
 
 change_elasticsearch_password() {
   while true; do
