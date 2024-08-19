@@ -1,183 +1,175 @@
 #!/bin/bash
 
-# Function to install ElastiFlow Flow Collector from a dynamically scraped URL with verification
+# Function to install ElastiFlow Flow Collector with checksum and GPG verification
 install_flow_collector() {
     local DOC_URL="https://docs.elastiflow.com/docs/flowcoll/install_linux"
-    
-    while true; do
-        # Scrape the URL for the .deb file, checksum, and GPG signature
-        echo "Scraping $DOC_URL for download details..."
-        local DEB_URL=$(curl -sL $DOC_URL | grep -oP 'https://[^ ]+flow-collector_[0-9]+\.[0-9]+\.[0-9]+_linux_amd64\.deb')
-        local CHECKSUM=$(curl -sL $DOC_URL | grep -oP 'SHA256: \K[0-9a-f]{64}')
-        local GPG_URL=$(curl -sL $DOC_URL | grep -oP 'https://[^\"]+\.asc')
 
-        # Check if the variables are populated
-        if [ -z "$DEB_URL" ]; then
-            echo "Error: Could not find the .deb file URL in $DOC_URL."
-            read -p "Do you want to retry? [y/N]: " RETRY
-            if [[ ! "$RETRY" =~ ^[Yy]$ ]]; then
-                echo "Operation aborted by user."
-                return 1
-            fi
-            continue
+    echo "Scraping $DOC_URL for download details..."
+
+    # Function to validate a URL
+    validate_url() {
+        if curl --output /dev/null --silent --head --fail "$1"; then
+            echo "$1"
+        else
+            echo ""
         fi
+    }
 
-        if [ -z "$CHECKSUM" ]; then
-            echo "Error: Could not find the checksum in $DOC_URL."
-            read -p "Do you want to retry? [y/N]: " RETRY
-            if [[ ! "$RETRY" =~ ^[Yy]$ ]]; then
-                echo "Operation aborted by user."
-                return 1
+    # Scrape and validate the first valid URL for the .deb file
+    local DEB_URL=$(curl -sL $DOC_URL | grep -oP 'https://[^\"]+flow-collector_[0-9]+\.[0-9]+\.[0-9]+_linux_amd64\.deb' | head -n 1)
+    DEB_URL=$(validate_url "$DEB_URL")
+
+    # Scrape and validate the first valid URL for the .sha256 checksum file
+    local SHA256_URL=$(curl -sL $DOC_URL | grep -oP 'https://[^\"]+flow-collector_[0-9]+\.[0-9]+\.[0-9]+_linux_amd64\.deb\.sha256' | head -n 1)
+    SHA256_URL=$(validate_url "$SHA256_URL")
+
+    # Scrape and validate the first valid URL for the .asc GPG signature file
+    local GPG_SIG_URL=$(curl -sL $DOC_URL | grep -oP 'https://[^\"]+flow-collector_[0-9]+\.[0-9]+\.[0-9]+_linux_amd64\.deb\.asc' | head -n 1)
+    GPG_SIG_URL=$(validate_url "$GPG_SIG_URL")
+
+    # Scrape for the GPG key ID
+    local GPG_KEY_ID=$(curl -sL $DOC_URL | grep -oP 'echo "[A-F0-9]{16}:[0-9]:"' | grep -oP '[A-F0-9]{16}')
+
+    # Check if the DEB_URL was found and is valid
+    if [ -z "$DEB_URL" ]; then
+        echo "Error: Could not find a valid .deb file URL in $DOC_URL."
+        exit 1
+    fi
+
+    echo "Found DEB URL: $DEB_URL"
+    echo "Found SHA256 URL: $SHA256_URL"
+    echo "Found GPG Signature URL: $GPG_SIG_URL"
+    echo "Found GPG Key ID: $GPG_KEY_ID"
+
+    # Extract the filename from the URL
+    local FILENAME=$(basename "$DEB_URL")
+
+    # Extract the version number from the filename
+    local REMOTE_VERSION=$(echo "$FILENAME" | grep -oP 'flow-collector_\K[0-9]+\.[0-9]+\.[0-9]+')
+
+    # Check the currently installed version of ElastiFlow
+    local CURRENT_VERSION=$(/usr/share/elastiflow/bin/flowcoll -version 2>/dev/null || echo "None")
+
+    echo "Current installed version: ${CURRENT_VERSION}"
+    echo "Remote available version: $REMOTE_VERSION"
+
+    # Prompt the user to confirm if they want to install the remote version
+    read -p "Do you want to install the remote version $REMOTE_VERSION? [y/N]: " CONFIRM
+    if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+        echo "Installation aborted by user."
+        exit 0
+    fi
+
+    # Download all files to /tmp
+    local DOWNLOAD_DIR="/tmp"
+    # Extract the filename from the URL and combine it with the download directory path
+    local DEB_FILE="$DOWNLOAD_DIR/$FILENAME"
+    echo "DEB file will be downloaded to: $DEB_FILE"
+
+    # Download the .deb file
+    wget -O "$DEB_FILE" "$DEB_URL" || {
+        echo "Error: Failed to download .deb file."
+        exit 1
+    }
+
+    # Attempt to download the checksum file
+    if [ -n "$SHA256_URL" ]; then
+        wget -O "$DOWNLOAD_DIR/$(basename $SHA256_URL)" "$SHA256_URL" || {
+            echo "Warning: Failed to download checksum file."
+            read -p "Do you want to continue without checksum verification? [y/N]: " CONFIRM
+            if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+                echo "Installation aborted by user."
+                exit 1
             fi
-            continue
-        fi
+            SHA256_URL=""
+        }
+    fi
 
-        if [ -z "$GPG_URL" ]; then
-            echo "Error: Could not find the GPG signature URL in $DOC_URL."
-            read -p "Do you want to retry? [y/N]: " RETRY
-            if [[ ! "$RETRY" =~ ^[Yy]$ ]]; then
-                echo "Operation aborted by user."
-                return 1
+    # Attempt to download the GPG signature file
+    if [ -n "$GPG_SIG_URL" ]; then
+        wget -O "$DOWNLOAD_DIR/$(basename $GPG_SIG_URL)" "$GPG_SIG_URL" || {
+            echo "Warning: Failed to download GPG signature file."
+            read -p "Do you want to continue without GPG signature verification? [y/N]: " CONFIRM
+            if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+                echo "Installation aborted by user."
+                exit 1
             fi
-            continue
-        fi
+            GPG_SIG_URL=""
+        }
+    fi
 
-        local REMOTE_VERSION=$(basename $DEB_URL | grep -oP 'flow-collector_\K[0-9\.]+')
-
-        # Check the currently installed version of ElastiFlow Flow Collector
-        local CURRENT_VERSION=$(dpkg -s flow-collector 2>/dev/null | grep '^Version:' | awk '{print $2}')
-
-        echo "Current installed version: ${CURRENT_VERSION:-None}"
-        echo "Remote available version: $REMOTE_VERSION"
-
-        # Prompt the user to confirm if they want to install the remote version
-        read -p "Do you want to install the remote version $REMOTE_VERSION? [y/N]: " CONFIRM
-        if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
-            echo "Installation aborted by user."
-            return 0
-        fi
-
-        # Set the temporary download directory
-        local DOWNLOAD_DIR="/tmp"
-        local DEB_FILE="$DOWNLOAD_DIR/$(basename $DEB_URL)"
-        local GPG_FILE="$DOWNLOAD_DIR/$(basename $GPG_URL)"
-
-        # Download the .deb file
-        echo "Downloading .deb file from $DEB_URL to $DOWNLOAD_DIR..."
-        wget -O $DEB_FILE $DEB_URL || {
-            echo "Error: Failed to download .deb file."
-            read -p "Do you want to retry? [y/N]: " RETRY
-            if [[ ! "$RETRY" =~ ^[Yy]$ ]]; then
-                echo "Operation aborted by user."
-                return 1
+    # Import and trust the GPG key
+    if [ -n "$GPG_KEY_ID" ]; then
+        echo "Importing and trusting the GPG key..."
+        gpg --keyserver keyserver.ubuntu.com --recv-keys "$GPG_KEY_ID" || {
+            echo "Warning: Failed to import GPG key."
+            read -p "Do you want to continue without GPG key import? [y/N]: " CONFIRM
+            if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+                echo "Installation aborted by user."
+                exit 1
             fi
-            continue
         }
 
-        # Download the GPG signature file
-        echo "Downloading GPG signature from $GPG_URL to $DOWNLOAD_DIR..."
-        wget -O $GPG_FILE $GPG_URL || {
-            echo "Error: Failed to download GPG signature file."
-            read -p "Do you want to retry? [y/N]: " RETRY
-            if [[ ! "$RETRY" =~ ^[Yy]$ ]]; then
-                echo "Operation aborted by user."
-                return 1
-            fi
-            continue
+        echo "Trusting the GPG key..."
+        echo "$GPG_KEY_ID:6:" | gpg --import-ownertrust || {
+            echo "Warning: Failed to trust the GPG key."
+            exit 1
         }
+    else
+        echo "No GPG key ID found. Skipping GPG key import."
+    fi
 
-        # Verify the checksum
+    # Verify the checksum if the checksum file was downloaded
+    if [ -n "$SHA256_URL" ]; then
         echo "Verifying checksum..."
         local ACTUAL_CHECKSUM=$(sha256sum $DEB_FILE | awk '{print $1}')
-        if [ "$ACTUAL_CHECKSUM" != "$CHECKSUM" ]; then
+        local EXPECTED_CHECKSUM=$(cat "$DOWNLOAD_DIR/$(basename $SHA256_URL)" | awk '{print $1}')
+        if [ "$ACTUAL_CHECKSUM" != "$EXPECTED_CHECKSUM" ]; then
             echo "Error: Checksum verification failed."
-            rm -f $DEB_FILE $GPG_FILE
-            read -p "Do you want to retry? [y/N]: " RETRY
-            if [[ ! "$RETRY" =~ ^[Yy]$ ]]; then
-                echo "Operation aborted by user."
-                return 1
-            fi
-            continue
+            rm -f $DEB_FILE "$DOWNLOAD_DIR/$(basename $SHA256_URL)"
+            exit 1
         else
             echo "Checksum verification passed."
         fi
+    else
+        echo "Skipping checksum verification."
+    fi
 
-        # Import the GPG key
-        echo "Importing GPG key..."
-        gpg --keyserver keyserver.ubuntu.com --recv-keys "YOUR_ELASTIFLOW_PUBLIC_KEY_ID" || {
-            echo "Error: Failed to import GPG key."
-            read -p "Do you want to retry? [y/N]: " RETRY
-            if [[ ! "$RETRY" =~ ^[Yy]$ ]]; then
-                echo "Operation aborted by user."
-                return 1
-            fi
-            continue
-        }
-
-        # Verify the GPG signature
+    # Verify the GPG signature if the signature file was downloaded
+    if [ -n "$GPG_SIG_URL" ]; then
         echo "Verifying GPG signature..."
-        gpg --verify $GPG_FILE $DEB_FILE
-        if [ $? -ne 0 ]; then
-            echo "Error: GPG verification failed."
-            rm -f $DEB_FILE $GPG_FILE
-            read -p "Do you want to retry? [y/N]: " RETRY
-            if [[ ! "$RETRY" =~ ^[Yy]$ ]]; then
-                echo "Operation aborted by user."
-                return 1
-            fi
-            continue
-        else
-            echo "GPG verification passed."
-        fi
-
-        # Install the .deb package
-        echo "Installing the downloaded .deb file..."
-        sudo dpkg -i $DEB_FILE || {
-            echo "Error: Failed to install the package."
-            read -p "Do you want to retry? [y/N]: " RETRY
-            if [[ ! "$RETRY" =~ ^[Yy]$ ]]; then
-                echo "Operation aborted by user."
-                return 1
-            fi
-            continue
+        gpg --verify "$DOWNLOAD_DIR/$(basename $GPG_SIG_URL)" $DEB_FILE || {
+            echo "Warning: GPG verification failed. Continuing without GPG verification."
         }
+        echo "GPG verification passed."
+    else
+        echo "No GPG signature file found. Skipping GPG verification."
+    fi
 
-        # Fix dependencies if needed
-        echo "Fixing dependencies..."
-        sudo apt-get install -f -y || {
-            echo "Error: Failed to fix dependencies."
-            read -p "Do you want to retry? [y/N]: " RETRY
-            if [[ ! "$RETRY" =~ ^[Yy]$ ]]; then
-                echo "Operation aborted by user."
-                return 1
-            fi
-            continue
-        }
+    # Install the .deb package using apt
+    echo "Installing the downloaded .deb file using apt..."
+    sudo apt install -y $DEB_FILE || {
+        echo "Error: Failed to install the package."
+        exit 1
+    }
 
-        # Enable the service to start on boot and start it immediately
-        local SERVICE_NAME="flow-collector"
-        echo "Enabling and starting the $SERVICE_NAME service..."
-        sudo systemctl enable $SERVICE_NAME && sudo systemctl start $SERVICE_NAME || {
-            echo "Error: Failed to enable or start the service."
-            read -p "Do you want to retry? [y/N]: " RETRY
-            if [[ ! "$RETRY" =~ ^[Yy]$ ]]; then
-                echo "Operation aborted by user."
-                return 1
-            fi
-            continue
-        }
+    # Enable the service to start on boot and start it immediately
+    local SERVICE_NAME="flow-collector"
+    echo "Enabling and starting the $SERVICE_NAME service..."
+    sudo systemctl enable $SERVICE_NAME && sudo systemctl start $SERVICE_NAME || {
+        echo "Error: Failed to enable or start the service."
+        exit 1
+    }
 
-        # Check the status of the service
-        echo "Checking the status of the $SERVICE_NAME service..."
-        sudo systemctl status $SERVICE_NAME
+    # Check the status of the service
+    echo "Checking the status of the $SERVICE_NAME service..."
+    sudo systemctl status $SERVICE_NAME
 
-        # Clean up the downloaded files
-        echo "Cleaning up..."
-        rm -f $DEB_FILE $GPG_FILE
+    # Clean up the downloaded files
+    echo "Cleaning up..."
+    rm -f $DEB_FILE "$DOWNLOAD_DIR/$(basename $SHA256_URL)" "$DOWNLOAD_DIR/$(basename $GPG_SIG_URL)"
 
-        echo "Installation completed successfully."
-        break
-    done
+    echo "Installation completed successfully."
 }
 
 # Call the function
