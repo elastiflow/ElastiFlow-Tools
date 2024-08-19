@@ -187,18 +187,6 @@ fi
         exit 1
     }
 
-    # Enable the service to start on boot and start it immediately
-    local SERVICE_NAME="flow-collector"
-    echo "Enabling and starting the $SERVICE_NAME service..."
-    sudo systemctl enable $SERVICE_NAME && sudo systemctl start $SERVICE_NAME || {
-        echo "Error: Failed to enable or start the service."
-        exit 1
-    }
-
-    # Check the status of the service
-    echo "Checking the status of the $SERVICE_NAME service..."
-    sudo systemctl status $SERVICE_NAME
-
     # Clean up the downloaded files
     echo "Cleaning up..."
     rm -f $DEB_FILE "$DOWNLOAD_DIR/$(basename $SHA256_URL)" "$DOWNLOAD_DIR/$(basename $GPG_SIG_URL)"
