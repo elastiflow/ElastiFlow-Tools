@@ -1,5 +1,20 @@
 #!/bin/bash
 
+########################################################
+
+elastiflow_version="7.1.2"
+elasticsearch_version="8.15.0"
+kibana_version="8.15.0"
+kibana_dashboards_version="8.14.x"
+kibana_dashboards_codex_ecs="codex"
+flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
+elastic_username="elastic"
+elastic_password2="elastic"
+# vm specs 64 gigs ram, 16 vcpus, 2 TB disk, license for up to 64k FPS, fpus 4 - so there's a 16k FPS limit, 1 week retention
+fpus="4"
+########################################################
+
+
 create_banner() {
   # Backup the existing /etc/issue file
   cp /etc/issue /etc/issue.bak
