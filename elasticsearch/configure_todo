@@ -164,3 +164,20 @@ install_elastiflow() {
   systemctl daemon-reload && systemctl enable flowcoll.service && systemctl start flowcoll.service
   sleep_message "Giving ElastiFlow service time to stabilize" 10
 }
+
+download_file() {
+  local url=$1
+  local target_path=$2
+  curl -s -o "$target_path" "$url"
+  if [ $? -eq 0 ]; then
+    chmod +x "$target_path"
+    echo "Downloaded and made $target_path executable."
+  else
+    echo "Failed to download $target_path.\n\n"
+  fi
+}
+
+download_aux_files(){
+  download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/configure/configure" "/home/user/configure"
+}
+
