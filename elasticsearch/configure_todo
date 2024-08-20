@@ -1,0 +1,51 @@
+create_banner() {
+  # Backup the existing /etc/issue file
+  cp /etc/issue /etc/issue.bak
+
+  # Create the new banner content
+  banner_content=$(cat << EOF
+
+@@@@@@@@@@@@@@ @@@@@                                @@@@     @@@@  @@@@@@@@@@@@@@@ @@@@
+@@@@@@@@@@@@@  @@@@@                               @@@@@     @@@@  @@@@@@@@@@@@@@  @@@@
+@@@@           @@@@@     @@@@@@        @@@@@@    @@@@@@@@@@  @@@@  @@@@@           @@@@     @@@@@@@@   @@@@     @@@@     @@@@
+@@@@           @@@@@  @@@@@@@@@@@@  @@@@@@@@@@@@ @@@@@@@@@@        @@@@@           @@@@   @@@@@@@@@@@  @@@@@    @@@@@    @@@@
+@@@@@@@@@@     @@@@@ @@@@@@  @@@@@  @@@@@  @@@@@@@@@@@@@@@   @@@@  @@@@@@@@@@@     @@@@  @@@@@@@@@@@@@@ @@@@   @@@@@@   @@@@@
+@@@@@@@@@      @@@@@          @@@@@ @@@@@@@@       @@@@@     @@@@  @@@@@@@@@@      @@@@ @@@@@     @@@@@ @@@@   @@@@@@@  @@@@
+@@@@@@@@       @@@@@  @@@@@@@@@@@@@ @@@@@@@@@@@@   @@@@@     @@@@  @@@@@@@@@       @@@@ @@@@@      @@@@  @@@@ @@@@ @@@ @@@@@
+@@@@           @@@@@ @@@@@@@@@@@@@@    @@@@@@@@@@  @@@@@     @@@@  @@@@@           @@@@ @@@@@     @@@@@  @@@@ @@@  @@@@@@@@
+@@@@@@@@@@@@@@ @@@@@ @@@@    @@@@@@@@@@@    @@@@@  @@@@@@    @@@@  @@@@@           @@@@ @@@@@@   @@@@@@   @@@@@@@   @@@@@@@
+@@@@@@@@@@@@@@ @@@@@ @@@@@@@@@@@@@@ @@@@@@@@@@@@    @@@@@@@  @@@@  @@@@@           @@@@  @@@@@@@@@@@@@    @@@@@@    @@@@@@
+@@@@@@@@@@@@@  @@@@@  @@@@@@@ @@@@@  @@@@@@@@@@      @@@@@@  @@@@  @@@@@           @@@@    @@@@@@@@@       @@@@@     @@@@@
+
+=======================================
+
+Welcome to ElastiFlow Virtual Appliance
+
+=======================================
+
+Log in and type sudo ./configure to get started.
+
+Setup Instructions:  https://sites.google.com/elastiflow.com/elastiflow
+Documentation:       https://docs.elastiflow.com
+Community:           https://forum.elastiflow.com
+Slack:               https://elastiflowcommunity.slack.com
+ 
+EOF
+  )
+
+  # Write the new content to /etc/issue
+  echo "$banner_content" > /etc/issue
+  
+  # Write the SSH banner content to /etc/ssh/ssh_banner
+  echo "$banner_content" > /etc/ssh/ssh_banner
+
+  # Update the SSH configuration to use the banner
+  if ! grep -q "^Banner /etc/ssh/ssh_banner" /etc/ssh/sshd_config; then
+    echo "Banner /etc/ssh/ssh_banner" >> /etc/ssh/sshd_config
+  fi
+
+  # Restart the SSH service to apply the changes
+  sudo systemctl restart ssh.service
+}
+
+
