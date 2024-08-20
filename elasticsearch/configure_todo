@@ -1,3 +1,5 @@
+#!/bin/bash
+
 create_banner() {
   # Backup the existing /etc/issue file
   cp /etc/issue /etc/issue.bak
