@@ -48,4 +48,117 @@ EOF
   sudo systemctl restart ssh.service
 }
 
+#no more than 33 percent of total installed memory...not to exceed 31 gigs
+configure_jvm_memory() {
+  printf "\n\n\n*********Configuring JVM memory usage...\n\n"
+  total_mem_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+  one_third_mem_gb=$(echo "$total_mem_kb / 1024 / 1024 / 3" | bc -l)
+  rounded_mem_gb=$(printf "%.0f" $one_third_mem_gb)
+  if [ $rounded_mem_gb -gt 31 ]; then
+      jvm_mem_gb=31
+  else
+      jvm_mem_gb=$rounded_mem_gb
+  fi
+  jvm_options="-Xms${jvm_mem_gb}g\n-Xmx${jvm_mem_gb}g"
+  echo -e $jvm_options | tee /etc/elasticsearch/jvm.options.d/heap.options > /dev/null
+  echo "Elasticsearch JVM options set to use $jvm_mem_gb GB for both -Xms and -Xmx."
+}
 
+configure_kibana() {
+  printf "\n\n\n*********Generating Kibana saved objects encryption key...\n\n"
+  output=$(/usr/share/kibana/bin/kibana-encryption-keys generate -q)
+  key_line=$(echo "$output" | grep '^xpack.encryptedSavedObjects.encryptionKey')
+  if [[ -n "$key_line" ]]; then
+      echo "$key_line" | tee -a /etc/kibana/kibana.yml > /dev/null
+  else
+      echo "No encryption key line found."
+  fi
+  printf "\n\n\n*********Generating Kibana enrollment token...\n\n"
+  kibana_token=$(/usr/share/elasticsearch/bin/elasticsearch-create-enrollment-token -s kibana)
+  printf "\n\n\nKibana enrollment token is:\n\n$kibana_token\n\n"
+  printf "\n\n\n*********Enrolling Kibana with Elastic...\n\n"
+  /usr/share/kibana/bin/kibana-setup --enrollment-token $kibana_token
+  printf "\n\n\n*********Enabling and starting Kibana service...\n\n"
+  systemctl daemon-reload && systemctl enable kibana.service && systemctl start kibana.service
+  sleep_message "Giving Kibana service time to stabilize" 20
+  printf "\n\n\n*********Configuring Kibana - set 0.0.0.0 as server.host\n\n"
+  replace_text "/etc/kibana/kibana.yml" "#server.host: \"localhost\"" "server.host: \"0.0.0.0\"" "${LINENO}"
+  printf "\n\n\n*********Configuring Kibana - set elasticsearch.hosts to localhost instead of interface IP...\n\n"
+  replace_text "/etc/kibana/kibana.yml" "elasticsearch.hosts: \['https:\/\/[^']*'\]" "elasticsearch.hosts: \['https:\/\/localhost:9200'\]" "${LINENO}"
+  replace_text "/etc/kibana/kibana.yml" '#server.publicBaseUrl: ""' 'server.publicBaseUrl: "http://kibana.example.com:5601"' "${LINENO}"
+  printf "\n\n\n*********Configuring Kibana - enabling PNG and PDF report generation...\n\n"
+  echo -e '\nxpack.reporting.capture.browser.chromium.disableSandbox: true\nxpack.reporting.queue.timeout: 120000\nxpack.reporting.capture.timeouts:\n  openUrl: 30000\n  renderComplete: 30000\n  waitForElements: 30000' >> /etc/kibana/kibana.yml
+  systemctl daemon-reload
+  systemctl restart kibana.service
+  sleep_message "Giving Kibana service time to stabilize" 20
+
+}
+
+install_dashboards() {
+  printf "\n\n\n*********Downloading and installing ElastiFlow flow dashboards\n\n"
+  git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
+  
+  response=$(curl --connect-timeout 10 -X POST -u $elastic_username:$elastic_password "localhost:5601/api/saved_objects/_import?overwrite=true" -H "kbn-xsrf: true" --form file=@/etc/elastiflow_for_elasticsearch/kibana/flow/kibana-$kibana_dashboards_version-flow-$kibana_dashboards_codex_ecs.ndjson -H 'kbn-xsrf: true')
+
+  if [ $? -ne 0 ]; then
+    printf "Error: %s\n" "$response"
+    printf "Flow dashboards not installed successfully\n\n"
+  else
+    dashboards_success=$(echo "$response" | jq -r '.success')
+    if [ "$dashboards_success" == "true" ]; then
+        printf "Flow dashboards installed successfully.\n\n"
+    else
+        printf "Flow dashboards not installed successfully\n\n"
+    fi
+  fi
+}
+
+
+install_elastiflow() {
+  elastiflow_config_strings=(
+  "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: 'true'"
+  "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: '${elastiflow_account_id}'"
+  "EF_FLOW_LICENSE_KEY" "EF_FLOW_LICENSE_KEY: '${elastiflow_flow_license_key}'"
+  "EF_FLOW_LICENSED_UNITS" "EF_FLOW_LICENSED_UNITS: $fpus"
+  "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: 'true'"
+  "EF_OUTPUT_ELASTICSEARCH_ADDRESSES" "EF_OUTPUT_ELASTICSEARCH_ADDRESSES: '127.0.0.1:9200'"
+  "EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE: 'false'"
+  "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: '${elastic_password2}'"
+  "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: 'true'"
+  "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION" "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: 'true'"
+  "EF_FLOW_SERVER_UDP_IP" "EF_FLOW_SERVER_UDP_IP: '0.0.0.0'"
+  "EF_FLOW_SERVER_UDP_PORT" "EF_FLOW_SERVER_UDP_PORT: '2055,4739,6343,9995'"
+  "EF_FLOW_SERVER_UDP_READ_BUFFER_MAX_SIZE" "EF_FLOW_SERVER_UDP_READ_BUFFER_MAX_SIZE: '33554432'"
+  "EF_PROCESSOR_DECODE_IPFIX_ENABLE" "EF_PROCESSOR_DECODE_IPFIX_ENABLE: 'true'"
+  "EF_PROCESSOR_DECODE_MAX_RECORDS_PER_PACKET" "EF_PROCESSOR_DECODE_MAX_RECORDS_PER_PACKET: '64'"
+  "EF_PROCESSOR_DECODE_NETFLOW1_ENABLE" "EF_PROCESSOR_DECODE_NETFLOW1_ENABLE: 'true'"
+  "EF_PROCESSOR_DECODE_NETFLOW5_ENABLE" "EF_PROCESSOR_DECODE_NETFLOW5_ENABLE: 'true'"
+  "EF_PROCESSOR_DECODE_NETFLOW6_ENABLE" "EF_PROCESSOR_DECODE_NETFLOW6_ENABLE: 'true'"
+  "EF_PROCESSOR_DECODE_NETFLOW7_ENABLE" "EF_PROCESSOR_DECODE_NETFLOW7_ENABLE: 'true'"
+  "EF_PROCESSOR_DECODE_NETFLOW9_ENABLE" "EF_PROCESSOR_DECODE_NETFLOW9_ENABLE: 'true'"
+  "EF_PROCESSOR_DECODE_SFLOW5_ENABLE" "EF_PROCESSOR_DECODE_SFLOW5_ENABLE: 'true'"
+  "EF_PROCESSOR_DECODE_SFLOW_COUNTERS_ENABLE" "EF_PROCESSOR_DECODE_SFLOW_COUNTERS_ENABLE: 'true'"
+  "EF_PROCESSOR_DECODE_SFLOW_FLOWS_ENABLE" "EF_PROCESSOR_DECODE_SFLOW_FLOWS_ENABLE: 'true'"
+  "EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE: 'true'"
+  "EF_LOGGER_FILE_LOG_ENABLE" "EF_LOGGER_FILE_LOG_ENABLE: 'true'"
+  "EF_OUTPUT_ELASTICSEARCH_TSDS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TSDS_ENABLE: 'true'"
+  "EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE: 'true'"
+  "EF_PROCESSOR_ENRICH_IPADDR_METADATA_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_METADATA_ENABLE: 'true'"  
+  "EF_PROCESSOR_ENRICH_IPADDR_METADATA_USERDEF_PATH" "EF_PROCESSOR_ENRICH_IPADDR_METADATA_USERDEF_PATH: '/etc/elastiflow/metadata/ipaddrs.yml'"
+  "EF_PROCESSOR_ENRICH_IPADDR_METADATA_REFRESH_RATE" "EF_PROCESSOR_ENRICH_IPADDR_METADATA_REFRESH_RATE: 15"
+  "EF_PROCESSOR_ENRICH_NETIF_METADATA_ENABLE" "EF_PROCESSOR_ENRICH_NETIF_METADATA_ENABLE: 'true'"
+  "EF_PROCESSOR_ENRICH_NETIF_METADATA_USERDEF_PATH" "EF_PROCESSOR_ENRICH_NETIF_METADATA_USERDEF_PATH: '/etc/elastiflow/metadata/netifs.yml'"
+  "EF_PROCESSOR_ENRICH_NETIF_METADATA_REFRESH_RATE"  "EF_PROCESSOR_ENRICH_NETIF_METADATA_REFRESH_RATE: 15"
+  )
+  
+  printf "\n\n\n*********Downloading and installing ElastiFlow Flow Collector...\n\n" 
+  wget -O flow-collector_"$elastiflow_version"_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_"$elastiflow_version"_linux_amd64.deb
+  apt-get -q install ./flow-collector_"$elastiflow_version"_linux_amd64.deb
+  change_elasticsearch_password
+  printf "\n\n\n*********Configuring ElastiFlow Flow Collector...\n\n" 
+  find_and_replace "$flowcoll_config_path" "${elastiflow_config_strings[@]}"
+  replace_text "/etc/systemd/system/flowcoll.service" "TimeoutStopSec=infinity" "TimeoutStopSec=60" "N/A"
+  printf "\n\n\n*********Enabling and starting ElastiFlow service...\n\n"
+  systemctl daemon-reload && systemctl enable flowcoll.service && systemctl start flowcoll.service
+  sleep_message "Giving ElastiFlow service time to stabilize" 10
+}
