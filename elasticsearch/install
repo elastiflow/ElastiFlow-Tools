@@ -10,7 +10,7 @@ elastiflow_account_id=""
 elastiflow_flow_license_key=""
 ########################################################
 
-elastiflow_version="7.2.0"
+elastiflow_version="7.1.2"
 elasticsearch_version="8.15.0"
 kibana_version="8.15.0"
 kibana_dashboards_version="8.14.x"
