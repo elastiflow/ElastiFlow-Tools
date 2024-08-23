@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# run script in non-interactive mode by default
+export DEBIAN_FRONTEND=noninteractive
+
 # Version: 3.0.2
 
 ########################################################
