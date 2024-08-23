@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# ElastiFlow PoC Configurator for installing ElastiFlow Trial and MaxMind enrichment
+# ElastiFlow PoC Configurator for configuring ElastiFlow Virtual Appliance
 # Version: 2.8.4.1
 # Author: O.J. Wolanyk
 
