@@ -116,7 +116,6 @@ comment_and_replace_line() {
   local FIND=$2
   local REPLACE=$3
   FIND_ESCAPED=$(echo "$FIND" | sed 's/[.[\*^$]/\\&/g')
-  REPLACE_ESCAPED=$(echo "$REPLACE" | sed 's/[&/\]/\\&/g')
 
   if grep -Eq "^[#]*$FIND_ESCAPED" "$FILE"; then
     sed -i.bak "/^[#]*$FIND_ESCAPED/c\\$REPLACE" "$FILE"
@@ -166,7 +165,8 @@ display_system_info() {
 
 check_for_updates() {
   # Dynamically determine the path to the installed script
-  local installed_script=$(realpath "$0")
+  installed_script=$(realpath "$0")
+  local installed_script
   local new_script_url="https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/elasticsearch/install"
   local tmp_script="/tmp/install"
 
@@ -182,8 +182,10 @@ check_for_updates() {
 
   echo "Downloaded remote script to $tmp_script."
 
-  local remote_version=$(grep -m 1 '^# Version: ' "$tmp_script" | awk '{print $3}')
-  local installed_version=$(grep -m 1 '^# Version: ' "$installed_script" | awk '{print $3}')
+  remote_version=$(grep -m 1 '^# Version: ' "$tmp_script" | awk '{print $3}')
+  local remote_version
+  installed_version=$(grep -m 1 '^# Version: ' "$installed_script" | awk '{print $3}')
+  local installed_version
 
   echo "Installed version: $installed_version"
   echo "Remote version: $remote_version"
@@ -204,7 +206,7 @@ check_for_updates() {
       done
       echo
 
-      read -t 1 -n 1 update_choice
+      read -rt 1 -n 1 update_choice
       update_choice=${update_choice:-y}
 
       if [[ $update_choice == "y" || $update_choice == "n" ]]; then
@@ -238,7 +240,7 @@ get_host_ip() {
     echo "No suitable network interface found."
     return 1
   else
-    ip_address=$(ip -o -4 addr show dev $INTERFACE | awk '{print $4}' | cut -d/ -f1)
+    ip_address=$(ip -o -4 addr show dev "$INTERFACE" | awk '{print $4}' | cut -d/ -f1)
     if [ -z "$ip_address" ]; then
       echo "No IP address found for interface $INTERFACE."
       return 1
@@ -257,7 +259,7 @@ download_file() {
     chmod +x "$target_path"
     echo "Downloaded and made $target_path executable."
   else
-    echo "Failed to download $target_path.\n\n"
+    echo -e "Failed to download $target_path.\n\n"
   fi
 }
 
@@ -265,9 +267,12 @@ download_file() {
 get_dashboard_url() {
   local kibana_url="http://$ip_address:5601"
   local dashboard_title="$1"
-  local encoded_title=$(echo "$dashboard_title" | sed 's/ /%20/g' | sed 's/:/%3A/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
-  local response=$(curl -s -u "$elastic_username:$elastic_password2" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
-  local dashboard_id=$(echo "$response" | jq -r '.saved_objects[] | select(.attributes.title=="'"$dashboard_title"'") | .id')
+  encoded_title=$(echo "$dashboard_title" | sed 's/ /%20/g' | sed 's/:/%3A/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
+  local encoded_title
+  response=$(curl -s -u "$elastic_username:$elastic_password2" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
+  local response
+  dashboard_id=$(echo "$response" | jq -r '.saved_objects[] | select(.attributes.title=="'"$dashboard_title"'") | .id')
+  local dashboard_id
   if [ -z "$dashboard_id" ]; then
     echo "Dashboard not found"
   else
@@ -292,7 +297,7 @@ handle_error() {
   local error_msg="$1"
   local line_num="$2"
   echo "Error at line $line_num: $error_msg"
-  read -p "Do you wish to continue? (y/n):" user_decision
+  read -rp "Do you wish to continue? (y/n):" user_decision
   if [[ $user_decision != "y" ]]; then
     echo "Exiting..."
     exit 1
@@ -329,8 +334,8 @@ sleep_message() {
   local duration=$2
   printf "\n\n\n********* %s...\n" "$message"
 
-  while [ $duration -gt 0 ]; do
-    printf "\rTime remaining: %02d seconds" $duration
+  while [ "$duration" -gt 0 ]; do
+    printf "\rTime remaining: %02d seconds" "$duration"
     sleep 1
     ((duration--))
   done
@@ -411,14 +416,14 @@ configure_jvm_memory() {
   printf "\n\n\n*********Configuring JVM memory usage...\n\n"
   total_mem_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
   one_third_mem_gb=$(echo "$total_mem_kb / 1024 / 1024 / 3" | bc -l)
-  rounded_mem_gb=$(printf "%.0f" $one_third_mem_gb)
-  if [ $rounded_mem_gb -gt 31 ]; then
+  rounded_mem_gb=$(printf "%.0f" "$one_third_mem_gb")
+  if [ "$rounded_mem_gb" -gt 31 ]; then
       jvm_mem_gb=31
   else
       jvm_mem_gb=$rounded_mem_gb
   fi
   jvm_options="-Xms${jvm_mem_gb}g\n-Xmx${jvm_mem_gb}g"
-  echo -e $jvm_options | tee /etc/elasticsearch/jvm.options.d/heap.options > /dev/null
+  echo -e "$jvm_options" | tee /etc/elasticsearch/jvm.options.d/heap.options > /dev/null
   echo "Elasticsearch JVM options set to use $jvm_mem_gb GB for both -Xms and -Xmx."
 }
 
@@ -433,7 +438,7 @@ start_elasticsearch() {
     echo "Elasticsearch is not running."
   fi
   printf "\n\n\n*********Checking if Elastic server is up...\n\n"
-  curl_result=$(curl -s -k -u $elastic_username:$elastic_password https://localhost:9200)
+  curl_result=$(curl -s -k -u $elastic_username:"$elastic_password" https://localhost:9200)
   search_text='cluster_name" : "elasticsearch'
   if echo "$curl_result" | grep -q "$search_text"; then
       echo -e "\e[32mElastic is up! Using authenticated curl.\e[0m\n\n"
@@ -443,12 +448,12 @@ start_elasticsearch() {
 }
 
 install_kibana() {
-  printf "\n\n\n*********Downloading and installing Kibana...\n\n"
+  echo -e "\n\n\n*********Downloading and installing Kibana...\n\n"
   apt-get -q update && apt-get -q install kibana=$kibana_version
 }
 
 configure_kibana() {
-  printf "\n\n\n*********Generating Kibana saved objects encryption key...\n\n"
+  echo -e "\n\n\n*********Generating Kibana saved objects encryption key...\n\n"
   output=$(/usr/share/kibana/bin/kibana-encryption-keys generate -q)
   key_line=$(echo "$output" | grep '^xpack.encryptedSavedObjects.encryptionKey')
   if [[ -n "$key_line" ]]; then
@@ -456,20 +461,20 @@ configure_kibana() {
   else
       echo "No encryption key line found."
   fi
-  printf "\n\n\n*********Generating Kibana enrollment token...\n\n"
+  echo -e "\n\n\n*********Generating Kibana enrollment token...\n\n"
   kibana_token=$(/usr/share/elasticsearch/bin/elasticsearch-create-enrollment-token -s kibana)
-  printf "\n\n\nKibana enrollment token is:\n\n$kibana_token\n\n"
-  printf "\n\n\n*********Enrolling Kibana with Elastic...\n\n"
-  /usr/share/kibana/bin/kibana-setup --enrollment-token $kibana_token
-  printf "\n\n\n*********Enabling and starting Kibana service...\n\n"
+  echo -e "\n\n\nKibana enrollment token is:\n\n$kibana_token\n\n"
+  echo -e "\n\n\n*********Enrolling Kibana with Elastic...\n\n"
+  /usr/share/kibana/bin/kibana-setup --enrollment-token "$kibana_token"
+  echo -e "\n\n\n*********Enabling and starting Kibana service...\n\n"
   systemctl daemon-reload && systemctl enable kibana.service && systemctl start kibana.service
   sleep_message "Giving Kibana service time to stabilize" 20
-  printf "\n\n\n*********Configuring Kibana - set 0.0.0.0 as server.host\n\n"
+  echo -e "\n\n\n*********Configuring Kibana - set 0.0.0.0 as server.host\n\n"
   replace_text "/etc/kibana/kibana.yml" "#server.host: \"localhost\"" "server.host: \"0.0.0.0\"" "${LINENO}"
-  printf "\n\n\n*********Configuring Kibana - set elasticsearch.hosts to localhost instead of interface IP...\n\n"
+  echo -e "\n\n\n*********Configuring Kibana - set elasticsearch.hosts to localhost instead of interface IP...\n\n"
   replace_text "/etc/kibana/kibana.yml" "elasticsearch.hosts: \['https:\/\/[^']*'\]" "elasticsearch.hosts: \['https:\/\/localhost:9200'\]" "${LINENO}"
   replace_text "/etc/kibana/kibana.yml" '#server.publicBaseUrl: ""' 'server.publicBaseUrl: "http://kibana.example.com:5601"' "${LINENO}"
-  printf "\n\n\n*********Configuring Kibana - enabling PNG and PDF report generation...\n\n"
+  echo -e "\n\n\n*********Configuring Kibana - enabling PNG and PDF report generation...\n\n"
   echo -e '\nxpack.reporting.capture.browser.chromium.disableSandbox: true\nxpack.reporting.queue.timeout: 120000\nxpack.reporting.capture.timeouts:\n  openUrl: 30000\n  renderComplete: 30000\n  waitForElements: 30000' >> /etc/kibana/kibana.yml
   systemctl daemon-reload
   systemctl restart kibana.service
@@ -590,20 +595,20 @@ check_dashboards_status() {
 }
 
 display_versions() {
-  printf "*********************************************\n"
+  echo -e "*********************************************\n"
 
   version=$(/usr/share/elastiflow/bin/flowcoll -version)
-  printf "Installed ElastiFlow version: $version\n"
+  echo -e "Installed ElastiFlow version: $version\n"
   version=$kibana_dashboards_version
-  printf "Installed ElastiFlow Dashboards version: $kibana_dashboards_codex_ecs $version\n"
+  echo -e "Installed ElastiFlow Dashboards version: $kibana_dashboards_codex_ecs $version\n"
   version=$(/usr/share/kibana/bin/kibana --version --allow-root | jq -r '.config.serviceVersion.value' 2>/dev/null)
-  printf "Installed Kibana version: $version\n"
+  echo -e "Installed Kibana version: $version\n"
   version=$(/usr/share/elasticsearch/bin/elasticsearch --version | grep -oP 'Version: \K[\d.]+')
-  printf "Installed Elasticsearch version: $version\n"
+  echo -e "Installed Elasticsearch version: $version\n"
   version=$(java -version 2>&1)
-  printf "Installed Java version: $version\n"
+  echo -e "Installed Java version: $version\n"
   version=$(lsb_release -d | awk -F'\t' '{print $2}')
-  printf "Operating System: $version\n"
+  echo -e "Operating System: $version\n"
   display_version "/home/user/configure"
   display_version "/home/user/support"
   display_system_info
@@ -612,7 +617,8 @@ display_versions() {
 
 display_version() {
   local file="$1"
-  local version=$(grep -m 1 '^# Version: ' "$file" | awk '{print $3}')
+  version=$(grep -m 1 '^# Version: ' "$file" | awk '{print $3}')
+  local version
   if [[ -z "$version" ]]; then
     echo "Failed to detect the version in $file"
   else
@@ -645,7 +651,8 @@ append_to_bashrc() {
 }
 
 cleanup (){
-  local installed_script=$(realpath "$0")
+  installed_script=$(realpath "$0")
+  local installed_script
   #release DHCP address
   dhclient -r
 
