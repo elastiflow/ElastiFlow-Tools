@@ -303,7 +303,7 @@ install_flow_collector() {
     local CURRENT_VERSION=$(/usr/share/elastiflow/bin/flowcoll -version 2>/dev/null || echo "None")
 
     echo "Current installed version: ${CURRENT_VERSION}"
-    echo "Remote available version: $REMOTE_VERSION"
+    echo "Remote version: $REMOTE_VERSION"
 
     # Prompt the user to confirm if they want to install the remote version
     read -p "Do you want to install the remote version $REMOTE_VERSION? [y/N]: " CONFIRM
