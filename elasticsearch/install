@@ -438,6 +438,29 @@ configure_jvm_memory() {
   echo "Elasticsearch JVM options set to use $jvm_mem_gb GB for both -Xms and -Xmx."
 }
 
+
+# Function to prompt the user and update JVM options
+update_jvm_options() {
+    # Ask the user if they would like to specify new JVM memory limits
+    read -p "Would you like to specify new JVM memory limits? (yes/no or y/n): " user_choice
+
+    # Convert the user's input to lowercase for easier comparison
+    user_choice=$(echo "$user_choice" | tr '[:upper:]' '[:lower:]')
+
+    if [[ "$user_choice" == "yes" || "$user_choice" == "y" ]]; then
+        # Prompt the user for the JVM memory size in GB
+        read -p "Enter the JVM memory size in GB: " jvm_mem_gb
+
+        # Update the jvm_options variable with the new value
+        jvm_options="-Xms${jvm_mem_gb}g\n-Xmx${jvm_mem_gb}g"
+        echo -e "$jvm_options" | tee /etc/elasticsearch/jvm.options.d/heap.options > /dev/null
+        echo "Elasticsearch JVM options set to use $jvm_mem_gb GB for both -Xms and -Xmx."
+    else
+        echo "No changes were made to the JVM memory limits."
+    fi
+}
+
+
 start_elasticsearch() {
   printf "\n\n\n*********Enabling and starting ElasticSearch service...\n\n"
   systemctl daemon-reload && systemctl enable elasticsearch.service && systemctl start elasticsearch.service
@@ -707,6 +730,7 @@ main() {
   display_versions
   display_dashboard_url
   create_banner
+  update_jvm_options
   cleanup
 }
 
