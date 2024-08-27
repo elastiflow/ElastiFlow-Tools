@@ -71,7 +71,7 @@ install_snmp_collector() {
   )
 
 
-  print_message "Installing ElastiFlow Unified SNMP Collector..." "$GREEN"
+  print_message "Installing ElastiFlow Unified SNMP Collector $elastiflow_snmp_collector_version..." "$GREEN"
   
   # Update package list and install prerequisites
   apt-get update -qq
@@ -90,7 +90,7 @@ install_snmp_collector() {
   systemctl start snmpcoll.service
 
   # Install SNMP dashboards
-  printf "\n\n\n*********Downloading and installing ElastiFlow SNMP dashboards\n\n"
+  printf "\n\n\n*********Downloading and installing ElastiFlow SNMP dashboards $kibana_dashboards_codex_ecs $kibana_dashboards_version\n\n"
 
   # Remove the existing directory if it exists
   if [ -d "/etc/elastiflow_for_elasticsearch" ]; then
