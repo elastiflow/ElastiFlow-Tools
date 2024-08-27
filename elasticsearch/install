@@ -102,6 +102,20 @@ EOF
 }
 
 
+disable_predictable_network_names() {
+    # Check if /etc/network/interfaces exists and replace interface names with eth0
+    if [ -e /etc/network/interfaces ]; then
+        sed -i 's/en[[:alnum:]]*/eth0/g' /etc/network/interfaces
+    fi
+
+    # Modify GRUB configuration to disable predictable network interface names
+    sed -i 's/GRUB_CMDLINE_LINUX="\(.*\)"/GRUB_CMDLINE_LINUX="net.ifnames=0 biosdevname=0 \1"/g' /etc/default/grub
+
+    # Update GRUB to apply changes
+    update-grub
+}
+
+
 print_message() {
   local message=$1
   local color=$2
@@ -671,6 +685,7 @@ main() {
   print_startup_message
   check_for_root
   check_compatibility
+  disable_predictable_network_names
   install_os_updates
   ip_address=$(get_host_ip)
   remove_update_service
