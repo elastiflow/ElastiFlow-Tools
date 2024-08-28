@@ -567,8 +567,7 @@ main() {
   ip_address=$(get_host_ip)
   remove_update_service
   install_prerequisites
-  tune_system
-  sleep_message "Giving dpkg time to clean up" 10
+  install_elastiflow
   download_aux_files
   resize_part_to_max
   display_versions
