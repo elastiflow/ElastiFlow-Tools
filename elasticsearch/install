@@ -122,6 +122,70 @@ print_message() {
   echo -e "${color}${message}${NC}"
 }
 
+
+# Function to clean the apt cache
+clean_apt_cache() {
+    echo "Cleaning APT cache..."
+    sudo apt-get clean
+    echo "APT cache cleaned."
+}
+
+# Function to clean old kernels
+clean_old_kernels() {
+    echo "Cleaning old kernels..."
+    sudo apt-get autoremove --purge -y
+    echo "Old kernels cleaned."
+}
+
+# Function to clean orphaned packages
+clean_orphaned_packages() {
+    echo "Cleaning orphaned packages..."
+    sudo apt-get autoremove -y
+    echo "Orphaned packages cleaned."
+}
+
+# Function to clean thumbnail cache
+clean_thumbnail_cache() {
+    echo "Cleaning thumbnail cache..."
+    rm -rf ~/.cache/thumbnails/*
+    echo "Thumbnail cache cleaned."
+}
+
+# Function to clean log files
+clean_log_files() {
+    echo "Cleaning log files..."
+    sudo find /var/log -type f -name "*.log" -delete
+    echo "Log files cleaned."
+}
+
+# Function to clean temporary files
+clean_temp_files() {
+    echo "Cleaning temporary files..."
+    sudo rm -rf /tmp/*
+    sudo rm -rf /var/tmp/*
+    echo "Temporary files cleaned."
+}
+
+# Function to remove unnecessary files
+clean_unnecessary_files() {
+    echo "Removing unnecessary files..."
+    sudo apt-get autoclean
+    echo "Unnecessary files removed."
+}
+
+# Function to clean system junk files
+clean_system_junk() {
+    echo "Cleaning system junk files..."
+    clean_apt_cache
+    clean_old_kernels
+    clean_orphaned_packages
+    clean_thumbnail_cache
+    clean_log_files
+    clean_temp_files
+    clean_unnecessary_files
+    echo "System junk files cleaned."
+}
+
 comment_and_replace_line() {
   local FILE=$1
   local FIND=$2
@@ -694,6 +758,8 @@ cleanup (){
   #delete self and any deb files
   rm -f "$installed_script"
   rm -f *.deb
+
+  clean_system_junk
 
 }
 
