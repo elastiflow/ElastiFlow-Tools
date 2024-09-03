@@ -1,4 +1,5 @@
-The python script comverts flwocoll.conf to flowcoll.yml. It looks in the current directory you are running the script from for flowcoll.conf and creates a flowcoll.yml 
+The python script comverts flwocoll.conf to flowcoll.yml. It looks in the current directory you are running the script from for flowcoll.conf and creates a flowcoll.yml. 
+This scriot only works for newer versions that have the right envionrment variables defined in flwocoll.conf 6.X +.
 
 To run
 python3 convert_config_toyml.py
