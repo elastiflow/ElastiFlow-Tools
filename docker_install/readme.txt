@@ -28,7 +28,7 @@ To easily install ElasticSearch, Kibana, and ElastiFlow with Docker Compose. Tes
       Download https://github.com/elastiflow/elastiflow_for_elasticsearch/blob/master/kibana/flow/kibana-8.14.x-flow-codex.ndjson
       In Kibana, do a global search (at the top) for "Saved Objects". Choose import and overwrite.
 
-7) Send netflow to IP_of_your_host 9995
+7) Send Netflow to IP_of_your_host 9995
 
 8) Visualize netflow
      In Kibana, do a global search (at the top) for the dashboard "ElastiFlow (flow): Overview" and open it.
