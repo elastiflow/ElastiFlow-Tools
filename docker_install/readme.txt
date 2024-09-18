@@ -6,15 +6,15 @@ To easily install ElasticSearch, Kibana, and ElastiFlow with Docker Compose. Tes
 
 1) Prepare server memory configuration
 
-Elasticsearch uses a mmapfs directory by default to store its indices. The default operating system limits on mmap counts is likely to be too low, which may result in out of memory exceptions.
-
-On Linux, you can increase the limits by running the following command as root:
-
-sysctl -w vm.max_map_count=262144
-
-To set this value permanently, update the vm.max_map_count setting in /etc/sysctl.conf. To verify after rebooting or enter “sysctl -p”, run sysctl vm.max_map_count.
-
-To verify changes, after rebooting, run sysctl vm.max_map_count
+      Elasticsearch uses a mmapfs directory by default to store its indices. The default operating system limits on mmap counts is likely to be too low, which may result in out of             memory exceptions.
+      
+      On Linux, you can increase the limits by running the following command as root:
+      
+      sysctl -w vm.max_map_count=262144
+      
+      To set this value permanently, update the vm.max_map_count setting in /etc/sysctl.conf. To verify after rebooting or enter “sysctl -p”, run sysctl vm.max_map_count.
+      
+      To verify changes, after rebooting, run sysctl vm.max_map_count
 
 2) Download all files to a new directory.
 
