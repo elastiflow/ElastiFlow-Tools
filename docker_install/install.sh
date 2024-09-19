@@ -170,6 +170,65 @@ printf "\n\n\n*********Disabling swap file is present...\n\n"
 }
 
 
+# Function to download and extract Elastiflow .deb
+extract_elastiflow() {
+    # Set variables
+    DEB_URL="https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_7.2.2_linux_amd64.deb"
+    DEB_FILE="flow-collector_7.2.2_linux_amd64.deb"
+    TEMP_DIR="/tmp/elastiflow_deb"
+    TARGET_DIR="/etc/elastiflow"
+
+    # Download the .deb file
+    echo "Downloading $DEB_URL..."
+    wget -O "$DEB_FILE" "$DEB_URL"
+
+    # Check if the temporary directory exists; if not, create it
+    if [ ! -d "$TEMP_DIR" ]; then
+        echo "Creating directory $TEMP_DIR..."
+        mkdir -p "$TEMP_DIR"
+    else
+        echo "$TEMP_DIR already exists, skipping creation."
+    fi
+
+    # Extract the .deb file contents
+    echo "Extracting $DEB_FILE..."
+    dpkg-deb -x "$DEB_FILE" "$TEMP_DIR"
+
+    # Copy /data/etc/elastiflow contents to /etc/elastiflow
+    echo "Copying extracted files to $TARGET_DIR..."
+    mkdir -p "$TARGET_DIR"
+    cp -r "$TEMP_DIR/data/etc/elastiflow/." "$TARGET_DIR/"
+
+    # Cleanup
+    echo "Cleaning up..."
+    rm -rf "$TEMP_DIR" "$DEB_FILE"
+
+    echo "Elastiflow installation completed!"
+}
+
+
+prompt_for_elastiflow_extraction_download() {
+    while true; do
+        read -p "Do you want to download the sample YAML enrichment files? (yes/y or no/n): " user_input
+
+        case $user_input in
+            [Yy]* )
+                echo "You chose to download the sample YAML enrichment files."
+                extract_elastiflow
+                break
+                ;;
+            [Nn]* )
+                echo "You chose not to download the sample YAML enrichment files."
+                break
+                ;;
+            * )
+                echo "Please answer yes/y or no/n."
+                ;;
+        esac
+    done
+}
+
+
 
 # Main script execution
 check_root
@@ -180,5 +239,5 @@ download_files
 edit_env_file  # Open the .env file for editing
 check_docker
 deploy_elastiflow
-
+prompt_for_elastiflow_extraction_download
 echo "ElastiFlow has been deployed successfully!"
