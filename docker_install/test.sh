@@ -10,8 +10,13 @@ TARGET_DIR="/etc/elastiflow"
 echo "Downloading $DEB_URL..."
 wget -O "$DEB_FILE" "$DEB_URL"
 
-# Create a temporary directory for extracting the .deb file
-mkdir -p "$TEMP_DIR"
+# Check if the temporary directory exists; if not, create it
+if [ ! -d "$TEMP_DIR" ]; then
+    echo "Creating directory $TEMP_DIR..."
+    mkdir -p "$TEMP_DIR"
+else
+    echo "$TEMP_DIR already exists, skipping creation."
+fi
 
 # Extract the .deb file contents
 echo "Extracting $DEB_FILE..."
