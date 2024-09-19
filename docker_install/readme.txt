@@ -4,27 +4,31 @@ bash -c "$(wget -qLO - https://raw.githubusercontent.com/elastiflow/ElastiFlow-T
 
 Code in this folder may contain code from https://github.com/elastic/elasticsearch/tree/8.11/docs/reference/setup/install/docker
 
-# Purpose:
+Purpose:
+=================
 To easily install ElasticSearch, Kibana, and ElastiFlow with Docker Compose. Tested with Elastic / Kibana 8.15.1 and ElastiFlow 7.2.2.
 
-# Prerequisites:
+Prerequisites:
+=================
 1) Clean Ubuntu 22 (or greater) server with at least 8 GB of RAM, 4 CPU cores, and 500 GB of disk.
 2) Docker. If you do not have Docker, you can install it by:
       1) downloading "install_docker.sh" to your Linux server.
       2) "sudo chmod +x install_docker.sh && ./install_docker.sh"
 
-# Instructions:
+Instructions:
+=================
 1) Prepare server
 
 ---
 Add the following recommended Kernel tuning parameters to /etc/sysctl.conf
 #For light to moderate ingest rates (less than 75000 flows per second: https://docs.elastiflow.com/docs/flowcoll/requirements/
 
-
-<CodeBlock language="shell">
-{`# get checksum of the downloaded file:\nsha256sum ${constants.flowDebBin}\n\n# verify the checksum provided from the previous command matches the checksum here:\n${constants.flowDebUrl}.sha256`}
-</CodeBlock>
-
+vm.max_map_count=262144"
+net.core.netdev_max_backlog=4096
+net.core.rmem_default=262144
+net.core.rmem_max=67108864
+net.ipv4.udp_rmem_min=131072
+net.ipv4.udp_mem=2097152 4194304 8388608
 
 To activate the settings, run "sysctl -p"
 
@@ -47,6 +51,18 @@ Disable swapping
 2) Download all files in the docker_install folder to a new directory on a Linux host.
 
 3) Edit the .env file to set your desired Kibana and Elastic passwords, Elastic stack version, and ElastiFlow version to deploy
+
+      # Password for the 'elastic' user (at least 6 characters)
+      ELASTIC_PASSWORD={elastic_password}
+
+      # Password for the 'kibana_system' user (at least 6 characters)
+      KIBANA_PASSWORD={kibana_password}
+
+      # Version of Elastic products
+      STACK_VERSION={version}
+
+      # Elastiflow Version
+      ELASTIFLOW_VERSION={version}
 
 4) Run "sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_compose.yml up -d".
 
