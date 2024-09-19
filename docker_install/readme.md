@@ -83,13 +83,7 @@ Description: This defines the memory usage limits for UDP sockets. It consists o
 8388608 (8 GB): This is the absolute maximum memory the kernel will allocate for UDP traffic.
 Use case: For systems with high-volume UDP traffic, these values help ensure that the system has enough memory allocated for UDP packet buffering before dropping packets or causing errors.
 
-
-
-#### 2) Create the following directory:
-`/etc/elastiflow/`
-
-
-#### 3) Disable swapping
+#### 2) Disable swapping
 
 View current swap configuration `swapon --show`
 
@@ -104,7 +98,7 @@ If there is a swap file, then use the following command, replacing `swapfile.img
 
 Reboot and verify swap is off with `swapon --show`
 
-#### 4) Download 
+#### 3) Download 
 Download all files in the docker_install folder to a new directory on a Linux host.
 
 ```
@@ -116,21 +110,31 @@ curl -L -o "readme.md" "https://raw.githubusercontent.com/elastiflow/ElastiFlow-
 ```
 
 
-#### 5) Edit the .env file
+#### 4) Edit the .env file
 Edit the .env file to set your desired Kibana and Elastic passwords, Elastic stack version, and ElastiFlow version to deploy
 
-#### 6) Deploy 
+#### 5) Deploy 
 Run `sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_compose.yml up -d`
 
 After a few minutes, browse to http://IP_of_your_host:5601. Username: `elastic`, Password: your Elastic password you set in step 2.
 
-#### 7) Install ElastiFlow dashboards:
+#### 6) Install ElastiFlow dashboards:
 Download https://github.com/elastiflow/elastiflow_for_elasticsearch/blob/master/kibana/flow/kibana-8.2.x-flow-codex.ndjson
 
 In Kibana, do a global search (at the top) for "Saved Objects". Choose import and overwrite.
 
-#### 8) Send Netflow
+#### 7) Send Netflow
 Send Netflow to IP_of_your_host 9995. Refer to your hardware vendor for documentation on how to configure netflow export.
 
-#### 9) Visualize netflow
+#### 8) Visualize netflow
 In Kibana, do a global search (at the top) for the dashboard "ElastiFlow (flow): Overview" and open it.
+
+#### 9) Optional - Download sample yml enrichment files
+Download ElastiFlow from here: https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_7.2.2_linux_amd64.deb
+
+Extract the contents of `/etc/elastiflow` in the archive to `/etc/elastiflow`.
+
+You can instead use a one liner to do the same:
+```
+wget -O flow-collector_7.2.2_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_7.2.2_linux_amd64.deb && mkdir -p elastiflow_extracted && dpkg-deb -x flow-collector_7.2.2_linux_amd64.deb elastiflow_extracted && sudo mkdir -p /etc/elastiflow && sudo cp -r elastiflow_extracted/data/etc/elastiflow/. /etc/elastiflow
+```
