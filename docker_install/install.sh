@@ -94,10 +94,6 @@ EOF
   echo "$kernel_tuning" >> /etc/sysctl.conf
   sysctl -p
   echo "Kernel parameters updated in /etc/sysctl.conf with previous configurations commented out."
-  mkdir /etc/systemd/system/elasticsearch.service.d && \
-  echo -e "[Service]\nLimitNOFILE=131072\nLimitNPROC=8192\nLimitMEMLOCK=infinity\nLimitFSIZE=infinity\nLimitAS=infinity" | \
-  tee /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf > /dev/null
-  echo "System limits set"
   printf "\n\n\n*********System tuning done...\n\n"
 }
 
