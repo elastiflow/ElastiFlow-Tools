@@ -7,23 +7,37 @@ To easily install ElasticSearch, Kibana, and ElastiFlow with Docker Compose. Tes
 
 Prerequisites:
 =================
-1) Clean Linux server with at least 8 GB of RAM, 4 CPU cores, and 500 GB of disk.
+1) Clean Ubuntu 22 or greater server with at least 8 GB of RAM, 4 CPU cores, and 500 GB of disk.
 2) Docker. If you do not have docker, you can install it by:
       1) downloading "install_docker.sh" to your Linux server.
       2) "sudo chmod +x install_docker.sh && ./install_docker.sh"
 
 Instructions:
 =================
-1) Prepare server.
+1) Prepare server
 
+---
 For software like Elasticsearch, increasing vm.max_map_count is recommended because Elasticsearch creates many memory mappings (pointers stored in RAM that point to disk locations) due to its heavy use of Lucene indexes. Elasticsearch documentation suggests increasing it to at least 262144 to avoid problems in production.
       
       On Linux, you can increase the limits by running the following command as root:
       "sysctl -w vm.max_map_count=262144"
       To set this value permanently, update the vm.max_map_count setting in /etc/sysctl.conf. To verify after rebooting or enter “sysctl -p”, run sysctl vm.max_map_count.
 
+---
 Create the following directory:
 /etc/elastiflow/
+
+---
+Disable swapping
+      1) View current swap configuration
+            swapon --show
+      2) If swap is active, you'll see the details of the swap partitions or files. 
+         If there is a swap partition, then 
+            "sudo nano /etc/fstab" and comment out or remove the swap entry: In the /etc/fstab file, look for the line that defines the swap partition or file. It usually looks something like this:
+            /swapfile none swap sw 0 0. If there is a swap file, then 
+         If there is a swap file, then use the following command, replacing "swapfile.img" with the name of your swap file returned with "swapon --show".
+            "sudo swapoff -a && rm /swapfile.img
+      3) Reboot and verify swap is off with "swapon --show"
       
 2) Download all files in the docker_install folder to a new directory on a Linux host.
 
