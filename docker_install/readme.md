@@ -31,6 +31,44 @@ net.ipv4.udp_mem=2097152 4194304 8388608
 ```
 To activate the settings, run `sysctl -p`
 
+##### Explanation of parameters:
+
+`vm.max_map_count=262144`
+
+Description: This parameter sets the maximum number of memory map areas a process can have. Memory maps are used by programs like Elasticsearch to map files to memory for faster access.
+Use case: Elasticsearch (and other large JVM applications) makes heavy use of memory-mapped files for efficient access to its index files. If this value is too low, Elasticsearch might fail to start or run efficiently.
+Default value: On many systems, the default is much lower (e.g., 65530), so setting it to 262144 ensures Elasticsearch has enough room to handle its memory mappings.
+
+`net.core.netdev_max_backlog=4096`
+
+Description: This parameter specifies the maximum number of packets allowed to queue up for processing at the network interface. If the network driver can't process packets fast enough, they are buffered in this queue.
+Use case: For systems handling high traffic or many connections, increasing this value ensures that packets are not dropped if they arrive faster than the system can process them. A value of 4096 means that up to 4096 packets can be queued before the system starts dropping them.
+
+`net.core.rmem_default=262144`
+
+Description: This sets the default size of the receive buffer used by sockets (in bytes). This buffer temporarily stores incoming data before it's processed by the application.
+Use case: For applications that receive a large amount of data, like Elasticsearch, setting a higher default receive buffer size improves performance by allowing the system to handle larger amounts of data before dropping packets or slowing down.
+
+`net.core.rmem_max=67108864`
+
+Description: This defines the maximum size (in bytes) for the receive buffer for a socket. Applications can request a buffer size up to this limit.
+Use case: When dealing with high-throughput applications, increasing the maximum receive buffer size allows the system to handle larger bursts of incoming data. The value of 67108864 means that the system can allocate up to 64 MB for the receive buffer of a socket.
+
+`net.ipv4.udp_rmem_min=131072`
+
+Description: This parameter sets the minimum size (in bytes) of the receive buffer used by UDP sockets.
+Use case: For systems handling a lot of UDP traffic (such as logging or monitoring applications that rely on UDP), setting a higher minimum receive buffer ensures that the system can handle incoming data without dropping packets due to small buffer sizes. The value 131072 (128 KB) helps in maintaining adequate buffer size for UDP traffic.
+
+`net.ipv4.udp_mem=2097152 4194304 8388608`
+
+Description: This defines the memory usage limits for UDP sockets. It consists of three values (in pages, where 1 page is usually 4096 bytes):
+2097152 (2 GB): This is the threshold where the kernel starts applying memory pressure to slow down the socket to prevent further memory allocation.
+4194304 (4 GB): The kernel starts dropping packets when memory allocation reaches this point.
+8388608 (8 GB): This is the absolute maximum memory the kernel will allocate for UDP traffic.
+Use case: For systems with high-volume UDP traffic, these values help ensure that the system has enough memory allocated for UDP packet buffering before dropping packets or causing errors.
+
+
+
 #### 2) Create the following directory:
 `/etc/elastiflow/`
 
