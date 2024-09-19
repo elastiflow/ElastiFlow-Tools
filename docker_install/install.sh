@@ -166,4 +166,4 @@ edit_env_file  # Open the .env file for editing
 check_docker
 deploy_elastiflow
 
-echo "Elastiflow has been deployed successfully!"
+echo "ElastiFlow has been deployed successfully!"
