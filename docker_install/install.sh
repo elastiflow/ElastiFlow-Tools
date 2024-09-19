@@ -63,8 +63,8 @@ check_docker() {
       case "$choice" in
         [yY] | [yY][eE][sS] )
           echo "Installing Docker..."
-          chmod +x "./install_docker.sh"
-          bash "./install_docker.sh"
+          chmod +x "$INSTALL_DIR/install_docker.sh"
+          bash "$INSTALL_DIR/install_docker.sh"
 
           # Verify if Docker is installed after running the install script
           if ! command -v docker &> /dev/null; then
