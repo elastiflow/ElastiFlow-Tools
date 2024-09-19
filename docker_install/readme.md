@@ -19,7 +19,7 @@ Docker. If you do not have Docker, you can install it by:
 
 ### Instructions:
 
-#### 1) Add the following recommended Kernel tuning parameters to /etc/sysctl.conf
+#### 1) Add the following recommended kernel tuning parameters to /etc/sysctl.conf
 
 ```
 vm.max_map_count=262144
