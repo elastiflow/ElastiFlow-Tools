@@ -5,13 +5,9 @@ ElastiFlow PoC Configuration Script
 ## Author
 - [O.J. Wolanyk]
 
-# ElastiFlow PoC configurator
-Script to streamline getting a PoC ElastiFlow Virtual Appliance up and running.
-
-
 What this is:
 ----------------
-This bash shell script can be run on the ElastiFlow Virtual Appliance to help configure an IP, add trial credentials, and configure and download MaxMind enrichment.
+Script to streamline getting a PoC ElastiFlow Virtual Appliance up and running.
 
 What this script does:
 ----------------
