@@ -8,7 +8,7 @@ check_root() {
   fi
 }
 
-# Function to ask the user if they want to deploy Elastiflow
+# Function to ask the user if they want to deploy ElastiFlow
 ask_deploy() {
   while true; do
     read -p "Do you want to deploy Elastiflow? (y/n): " answer
