@@ -57,7 +57,7 @@ edit_env_file() {
 # Function to check if Docker is installed and install if necessary
 check_docker() {
   if ! command -v docker &> /dev/null; then
-    echo "Docker is not installed."
+    echo "Docker is not installed. This is required."
     while true; do
       read -p "Do you want to install Docker? (y/n): " choice
       case "$choice" in
