@@ -1,7 +1,7 @@
 
 Code in this folder may contain code from https://github.com/elastic/elasticsearch/tree/8.11/docs/reference/setup/install/docker
 
-ElastiFlow PoC Configuration Script
+ElastiFlow Environment with Docker
 ================================  
 
 ## Author
