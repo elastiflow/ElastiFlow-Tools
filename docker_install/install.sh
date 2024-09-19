@@ -17,7 +17,7 @@ ask_deploy() {
         break
         ;;
       [nN]|[nN][oO])
-        echo "Exiting without deploying Elastiflow."
+        echo "Exiting without deploying ElastiFlow."
         exit 0
         ;;
       *)
@@ -117,9 +117,9 @@ EOF
 }
 
 
-# Function to deploy Elastiflow using Docker Compose
+# Function to deploy ElastiFlow using Docker Compose
 deploy_elastiflow() {
-  echo "Deploying Elastiflow..."
+  echo "Deploying ElastiFlow..."
   cd "$INSTALL_DIR"
   docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_compose.yml up -d
 }
@@ -170,7 +170,7 @@ printf "\n\n\n*********Disabling swap file is present...\n\n"
 }
 
 
-# Function to download and extract Elastiflow .deb
+# Function to download and extract ElastiFlow .deb
 extract_elastiflow() {
     # Set variables
     DEB_URL="https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_7.2.2_linux_amd64.deb"
@@ -203,7 +203,7 @@ extract_elastiflow() {
     echo "Cleaning up..."
     rm -rf "$TEMP_DIR" "$DEB_FILE"
 
-    echo "Elastiflow installation completed!"
+    echo "ElastiFlow yml files have been extracted!"
 }
 
 
