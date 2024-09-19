@@ -15,7 +15,8 @@ Docker. If you do not have Docker, you can install it by:
 
 #### 1) Add the following recommended Kernel tuning parameters to /etc/sysctl.conf
 
-```vm.max_map_count=262144
+```
+vm.max_map_count=262144
 net.core.netdev_max_backlog=4096
 net.core.rmem_default=262144
 net.core.rmem_max=67108864
@@ -26,6 +27,7 @@ To activate the settings, run `sysctl -p`
 
 #### 2) Create the following directory:
 `/etc/elastiflow/`
+
 
 #### 3) Disable swapping
 
@@ -55,6 +57,7 @@ After a few minutes, browse to http://IP_of_your_host:5601. Username: `elastic`"
 
 #### 7) Install ElastiFlow dashboards:
 Download https://github.com/elastiflow/elastiflow_for_elasticsearch/blob/master/kibana/flow/kibana-8.2.x-flow-codex.ndjson
+
 In Kibana, do a global search (at the top) for "Saved Objects". Choose import and overwrite.
 
 #### 8 Send Netflow
