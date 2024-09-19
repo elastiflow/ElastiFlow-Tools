@@ -71,6 +71,37 @@ check_docker() {
   fi
 }
 
+tune_system() {
+  printf "\n\n\n*********System tuning starting...\n\n"
+  kernel_tuning=$(cat <<EOF
+#####ElastiFlow tuning parameters######
+#For light to moderate ingest rates (less than 75000 flows per second: https://docs.elastiflow.com/docs/flowcoll/requirements/
+net.core.netdev_max_backlog=4096
+net.core.rmem_default=262144
+net.core.rmem_max=67108864
+net.ipv4.udp_rmem_min=131072
+net.ipv4.udp_mem=2097152 4194304 8388608
+vm.max_map_count=262144
+#######################################
+EOF
+  )
+  sed -i '/net.core.netdev_max_backlog=/s/^/#/' /etc/sysctl.conf
+  sed -i '/net.core.rmem_default=/s/^/#/' /etc/sysctl.conf
+  sed -i '/net.core.rmem_max=/s/^/#/' /etc/sysctl.conf
+  sed -i '/net.ipv4.udp_rmem_min=/s/^/#/' /etc/sysctl.conf
+  sed -i '/net.ipv4.udp_mem=/s/^/#/' /etc/sysctl.conf
+  sed -i '/vm.max_map_count=/s/^/#/' /etc/sysctl.conf
+  echo "$kernel_tuning" >> /etc/sysctl.conf
+  sysctl -p
+  echo "Kernel parameters updated in /etc/sysctl.conf with previous configurations commented out."
+  mkdir /etc/systemd/system/elasticsearch.service.d && \
+  echo -e "[Service]\nLimitNOFILE=131072\nLimitNPROC=8192\nLimitMEMLOCK=infinity\nLimitFSIZE=infinity\nLimitAS=infinity" | \
+  tee /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf > /dev/null
+  echo "System limits set"
+  printf "\n\n\n*********System tuning done...\n\n"
+}
+
+
 # Function to deploy Elastiflow using Docker Compose
 deploy_elastiflow() {
   echo "Deploying Elastiflow..."
@@ -81,6 +112,7 @@ deploy_elastiflow() {
 # Main script execution
 check_root
 ask_deploy
+tune_system
 download_files
 edit_env_file  # Open the .env file for editing
 check_docker
