@@ -189,6 +189,9 @@ clean_system_junk() {
 
 # Function to check and disable swap if any swap file is in use
 disable_swap_if_swapfile_in_use() {
+  
+printf "\n\n\n*********Disabling swap file is present...\n\n"
+
     # Check if swap is on
     swap_status=$(swapon --show)
 
