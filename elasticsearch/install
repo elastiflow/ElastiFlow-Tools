@@ -827,7 +827,7 @@ main() {
   install_os_updates
   ip_address=$(get_host_ip)
   remove_update_service
-  disable_swap_if_swapfile_img
+  disable_swap_if_swapfile_in_use
   install_prerequisites
   tune_system
   sleep_message "Giving dpkg time to clean up" 10
