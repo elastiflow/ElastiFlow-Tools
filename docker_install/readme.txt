@@ -72,7 +72,7 @@ Disable swapping
       Download https://github.com/elastiflow/elastiflow_for_elasticsearch/blob/master/kibana/flow/kibana-8.2.x-flow-codex.ndjson
       In Kibana, do a global search (at the top) for "Saved Objects". Choose import and overwrite.
 
-7) Send Netflow to IP_of_your_host 9995. Refer to your hardware vendor for documentation.
+7) Send Netflow to IP_of_your_host 9995. Refer to your hardware vendor for documentation on how to configure netflow export.
 
 8) Visualize netflow
      In Kibana, do a global search (at the top) for the dashboard "ElastiFlow (flow): Overview" and open it.
