@@ -547,7 +547,7 @@ configure_jvm_memory() {
 
 # Function to prompt the user and update JVM options
 update_jvm_options() {
-    # Ask the user if they would like to specify new JVM memory limits
+    # Ask the user if they would like to specify new JVM memory limits. This is so you can run this script on a 8 gig machine for instance, but then configure jvm for 32 gigs or some other amount.
     read -p "Would you like to specify new JVM memory limits? (yes/no or y/n): " user_choice
 
     # Convert the user's input to lowercase for easier comparison
