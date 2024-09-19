@@ -53,6 +53,15 @@ Reboot and verify swap is off with `swapon --show`
 #### 4) Download 
 Download all files in the docker_install folder to a new directory on a Linux host.
 
+```
+curl -L -o ".env" "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/.env"
+curl -L -o "elasticsearch_kibana_compose.yml" "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elasticsearch_kibana_compose.yml"
+curl -L -o "elastiflow_compose.yml" "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elastiflow_compose.yml"
+curl -L -o "install_docker.sh" "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/install_docker.sh"
+curl -L -o "readme.md" "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/readme.md"
+```
+
+
 #### 5) Edit the .env file
 Edit the .env file to set your desired Kibana and Elastic passwords, Elastic stack version, and ElastiFlow version to deploy
 
