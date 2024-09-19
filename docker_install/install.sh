@@ -11,7 +11,7 @@ check_root() {
 # Function to ask the user if they want to deploy ElastiFlow
 ask_deploy() {
   while true; do
-    read -p "Do you want to deploy Elastiflow? (y/n): " answer
+    read -p "Do you want to deploy ElastiFlow? (y/n): " answer
     case "$answer" in
       [yY]|[yY][eE][sS]) 
         break
