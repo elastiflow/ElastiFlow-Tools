@@ -25,7 +25,7 @@ dpkg-deb -x "$DEB_FILE" "$TEMP_DIR"
 # Copy /data/etc/elastiflow contents to /etc/elastiflow
 echo "Copying extracted files to $TARGET_DIR..."
 mkdir -p "$TARGET_DIR"
-cp -r "$TEMP_DIR/data/etc/elastiflow/." "$TARGET_DIR/"
+cp -r "$TEMP_DIR/etc/elastiflow/." "$TARGET_DIR/"
 
 # Cleanup
 echo "Cleaning up..."
