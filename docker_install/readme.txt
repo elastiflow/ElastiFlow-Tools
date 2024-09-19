@@ -6,12 +6,10 @@ To easily install ElasticSearch, Kibana, and ElastiFlow with Docker Compose. Tes
 
 1) Prepare server memory configuration
 
-For software like Elasticsearch, increasing vm.max_map_count is recommended because Elasticsearch creates many memory mappings due to its heavy use of Lucene indexes. Elasticsearch documentation suggests increasing it to at least 262144 to avoid problems in production.
+For software like Elasticsearch, increasing vm.max_map_count is recommended because Elasticsearch creates many memory mappings (pointers stored in RAM that point to disk locations) due to its heavy use of Lucene indexes. Elasticsearch documentation suggests increasing it to at least 262144 to avoid problems in production.
       
       On Linux, you can increase the limits by running the following command as root:
-      
-      sysctl -w vm.max_map_count=262144
-      
+      "sysctl -w vm.max_map_count=262144"
       To set this value permanently, update the vm.max_map_count setting in /etc/sysctl.conf. To verify after rebooting or enter “sysctl -p”, run sysctl vm.max_map_count.
       
 2) Download all files in the docker_install folder to a new directory on a Linux host.
