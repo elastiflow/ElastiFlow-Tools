@@ -20,12 +20,11 @@ To easily install ElasticSearch, Kibana, and ElastiFlow with Docker Compose. Tes
 Add the following recommended Kernel tuning parameters to /etc/sysctl.conf
 #For light to moderate ingest rates (less than 75000 flows per second: https://docs.elastiflow.com/docs/flowcoll/requirements/
 
-vm.max_map_count=262144"
-net.core.netdev_max_backlog=4096
-net.core.rmem_default=262144
-net.core.rmem_max=67108864
-net.ipv4.udp_rmem_min=131072
-net.ipv4.udp_mem=2097152 4194304 8388608
+
+<CodeBlock language="shell">
+{`# get checksum of the downloaded file:\nsha256sum ${constants.flowDebBin}\n\n# verify the checksum provided from the previous command matches the checksum here:\n${constants.flowDebUrl}.sha256`}
+</CodeBlock>
+
 
 To activate the settings, run "sysctl -p"
 
