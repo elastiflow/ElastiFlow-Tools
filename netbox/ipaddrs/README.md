@@ -14,7 +14,7 @@ python3 import_mappings.py
 
 Example output
 
-192.168.2.1/24:
+"192.168.2.1/24:
   tags:
   - Router
   metadata:
@@ -29,4 +29,4 @@ Example output
   - Server
   metadata:
     company.site.name: Autodiscovered devices
-    device.type.name: UNRAID
+    device.type.name: UNRAID"
