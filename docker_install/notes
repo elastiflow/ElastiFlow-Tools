@@ -1,0 +1,4 @@
+notes
+***test***
+bash -c "$(wget -qLO - https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/install.sh)"
+***test***
