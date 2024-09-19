@@ -109,10 +109,58 @@ deploy_elastiflow() {
   docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_compose.yml up -d
 }
 
+# Function to check and disable swap if any swap file is in use
+disable_swap_if_swapfile_in_use() {
+  
+printf "\n\n\n*********Disabling swap file is present...\n\n"
+
+    # Check if swap is on
+    swap_status=$(swapon --show)
+
+    if [ -n "$swap_status" ]; then
+        echo "Swap is currently on."
+
+        # Get the swap file name if it's in use (filtering for file type swaps)
+        swapfile=$(swapon --show | awk '$2 == "file" {print $1}')
+
+        if [ -n "$swapfile" ]; then
+            echo "$swapfile is in use."
+
+            # Turn off swap
+            echo "Turning off swap..."
+            sudo swapoff -a
+
+            # Check if swapoff was successful
+            if [ $? -eq 0 ]; then
+                echo "Swap has been turned off."
+
+                # Delete the detected swap file
+                echo "Deleting $swapfile..."
+                sudo rm -f "$swapfile"
+
+                if [ $? -eq 0 ]; then
+                    echo "$swapfile has been deleted."
+                else
+                    echo "Failed to delete $swapfile."
+                fi
+            else
+                echo "Failed to turn off swap."
+            fi
+        else
+            echo "No swap file found in use."
+        fi
+    else
+        echo "Swap is currently off."
+    fi
+}
+
+
+
 # Main script execution
 check_root
 ask_deploy
 tune_system
+disable_swap_if_swapfile_in_use
 download_files
 edit_env_file  # Open the .env file for editing
 check_docker
