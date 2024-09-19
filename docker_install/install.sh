@@ -57,19 +57,38 @@ edit_env_file() {
 # Function to check if Docker is installed and install if necessary
 check_docker() {
   if ! command -v docker &> /dev/null; then
-    echo "Docker is not installed. Installing Docker..."
-    chmod +x "$INSTALL_DIR/install_docker.sh"
-    bash "$INSTALL_DIR/install_docker.sh"
+    echo "Docker is not installed."
+    while true; do
+      read -p "Do you want to install Docker? (y/n): " choice
+      case "$choice" in
+        [yY] | [yY][eE][sS] )
+          echo "Installing Docker..."
+          chmod +x "./install_docker.sh"
+          bash "./install_docker.sh"
 
-    # Verify if Docker is installed after running the install script
-    if ! command -v docker &> /dev/null; then
-      echo "Docker installation failed. Please check the installation process and try again."
-      exit 1
-    fi
+          # Verify if Docker is installed after running the install script
+          if ! command -v docker &> /dev/null; then
+            echo "Docker installation failed. Please check the installation process and try again."
+            exit 1
+          else
+            echo "Docker installed successfully."
+          fi
+          break
+          ;;
+        [nN] | [nN][oO] )
+          echo "Docker installation declined. Exiting..."
+          exit 0
+          ;;
+        * )
+          echo "Invalid input. Please enter 'y' for yes or 'n' for no."
+          ;;
+      esac
+    done
   else
     echo "Docker is already installed."
   fi
 }
+
 
 tune_system() {
 printf "\n\n\n*********System tuning starting...\n\n"
