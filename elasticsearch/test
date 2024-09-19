@@ -1,3 +1,6 @@
+#!/bin/bash
+
+
 # Function to check and disable swap if /swapfile.img is in use
 disable_swap_if_swapfile_img() {
     # Check if swap is on
