@@ -3,7 +3,9 @@ This python script uses the Netbox API to get useful information to augment flow
 Update the following in the script to match your environment 
 
 API_TOKEN = '9efdcab9667d7314eb73157c839cd6c970ab5718'  # Replace with your actual API token
+
 NETBOX_API_URL = 'http://192.168.1.6:8000/api/dcim/devices/'
+
 SITES_API_URL = 'http://192.168.1.6:8000/api/dcim/sites/'
 
 to run
