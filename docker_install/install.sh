@@ -72,8 +72,8 @@ check_docker() {
 }
 
 tune_system() {
-  printf "\n\n\n*********System tuning starting...\n\n"
-  kernel_tuning=$(cat <<EOF
+printf "\n\n\n*********System tuning starting...\n\n"
+kernel_tuning=$(cat <<EOF
 #####ElastiFlow tuning parameters######
 #For light to moderate ingest rates (less than 75000 flows per second: https://docs.elastiflow.com/docs/flowcoll/requirements/
 net.core.netdev_max_backlog=4096
