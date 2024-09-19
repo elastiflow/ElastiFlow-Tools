@@ -4,19 +4,16 @@ bash -c "$(wget -qLO - https://raw.githubusercontent.com/elastiflow/ElastiFlow-T
 
 Code in this folder may contain code from https://github.com/elastic/elasticsearch/tree/8.11/docs/reference/setup/install/docker
 
-Purpose:
-=================
+# Purpose:
 To easily install ElasticSearch, Kibana, and ElastiFlow with Docker Compose. Tested with Elastic / Kibana 8.15.1 and ElastiFlow 7.2.2.
 
-Prerequisites:
-=================
+# Prerequisites:
 1) Clean Ubuntu 22 (or greater) server with at least 8 GB of RAM, 4 CPU cores, and 500 GB of disk.
 2) Docker. If you do not have Docker, you can install it by:
       1) downloading "install_docker.sh" to your Linux server.
       2) "sudo chmod +x install_docker.sh && ./install_docker.sh"
 
-Instructions:
-=================
+# Instructions:
 1) Prepare server
 
 ---
@@ -51,18 +48,6 @@ Disable swapping
 2) Download all files in the docker_install folder to a new directory on a Linux host.
 
 3) Edit the .env file to set your desired Kibana and Elastic passwords, Elastic stack version, and ElastiFlow version to deploy
-
-      # Password for the 'elastic' user (at least 6 characters)
-      ELASTIC_PASSWORD={elastic_password}
-
-      # Password for the 'kibana_system' user (at least 6 characters)
-      KIBANA_PASSWORD={kibana_password}
-
-      # Version of Elastic products
-      STACK_VERSION={version}
-
-      # Elastiflow Version
-      ELASTIFLOW_VERSION={version}
 
 4) Run "sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_compose.yml up -d".
 
