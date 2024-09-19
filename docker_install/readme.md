@@ -66,7 +66,7 @@ Download https://github.com/elastiflow/elastiflow_for_elasticsearch/blob/master/
 
 In Kibana, do a global search (at the top) for "Saved Objects". Choose import and overwrite.
 
-#### 8 Send Netflow
+#### 8) Send Netflow
 Send Netflow to IP_of_your_host 9995. Refer to your hardware vendor for documentation on how to configure netflow export.
 
 #### 9) Visualize netflow
