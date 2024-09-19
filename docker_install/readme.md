@@ -59,7 +59,7 @@ Edit the .env file to set your desired Kibana and Elastic passwords, Elastic sta
 #### 6) Deploy 
 Run `sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_compose.yml up -d`
 
-After a few minutes, browse to http://IP_of_your_host:5601. Username: `elastic`", Password: your Elastic password you set in step 2.
+After a few minutes, browse to http://IP_of_your_host:5601. Username: `elastic`, Password: your Elastic password you set in step 2.
 
 #### 7) Install ElastiFlow dashboards:
 Download https://github.com/elastiflow/elastiflow_for_elasticsearch/blob/master/kibana/flow/kibana-8.2.x-flow-codex.ndjson
