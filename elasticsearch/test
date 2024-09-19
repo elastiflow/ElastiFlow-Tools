@@ -40,3 +40,5 @@ disable_swap_if_swapfile_img() {
         echo "Swap is currently off."
     fi
 }
+
+disable_swap_if_swapfile_img
