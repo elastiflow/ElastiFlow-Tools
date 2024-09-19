@@ -20,20 +20,17 @@ Instructions:
 1) Prepare server
 
 ---
-For software like Elasticsearch, increasing vm.max_map_count is recommended because Elasticsearch creates many memory mappings (pointers stored in RAM that point to disk locations) due to its heavy use of Lucene indexes. Elasticsearch documentation suggests increasing it to at least 262144 to avoid problems in production.
-      
-      On Linux, you can increase the limits by running the following command as root:
-      "sysctl -w vm.max_map_count=262144"
-      To set this value permanently, update the vm.max_map_count setting in /etc/sysctl.conf. To verify after rebooting or enter “sysctl -p”, run sysctl vm.max_map_count.
-
-Add the following recommended Kernel tuning parameters to /etc/sysctl.d
-
+Add the following recommended Kernel tuning parameters to /etc/sysctl.conf
 #For light to moderate ingest rates (less than 75000 flows per second: https://docs.elastiflow.com/docs/flowcoll/requirements/
+
+vm.max_map_count=262144"
 net.core.netdev_max_backlog=4096
 net.core.rmem_default=262144
 net.core.rmem_max=67108864
 net.ipv4.udp_rmem_min=131072
 net.ipv4.udp_mem=2097152 4194304 8388608
+
+To activate the settings, run "sysctl -p"
 
 ---
 Create the following directory:
