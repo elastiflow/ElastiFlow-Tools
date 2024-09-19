@@ -14,19 +14,5 @@ python3 import_mappings.py
 
 Example output
 
-"192.168.2.1/24:
-  tags:
-  - Router
-  metadata:
-    company.site.name: greer_office
-    device.type.name: Ubiquiti
-    .geo.loc.coord: 34.938728,82.227057
-    .geo.city.name: Greer
-    .geo.country.code: US
-    .geo.tz.name: America/New_York
-192.168.1.129/24:
-  tags:
-  - Server
-  metadata:
-    company.site.name: Autodiscovered devices
-    device.type.name: UNRAID"
+
+<img width="332" alt="Screenshot 2024-09-19 at 9 19 39 AM" src="https://github.com/user-attachments/assets/4152b8b0-bfdd-41c2-bf81-42e27d3dd417">
