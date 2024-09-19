@@ -16,15 +16,15 @@ This bash shell script can be run on the ElastiFlow Virtual Appliance to help co
 What this script does:
 ----------------
 
-Configures a static IP address
+Configures a static IP address-
   Prompts the user for a static IP, gateway, and DNS servers, and then does a netplan apply
 
-Configures trial
+Configures trial-
   Prompts the user for an ElastiFlow account ID and ElastiFlow license key
   Adds this information to flowcoll.conf
   Restarts flowcoll.service and verifies valid changes.
   
-Configures MaxMind enrichment
+Configures MaxMind enrichment-
   Prompts the user for MaxMind license key
   Downloads MaxMind databases
   Configures flowcoll.conf for MaxMind enrichment
