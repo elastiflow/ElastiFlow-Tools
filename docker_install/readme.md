@@ -36,7 +36,7 @@ net.ipv4.udp_mem=2097152 4194304 8388608
 ```
 To activate the settings, run `sudo sysctl -p`
 
-You could instead use the following one liner to do the same:
+You could instead use the following one liner to do everything:
 
 ```
 echo -e "\n# Memory mapping limits for Elasticsearch\nvm.max_map_count=262144\n# Network settings for high performance\nnet.core.netdev_max_backlog=4096\nnet.core.rmem_default=262144\nnet.core.rmem_max=67108864\nnet.ipv4.udp_rmem_min=131072\nnet.ipv4.udp_mem=2097152 4194304 8388608" | sudo tee -a /etc/sysctl.conf > /dev/null && sudo sysctl -p
