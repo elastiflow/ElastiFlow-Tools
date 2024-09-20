@@ -126,7 +126,7 @@ curl -L -o "readme.md" "https://raw.githubusercontent.com/elastiflow/ElastiFlow-
 
 
 #### 4) Edit the .env file
-Edit the .env file to set your desired Kibana and Elastic passwords, Elastic stack version, and ElastiFlow version to deploy
+Edit the .env file to set your desired Kibana and Elastic passwords, Elastic stack version, and ElastiFlow version to deploy. You may not see this file in your directory since it is hidden, but it is there.
 
 #### 5) Deploy 
 ```
