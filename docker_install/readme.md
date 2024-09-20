@@ -109,10 +109,7 @@ Or run the following in a terminal session:
 sudo wget "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/.env" && sudo wget "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elasticsearch_kibana_compose.yml" && sudo wget "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elastiflow_compose.yml" && sudo wget "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/readme.md"
 ```
 
-#### 4) Set variables / Edit the .env file
-Edit the .env file to set your desired Kibana and Elastic passwords, Elastic stack version, and ElastiFlow version to deploy. You may not see this file in your directory since it is hidden, but it is there.
-
-#### 5) Download sample yml enrichment files
+#### 4) Download sample yml enrichment files
 Download ElastiFlow from here: 
 https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_7.2.2_linux_amd64.deb
 
@@ -122,27 +119,25 @@ You can instead use a one liner to do everything:
 ```
 sudo wget -O flow-collector_7.2.2_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_7.2.2_linux_amd64.deb && sudo mkdir -p elastiflow_extracted && sudo dpkg-deb -x flow-collector_7.2.2_linux_amd64.deb elastiflow_extracted && sudo mkdir -p /etc/elastiflow && sudo cp -r elastiflow_extracted/etc/elastiflow/. /etc/elastiflow
 ```
-#### 6) Deploy 
+#### 5) Deploy 
 
 From the directory where you downloaded the yml and .env files, 
 ```
 sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_compose.yml up -d
 ```
-#### 7) Log in to Kibana 
+#### 6) Log in to Kibana 
 
 After a few minutes, browse to `http://IP_of_your_host:5601`.
 
 Username: `elastic` Password: `your Elastic password you specified in your .env file`
 
-#### 8) Install ElastiFlow dashboards:
+#### 7) Install ElastiFlow dashboards:
 Download https://github.com/elastiflow/elastiflow_for_elasticsearch/blob/master/kibana/flow/kibana-8.2.x-flow-codex.ndjson
 
 In Kibana, do a global search (at the top) for "Saved Objects". Choose "import" and "overwrite".
 
-#### 9) Send Netflow
+#### 8) Send Netflow
 Send Netflow to IP_of_your_host 9995. Refer to your hardware vendor for documentation on how to configure netflow export.
 
-#### 10) Visualize netflow
+#### 9) Visualize netflow
 In Kibana, do a global search (at the top) for the dashboard "ElastiFlow (flow): Overview" and open it.
-
-
