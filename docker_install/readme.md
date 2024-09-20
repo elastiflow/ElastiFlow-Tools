@@ -100,7 +100,7 @@ sudo swapoff -a && sudo rm /swap.img
 
 Reboot and verify swap is off with `swapon --show`
 
-#### 3) Download 
+#### 3) Download Docker Compose Files
 Create a new directory on your server and download `elasticsearch_kibana_compose.yml`, `elastiflow_compose.yml`, and `.env` from here https://github.com/elastiflow/ElastiFlow-Tools/edit/main/docker_install
 
 Or run the following in a terminal session:
