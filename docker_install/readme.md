@@ -55,7 +55,7 @@ net.ipv4.udp_mem=2097152 4194304 8388608
 EOF
 ```
 
-To activate the settings, run `sysctl -p`
+To activate the settings, run `sudo sysctl -p`
 
 ##### Explanation of parameters:
 
