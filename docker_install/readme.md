@@ -129,7 +129,8 @@ sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_compose.ym
 
 After a few minutes, browse to `http://IP_of_your_host:5601`.
 
-Username: `elastic` Password: `your Elastic password you specified in your .env file`
+Username: `elastic` 
+Password: `elastic`
 
 #### 7) Install ElastiFlow dashboards:
 Download https://github.com/elastiflow/elastiflow_for_elasticsearch/blob/master/kibana/flow/kibana-8.2.x-flow-codex.ndjson
