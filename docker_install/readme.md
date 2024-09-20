@@ -99,7 +99,7 @@ NAME      TYPE SIZE USED PRIO
 /swap.img file   4G   0B   -2
 ```
 
-`sudo swapoff -a && rm /swap.img`
+`sudo swapoff -a && sudo rm /swap.img`
 
 Reboot and verify swap is off with `swapon --show`
 
