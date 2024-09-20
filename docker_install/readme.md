@@ -114,7 +114,7 @@ NAME      TYPE SIZE USED PRIO
 Reboot and verify swap is off with `swapon --show`
 
 #### 3) Download 
-Download the following files to a new directory on your server.
+Create a new directory on your server and download the following files to it:
 
 https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/.env
 https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elasticsearch_kibana_compose.yml"
@@ -128,7 +128,6 @@ curl -L -o "elastiflow_compose.yml" "https://raw.githubusercontent.com/elastiflo
 curl -L -o "readme.md" "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/readme.md"
 ```
 
-
 #### 4) Edit the .env file
 Edit the .env file to set your desired Kibana and Elastic passwords, Elastic stack version, and ElastiFlow version to deploy. You may not see this file in your directory since it is hidden, but it is there.
 
@@ -137,7 +136,11 @@ Edit the .env file to set your desired Kibana and Elastic passwords, Elastic sta
 sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_compose.yml up -d
 ```
 
-After a few minutes, browse to http://IP_of_your_host:5601. Username: `elastic`, Password: your Elastic password you set in step 2.
+#### 6) Log in to Kibana 
+
+After a few minutes, browse to `http://IP_of_your_host:5601`.
+
+Username: `elastic` Password: `your Elastic password you specified in your .env file`
 
 #### 6) Install ElastiFlow dashboards:
 Download https://github.com/elastiflow/elastiflow_for_elasticsearch/blob/master/kibana/flow/kibana-8.2.x-flow-codex.ndjson
