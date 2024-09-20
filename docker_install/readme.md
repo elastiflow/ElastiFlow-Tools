@@ -126,6 +126,8 @@ You can instead use a one liner to do everything:
 sudo wget -O flow-collector_7.2.2_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_7.2.2_linux_amd64.deb && sudo mkdir -p elastiflow_extracted && sudo dpkg-deb -x flow-collector_7.2.2_linux_amd64.deb elastiflow_extracted && sudo mkdir -p /etc/elastiflow && sudo cp -r elastiflow_extracted/etc/elastiflow/. /etc/elastiflow
 ```
 #### 6) Deploy 
+
+From the directory where you downloaded the yml and .env files, 
 ```
 sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_compose.yml up -d
 ```
