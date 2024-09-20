@@ -18,6 +18,7 @@ Docker. If you do not have Docker, you can install it by:
 2) `sudo chmod +x install_docker.sh && ./install_docker.sh`
    
    OR simply can use this one liner
+
 `sudo bash -c "$(wget -qLO - https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/docker_install.sh)"`
 
 ### Instructions:
