@@ -114,7 +114,7 @@ NAME      TYPE SIZE USED PRIO
 Reboot and verify swap is off with `swapon --show`
 
 #### 3) Download 
-Download all files in the docker_install folder to a new directory on a Linux host.
+Download the following files to a new directory on your server.
 
 https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/.env
 https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elasticsearch_kibana_compose.yml"
