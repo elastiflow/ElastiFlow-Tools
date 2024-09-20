@@ -18,11 +18,6 @@ To easily install ElasticSearch, Kibana, and ElastiFlow with Docker Compose. Tes
 -Docker. 
 
 If you do not have Docker, you can install it by:
-1) downloading "install_docker.sh" to your Linux server.
-2) `sudo chmod +x install_docker.sh && ./install_docker.sh`
-   
-   OR simply can use this one liner
-
 ```
 sudo bash -c "$(wget -qLO - https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/install_docker.sh)"
 ```
