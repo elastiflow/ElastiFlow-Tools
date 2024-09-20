@@ -44,16 +44,6 @@ download_files() {
   curl -L -o "$INSTALL_DIR/readme.md" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/readme.md"
 }
 
-# Function to edit the .env file after downloading
-edit_env_file() {
-  ENV_FILE="$INSTALL_DIR/.env"
-  if command -v nano &> /dev/null; then
-    nano "$ENV_FILE"
-  else
-    vi "$ENV_FILE"
-  fi
-}
-
 # Function to check if Docker is installed and install if necessary
 check_docker() {
   if ! command -v docker &> /dev/null; then
@@ -236,7 +226,6 @@ ask_deploy
 tune_system
 disable_swap_if_swapfile_in_use
 download_files
-edit_env_file  # Open the .env file for editing
 check_docker
 deploy_elastiflow
 prompt_for_elastiflow_extraction_download
