@@ -102,9 +102,14 @@ If swap is active, you'll see the details of the swap partitions or files.
 If there is a swap partition, then `sudo nano /etc/fstab` and comment out or remove the swap entry: In the /etc/fstab file, look for the line that defines the swap partition or file.  It usually looks something like this:
 `/swapfile none swap sw 0 0`.
 
-If there is a swap file, then use the following command, replacing `swapfile.img` with the name of your swap file returned with `swapon --show`.
+If there is a swap file, then use the following command, replacing `swapfile.img` with the name of your swap file returned with 
+```
+swapon --show
+NAME      TYPE SIZE USED PRIO
+/swap.img file   4G   0B   -2
+```
 
-`sudo swapoff -a && rm /swapfile.img`
+`sudo swapoff -a && rm /swap.img`
 
 Reboot and verify swap is off with `swapon --show`
 
