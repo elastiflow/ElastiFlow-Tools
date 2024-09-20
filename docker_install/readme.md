@@ -11,9 +11,13 @@ ElastiFlow Environment with Docker
 To easily install ElasticSearch, Kibana, and ElastiFlow with Docker Compose. Tested with Elastic / Kibana 8.15.1 and ElastiFlow 7.2.2.
 
 ### Prerequisites:
-Clean Ubuntu 22 (or greater) server with at least 8 GB of RAM, 4 CPU cores, and 500 GB of disk.
+-Clean Ubuntu 22 (or greater) server
 
-Docker. If you do not have Docker, you can install it by:
+-8 GB of RAM, 4 CPU cores, and 500 GB of disk.
+
+-Docker. 
+
+If you do not have Docker, you can install it by:
 1) downloading "install_docker.sh" to your Linux server.
 2) `sudo chmod +x install_docker.sh && ./install_docker.sh`
    
