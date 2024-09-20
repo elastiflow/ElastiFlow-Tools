@@ -147,4 +147,4 @@ Browse for and upload the ndjson file you downloaded. Choose "import" and "overw
 Send Netflow to IP_of_your_host 9995. Refer to your hardware vendor for documentation on how to configure netflow export.
 
 #### 9) Visualize netflow
-In Kibana, do a global search (at the top) for the dashboard "ElastiFlow (flow): Overview" and open it.
+In Kibana, do a global search (at the top) for the dashboard "ElastiFlow (flow): Overview" and open it. It may be a few minutes for flow records to populate as the system is waiting for flow templates to arrive.
