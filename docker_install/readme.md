@@ -139,7 +139,7 @@ Extract the contents of `/etc/elastiflow` in the archive to `/etc/elastiflow`.
 
 You can instead use a one liner to do everything:
 ```
-wget -O flow-collector_7.2.2_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_7.2.2_linux_amd64.deb && mkdir -p elastiflow_extracted && dpkg-deb -x flow-collector_7.2.2_linux_amd64.deb elastiflow_extracted && sudo mkdir -p /etc/elastiflow && sudo cp -r elastiflow_extracted/data/etc/elastiflow/. /etc/elastiflow
+wget -O flow-collector_7.2.2_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_7.2.2_linux_amd64.deb && mkdir -p elastiflow_extracted && dpkg-deb -x flow-collector_7.2.2_linux_amd64.deb elastiflow_extracted && sudo mkdir -p /etc/elastiflow && sudo cp -r elastiflow_extracted/etc/elastiflow/. /etc/elastiflow
 ```
 #### 6) Deploy 
 ```
