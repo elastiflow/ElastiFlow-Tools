@@ -116,11 +116,15 @@ Reboot and verify swap is off with `swapon --show`
 #### 3) Download 
 Download all files in the docker_install folder to a new directory on a Linux host.
 
+https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/.env
+https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elasticsearch_kibana_compose.yml"
+https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elastiflow_compose.yml
+
+Or copy and paste the following in a terminal session:
 ```
 curl -L -o ".env" "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/.env"
 curl -L -o "elasticsearch_kibana_compose.yml" "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elasticsearch_kibana_compose.yml"
 curl -L -o "elastiflow_compose.yml" "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elastiflow_compose.yml"
-curl -L -o "install_docker.sh" "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/install_docker.sh"
 curl -L -o "readme.md" "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/readme.md"
 ```
 
