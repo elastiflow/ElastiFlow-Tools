@@ -79,11 +79,11 @@ services:
       - xpack.security.transport.ssl.verification_mode=certificate
       - xpack.license.self_generated.type=${LICENSE}
       # fix to enable pdf and png report generation for paid elastic
-      - xpack.reporting.capture.browser.chromium.disableSandbox=true
-      - xpack.reporting.queue.timeout=120000
-      - xpack.reporting.capture.timeouts.openUrl=30000
-      - xpack.reporting.capture.timeouts.renderComplete=30000
-      - xpack.reporting.capture.timeouts.waitForElements=30000
+      #- xpack.reporting.capture.browser.chromium.disableSandbox=true
+      #- xpack.reporting.queue.timeout=120000
+      #- xpack.reporting.capture.timeouts.openUrl=30000
+      #- xpack.reporting.capture.timeouts.renderComplete=30000
+      #- xpack.reporting.capture.timeouts.waitForElements=30000
     #mem_limit: ${MEM_LIMIT}
     ulimits:
       memlock:
