@@ -109,10 +109,7 @@ https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_instal
 
 Or copy and paste the following in a terminal session:
 ```
-curl -L -o ".env" "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/.env"
-curl -L -o "elasticsearch_kibana_compose.yml" "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elasticsearch_kibana_compose.yml"
-curl -L -o "elastiflow_compose.yml" "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elastiflow_compose.yml"
-curl -L -o "readme.md" "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/readme.md"
+sudo mkdir ./elastiflow_install && sudo curl -L -o "./elastiflow_install/.env" "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/.env" && sudo curl -L -o "elasticsearch_kibana_compose.yml" "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elasticsearch_kibana_compose.yml" && sudo curl -L -o "elastiflow_compose.yml" "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elastiflow_compose.yml" && sudo curl -L -o "readme.md" "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/readme.md"
 ```
 
 #### 4) Set variables / Edit the .env file
