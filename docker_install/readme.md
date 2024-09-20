@@ -16,6 +16,9 @@ Clean Ubuntu 22 (or greater) server with at least 8 GB of RAM, 4 CPU cores, and 
 Docker. If you do not have Docker, you can install it by:
 1) downloading "install_docker.sh" to your Linux server.
 2) `sudo chmod +x install_docker.sh && ./install_docker.sh`
+   
+   OR simply can use this one liner
+`sudo bash -c "$(wget -qLO - https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/docker_install.sh)"`
 
 ### Instructions:
 
