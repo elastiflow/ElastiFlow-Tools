@@ -128,37 +128,38 @@ curl -L -o "elastiflow_compose.yml" "https://raw.githubusercontent.com/elastiflo
 curl -L -o "readme.md" "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/readme.md"
 ```
 
-#### 4) Edit the .env file
+#### 4) Set variables / Edit the .env file
 Edit the .env file to set your desired Kibana and Elastic passwords, Elastic stack version, and ElastiFlow version to deploy. You may not see this file in your directory since it is hidden, but it is there.
 
-#### 5) Deploy 
+#### 5) Download sample yml enrichment files
+Download ElastiFlow from here: 
+https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_7.2.2_linux_amd64.deb
+
+Extract the contents of `/etc/elastiflow` in the archive to `/etc/elastiflow`.
+
+You can instead use a one liner to do everything:
+```
+wget -O flow-collector_7.2.2_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_7.2.2_linux_amd64.deb && mkdir -p elastiflow_extracted && dpkg-deb -x flow-collector_7.2.2_linux_amd64.deb elastiflow_extracted && sudo mkdir -p /etc/elastiflow && sudo cp -r elastiflow_extracted/data/etc/elastiflow/. /etc/elastiflow
+```
+#### 6) Deploy 
 ```
 sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_compose.yml up -d
 ```
-
-#### 6) Log in to Kibana 
+#### 7) Log in to Kibana 
 
 After a few minutes, browse to `http://IP_of_your_host:5601`.
 
 Username: `elastic` Password: `your Elastic password you specified in your .env file`
 
-#### 6) Install ElastiFlow dashboards:
+#### 8) Install ElastiFlow dashboards:
 Download https://github.com/elastiflow/elastiflow_for_elasticsearch/blob/master/kibana/flow/kibana-8.2.x-flow-codex.ndjson
 
-In Kibana, do a global search (at the top) for "Saved Objects". Choose import and overwrite.
+In Kibana, do a global search (at the top) for "Saved Objects". Choose "import" and "overwrite".
 
-#### 7) Send Netflow
+#### 9) Send Netflow
 Send Netflow to IP_of_your_host 9995. Refer to your hardware vendor for documentation on how to configure netflow export.
 
-#### 8) Visualize netflow
+#### 10) Visualize netflow
 In Kibana, do a global search (at the top) for the dashboard "ElastiFlow (flow): Overview" and open it.
 
-#### 9) Optional - Download sample yml enrichment files
-Download ElastiFlow from here: https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_7.2.2_linux_amd64.deb
 
-Extract the contents of `/etc/elastiflow` in the archive to `/etc/elastiflow`.
-
-You can instead use a one liner to do the same:
-```
-wget -O flow-collector_7.2.2_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_7.2.2_linux_amd64.deb && mkdir -p elastiflow_extracted && dpkg-deb -x flow-collector_7.2.2_linux_amd64.deb elastiflow_extracted && sudo mkdir -p /etc/elastiflow && sudo cp -r elastiflow_extracted/data/etc/elastiflow/. /etc/elastiflow
-```
