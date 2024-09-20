@@ -109,8 +109,11 @@ https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_instal
 
 Or copy and paste the following in a terminal session:
 ```
-sudo mkdir ./elastiflow_install && sudo curl -L -o "./elastiflow_install/.env" "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/.env" && sudo curl -L -o "elasticsearch_kibana_compose.yml" "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elasticsearch_kibana_compose.yml" && sudo curl -L -o "elastiflow_compose.yml" "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elastiflow_compose.yml" && sudo curl -L -o "readme.md" "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/readme.md"
+sudo curl --create-dirs -O --output-dir ./elastiflow_install "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/.env" && sudo curl --create-dirs -O --output-dir ./elastiflow_install  "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elasticsearch_kibana_compose.yml" && sudo curl --create-dirs -O --output-dir ./elastiflow_install "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elastiflow_compose.yml" && sudo curl --create-dirs -O --output-dir ./elastiflow_install "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/readme.md"
 ```
+
+sudo curl --create-dirs -O --output-dir /elastiflow_install https://example.com/pancakes.jpg
+
 
 #### 4) Set variables / Edit the .env file
 Edit the .env file to set your desired Kibana and Elastic passwords, Elastic stack version, and ElastiFlow version to deploy. You may not see this file in your directory since it is hidden, but it is there.
