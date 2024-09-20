@@ -135,7 +135,13 @@ Password: `elastic`
 #### 7) Install ElastiFlow dashboards:
 Download https://github.com/elastiflow/elastiflow_for_elasticsearch/blob/master/kibana/flow/kibana-8.2.x-flow-codex.ndjson
 
-In Kibana, do a global search (at the top) for "Saved Objects". Choose "import" and "overwrite".
+Log in to Kibana
+
+If given the choice, click "Explore on my own"
+
+Do a global search (at the top) for "Saved Objects". Select it 
+
+Browse for and upload the ndjson file you downloaded. Choose "import" and "overwrite".
 
 #### 8) Send Netflow
 Send Netflow to IP_of_your_host 9995. Refer to your hardware vendor for documentation on how to configure netflow export.
