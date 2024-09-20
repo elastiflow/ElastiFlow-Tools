@@ -39,6 +39,7 @@ net.core.rmem_max=67108864
 net.ipv4.udp_rmem_min=131072
 net.ipv4.udp_mem=2097152 4194304 8388608
 ```
+To activate the settings, run `sudo sysctl -p`
 
 You could instead use the following one liner to do the same:
 
@@ -53,9 +54,8 @@ net.core.rmem_max=67108864
 net.ipv4.udp_rmem_min=131072
 net.ipv4.udp_mem=2097152 4194304 8388608
 EOF
+sudo sysctl -p
 ```
-
-To activate the settings, run `sudo sysctl -p`
 
 ##### Explanation of parameters:
 
