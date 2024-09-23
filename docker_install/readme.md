@@ -11,7 +11,7 @@ To easily install ElasticSearch, Kibana, and ElastiFlow with Docker Compose. Tes
 ### Prerequisites:
 - Clean Ubuntu 22 (or greater) Linux server
 
-- 16 GB of RAM, 4 CPU cores, and 500 GB of disk. This will allow you to store roughly 1 month of flow data at 500 FPS.
+- 16 GB of RAM, 4 CPU cores, and 500 GB of disk space. This will allow you to store roughly 1 month of flow data at 500 FPS.
 
 - Docker. 
 
