@@ -1,6 +1,4 @@
 
-Code in this folder may contain code from https://github.com/elastic/elasticsearch/tree/8.11/docs/reference/setup/install/docker
-
 ElastiFlow Environment with Docker
 ================================  
 
@@ -160,3 +158,6 @@ sudo docker compose -f elastiflow_compose.yml down && sudo docker compose -f ela
 ```
 sudo docker logs flow-collector -f
 ```
+
+Code in this folder may contain code from https://github.com/elastic/elasticsearch/tree/8.11/docs/reference/setup/install/docker
+
