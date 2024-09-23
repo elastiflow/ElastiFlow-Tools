@@ -11,11 +11,11 @@ ElastiFlow Environment with Docker
 To easily install ElasticSearch, Kibana, and ElastiFlow with Docker Compose. Tested with Elastic / Kibana 8.15.1 and ElastiFlow 7.2.2.
 
 ### Prerequisites:
--Clean Ubuntu 22 (or greater) server
+- Clean Ubuntu 22 (or greater) server
 
--8 GB of RAM, 4 CPU cores, and 500 GB of disk.
+- 8 GB of RAM, 4 CPU cores, and 500 GB of disk. This will allow you to store roughly 2 weeks of flow data at 2000 FPS.
 
--Docker. 
+- Docker. 
 
 If you do not have Docker, you can install it by:
 ```
@@ -148,3 +148,15 @@ Send Netflow to IP_of_your_host 9995. Refer to your hardware vendor for document
 
 #### 9) Visualize netflow
 In Kibana, do a global search (at the top) for the dashboard "ElastiFlow (flow): Overview" and open it. It may be a few minutes for flow records to populate as the system waits for flow templates to arrive.
+
+
+## Notes
+
+- If you need to make any ElastiFlow configuration changes such as turning options on and off, adding your license information, etc, go ahead and edit the elastiflow_compose.yml and then do a 
+```
+sudo docker compose -f elastiflow_compose.yml down && sudo docker compose -f elastiflow_compose.yml up -d
+```
+- After making configuration changes, if ElastiFlow starts and then stops or fails to stay running, check the logs by doing
+```
+sudo docker logs flow-collector -f
+```
