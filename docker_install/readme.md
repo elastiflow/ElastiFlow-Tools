@@ -1,5 +1,5 @@
 
-ElastiFlow Environment with Docker
+ElastiFlow Docker Deployment Tool
 ================================  
 
 ## Author
@@ -42,39 +42,17 @@ echo -e "\n# Memory mapping limits for Elasticsearch\nvm.max_map_count=262144\n#
 
 ##### Explanation of parameters:
 
-`vm.max_map_count=262144`
+`vm.max_map_count=262144`: Sets the max memory map areas per process, important for Elasticsearch to handle memory-mapped files. Default is often lower, so 262144 is needed for smooth operation.
 
-Description: This parameter sets the maximum number of memory map areas a process can have. Memory maps are used by programs like Elasticsearch to map files to memory for faster access.
-Use case: Elasticsearch (and other large JVM applications) makes heavy use of memory-mapped files for efficient access to its index files. If this value is too low, Elasticsearch might fail to start or run efficiently.
-Default value: On many systems, the default is much lower (e.g., 65530), so setting it to 262144 ensures Elasticsearch has enough room to handle its memory mappings.
+`net.core.netdev_max_backlog=4096`: Defines the max queued packets at the network interface. A higher value (4096) helps systems with high traffic prevent packet drops.
 
-`net.core.netdev_max_backlog=4096`
+`net.core.rmem_default=262144`: Sets the default socket receive buffer size (262144 bytes). Useful for applications like Elasticsearch that handle large amounts of data.
 
-Description: This parameter specifies the maximum number of packets allowed to queue up for processing at the network interface. If the network driver can't process packets fast enough, they are buffered in this queue.
-Use case: For systems handling high traffic or many connections, increasing this value ensures that packets are not dropped if they arrive faster than the system can process them. A value of 4096 means that up to 4096 packets can be queued before the system starts dropping them.
+`net.core.rmem_max=67108864`: Defines the max socket receive buffer size (up to 64 MB) for handling high-throughput applications.
 
-`net.core.rmem_default=262144`
+`net.ipv4.udp_rmem_min=131072`: Sets the minimum UDP socket receive buffer (131072 bytes), ensuring adequate space for UDP traffic without dropping packets.
 
-Description: This sets the default size of the receive buffer used by sockets (in bytes). This buffer temporarily stores incoming data before it's processed by the application.
-Use case: For applications that receive a large amount of data, like Elasticsearch, setting a higher default receive buffer size improves performance by allowing the system to handle larger amounts of data before dropping packets or slowing down.
-
-`net.core.rmem_max=67108864`
-
-Description: This defines the maximum size (in bytes) for the receive buffer for a socket. Applications can request a buffer size up to this limit.
-Use case: When dealing with high-throughput applications, increasing the maximum receive buffer size allows the system to handle larger bursts of incoming data. The value of 67108864 means that the system can allocate up to 64 MB for the receive buffer of a socket.
-
-`net.ipv4.udp_rmem_min=131072`
-
-Description: This parameter sets the minimum size (in bytes) of the receive buffer used by UDP sockets.
-Use case: For systems handling a lot of UDP traffic (such as logging or monitoring applications that rely on UDP), setting a higher minimum receive buffer ensures that the system can handle incoming data without dropping packets due to small buffer sizes. The value 131072 (128 KB) helps in maintaining adequate buffer size for UDP traffic.
-
-`net.ipv4.udp_mem=2097152 4194304 8388608`
-
-Description: This defines the memory usage limits for UDP sockets. It consists of three values (in pages, where 1 page is usually 4096 bytes):
-2097152 (2 GB): This is the threshold where the kernel starts applying memory pressure to slow down the socket to prevent further memory allocation.
-4194304 (4 GB): The kernel starts dropping packets when memory allocation reaches this point.
-8388608 (8 GB): This is the absolute maximum memory the kernel will allocate for UDP traffic.
-Use case: For systems with high-volume UDP traffic, these values help ensure that the system has enough memory allocated for UDP packet buffering before dropping packets or causing errors.
+`net.ipv4.udp_mem=2097152 4194304 8388608`: Defines UDP memory limits (in pages). 2 GB slows socket allocation, 4 GB starts dropping packets, and 8 GB is the max allowed. Helps manage high UDP traffic.
 
 #### 2) Disable swapping
 
@@ -162,6 +140,5 @@ sudo docker logs flow-collector -f
  
 - Questions?
   [Documentation](https://docs.elastiflow.com) | [Community Forum](https://forum.elastiflow.com) | [Slack](https://elastiflowcommunity.slack.com) 
- 
-Code in this folder may contain code from [Elastic's Github Repo.](https://github.com/elastic/elasticsearch/tree/8.11/docs/reference/setup/install/docker)
+- Code in this folder may contain code from [Elastic's Github Repo.](https://github.com/elastic/elasticsearch/tree/8.11/docs/reference/setup/install/docker)
 
