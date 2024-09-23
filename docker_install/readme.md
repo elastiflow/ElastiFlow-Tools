@@ -11,7 +11,7 @@ To easily install ElasticSearch, Kibana, and ElastiFlow with Docker Compose. Tes
 ### Prerequisites:
 - Clean Ubuntu 22 (or greater) server
 
-- 8 GB of RAM, 4 CPU cores, and 500 GB of disk. This will allow you to store roughly 2 weeks of flow data at 2000 FPS.
+- 16 GB of RAM, 4 CPU cores, and 500 GB of disk. This will allow you to store roughly 1 month of flow data at 500 FPS.
 
 - Docker. 
 
@@ -99,7 +99,7 @@ sudo swapoff -a && sudo rm /swap.img
 Reboot and verify swap is off with `swapon --show`
 
 #### 3) Download Docker Compose files
-Create a new directory on your server and download `elasticsearch_kibana_compose.yml`, `elastiflow_compose.yml`, and `.env` from here https://github.com/elastiflow/ElastiFlow-Tools/edit/main/docker_install
+Create a new directory on your server and download `elasticsearch_kibana_compose.yml`, `elastiflow_compose.yml`, and `.env` from [here](https://github.com/elastiflow/ElastiFlow-Tools/edit/main/docker_install)
 
 Or run the following in a terminal session:
 
@@ -108,8 +108,7 @@ sudo wget "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/do
 ```
 
 #### 4) Download sample yml enrichment files
-Download ElastiFlow from here: 
-https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_7.2.2_linux_amd64.deb
+Download ElastiFlow from [here.](https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_7.2.2_linux_amd64.deb) 
 
 Extract the contents of `/etc/elastiflow` in the archive to `/etc/elastiflow`.
 
@@ -131,7 +130,7 @@ Username: `elastic`
 Password: `elastic`
 
 #### 7) Install ElastiFlow dashboards:
-Download https://github.com/elastiflow/elastiflow_for_elasticsearch/blob/master/kibana/flow/kibana-8.2.x-flow-codex.ndjson
+[Download](https://github.com/elastiflow/elastiflow_for_elasticsearch/blob/master/kibana/flow/kibana-8.2.x-flow-codex.ndjson) this dashboard to your local machine.
 
 Log in to Kibana
 
@@ -158,6 +157,10 @@ sudo docker compose -f elastiflow_compose.yml down && sudo docker compose -f ela
 ```
 sudo docker logs flow-collector -f
 ```
-
-Code in this folder may contain code from https://github.com/elastic/elasticsearch/tree/8.11/docs/reference/setup/install/docker
+- If you would like to request a free basic license go [here](https://www.elastiflow.com/basic-license). You can also request a 30 day premium license [here](https://www.elastiflow.com/get-started).
+ 
+- Questions?
+  [Documentation](https://docs.elastiflow.com) | [Community Forum](https://forum.elastiflow.com) | [Slack](https://elastiflowcommunity.slack.com) 
+ 
+Code in this folder may contain code from [Elastic's Github Repo.](https://github.com/elastic/elasticsearch/tree/8.11/docs/reference/setup/install/docker)
 
