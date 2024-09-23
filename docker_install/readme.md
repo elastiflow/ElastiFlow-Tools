@@ -136,6 +136,14 @@ sudo docker compose -f elastiflow_compose.yml down && sudo docker compose -f ela
 ```
 sudo docker logs flow-collector -f
 ```
+- If you would like to use a different amount of RAM than 16GB, please view the .env file for guidance on the values for the following keys:
+
+`JVM_HEAP_SIZE`
+
+`MEM_LIMIT_ELASTIC`
+
+`MEM_LIMIT_KIBANA`
+
 - If you would like to request a free basic license go [here](https://www.elastiflow.com/basic-license). You can also request a 30 day premium license which unlocks much higher flow rates and [NetIntel enrichments](https://www.elastiflow.com/blog/posts/elastiflow-launches-netintel-to-boost-enterprise-security-against-internal), click [here](https://www.elastiflow.com/get-started).
  
 - Questions?
