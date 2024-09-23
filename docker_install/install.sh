@@ -117,7 +117,7 @@ deploy_elastiflow() {
 # Function to check and disable swap if any swap file is in use
 disable_swap_if_swapfile_in_use() {
   
-printf "\n\n\n*********Disabling swap file is present...\n\n"
+printf "\n\n\n*********Disabling swap file if present...\n\n"
 
     # Check if swap is on
     swap_status=$(swapon --show)
@@ -199,7 +199,7 @@ extract_elastiflow() {
 
 prompt_for_elastiflow_extraction_download() {
     while true; do
-        read -p "Do you want to download the sample YAML enrichment files? (yes/y or no/n): " user_input
+        read -p "Do you want to download the sample YAML enrichment files? (Highly Recommended) (yes/y or no/n): " user_input
 
         case $user_input in
             [Yy]* )
@@ -227,6 +227,6 @@ tune_system
 disable_swap_if_swapfile_in_use
 download_files
 check_docker
-deploy_elastiflow
 prompt_for_elastiflow_extraction_download
+deploy_elastiflow
 echo "ElastiFlow has been deployed successfully!"
