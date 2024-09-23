@@ -78,24 +78,25 @@ Use case: For systems with high-volume UDP traffic, these values help ensure tha
 
 #### 2) Disable swapping
 
-View current swap configuration `swapon --show`
+High performance data platforms like Elastic don't like to swap to disk.
+
+First, view your current swap configuration with `swapon --show`
 
 If swap is active, you'll see the details of the swap partitions or files. 
 
-If there is a swap partition, then `sudo nano /etc/fstab` and comment out or remove the swap entry: In the /etc/fstab file, look for the line that defines the swap partition or file.  It usually looks something like this:
+If there is a swap partition, in the /etc/fstab file, look for the line that defines the swap partition or file.  It usually looks something like this:
 `/swapfile none swap sw 0 0`.
 
-If there is a swap file, then use the following command, replacing `swapfile.img` with the name of your swap file returned with 
+If there is a swap file, then use the following command, 
+```
+sudo swapoff -a && sudo rm /swap.img
+```
+replacing `swapfile.img` with the name of your swap file returned with 
 ```
 swapon --show
 NAME      TYPE SIZE USED PRIO
 /swap.img file   4G   0B   -2
 ```
-
-```
-sudo swapoff -a && sudo rm /swap.img
-```
-
 Reboot and verify swap is off with `swapon --show`
 
 #### 3) Download Docker Compose files
@@ -157,7 +158,7 @@ sudo docker compose -f elastiflow_compose.yml down && sudo docker compose -f ela
 ```
 sudo docker logs flow-collector -f
 ```
-- If you would like to request a free basic license go [here](https://www.elastiflow.com/basic-license). You can also request a 30 day premium license [here](https://www.elastiflow.com/get-started).
+- If you would like to request a free basic license go [here](https://www.elastiflow.com/basic-license). You can also request a 30 day premium license which unlocks much higher flow rates and [NetIntel enrichments](https://www.elastiflow.com/blog/posts/elastiflow-launches-netintel-to-boost-enterprise-security-against-internal), click [here](https://www.elastiflow.com/get-started).
  
 - Questions?
   [Documentation](https://docs.elastiflow.com) | [Community Forum](https://forum.elastiflow.com) | [Slack](https://elastiflowcommunity.slack.com) 
