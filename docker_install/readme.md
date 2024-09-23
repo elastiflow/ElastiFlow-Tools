@@ -136,7 +136,7 @@ sudo docker compose -f elastiflow_compose.yml down && sudo docker compose -f ela
 ```
 sudo docker logs flow-collector -f
 ```
-- If you would like to use a different amount of RAM than 16GB, please view the .env file for guidance on the values for the following keys:
+- If your server is has a different amount of RAM than 16GB, please view the .env file for guidance on the values for the following keys:
 
 `JVM_HEAP_SIZE`
 
