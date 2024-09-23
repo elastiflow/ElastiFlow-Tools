@@ -80,7 +80,7 @@ services:
       - xpack.license.self_generated.type=${LICENSE}
       - ES_JAVA_OPTS=-Xms${JVM_HEAP_SIZE}g -Xmx${JVM_HEAP_SIZE}g
 
-    #mem_limit: ${MEM_LIMIT}
+    mem_limit: ${MEM_LIMIT_ELASTIC}
     ulimits:
       memlock:
         soft: -1
@@ -112,7 +112,7 @@ services:
       - ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD}
       - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=config/certs/ca/ca.crt
       - SERVER_PUBLICBASEURL=http://kibana.example.com:5601
-    #mem_limit: ${MEM_LIMIT}
+    mem_limit: ${MEM_LIMIT_KIBANA}
     healthcheck:
       test:
         [
