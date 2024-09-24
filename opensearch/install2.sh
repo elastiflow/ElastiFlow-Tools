@@ -1,6 +1,6 @@
 #!/bin/bash
 
-elastiflow_version="6.4.2"
+elastiflow_version="7.2.2"
 export OPENSEARCH_INITIAL_ADMIN_PASSWORD="yourStrongPassword123!"
 
 # Function to handle errors
