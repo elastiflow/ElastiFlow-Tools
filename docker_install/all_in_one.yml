@@ -128,9 +128,21 @@ services:
     image: elastiflow/flow-collector:${ELASTIFLOW_VERSION}
     container_name: flow-collector
     restart: 'unless-stopped'
+    depends_on:
+      kibana:
+        condition: service_healthy
     network_mode: 'host'
     volumes:
       - /etc/elastiflow:/etc/elastiflow
+    healthcheck:
+        test:
+          [
+          "CMD-SHELL",
+          "curl -s http://localhost:8080 | grep -q '200 - Ready!'",
+          ]
+      interval: 10s
+      timeout: 10s
+      retries: 120
     environment:
       EF_LICENSE_ACCEPTED: 'true'
       #EF_ACCOUNT_ID: ''
