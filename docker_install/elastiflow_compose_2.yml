@@ -14,8 +14,8 @@ services:
           "CMD-SHELL",
           "curl -s http://localhost:8080/readyz | grep -q '200 - Ready!'",
         ]
-      interval: 10s
-      timeout: 10s
+      interval: 1s
+      timeout: 3s
       retries: 120
       
     environment:
