@@ -13,9 +13,7 @@ To easily install ElasticSearch, Kibana, and ElastiFlow with Docker Compose. Tes
 
 - 16 GB of RAM, 4 CPU cores, and 500 GB of disk space. This will allow you to store roughly 1 month of flow data at 500 FPS.
 
-- Docker. 
-
-If you do not have Docker, you can install it with the following one liner:
+- Docker. If you do not have Docker, you can install it with the following one liner:
 ```
 sudo bash -c "$(wget -qLO - https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/install_docker.sh)"
 ```
@@ -58,24 +56,12 @@ echo -e "\n# Memory mapping limits for Elasticsearch\nvm.max_map_count=262144\n#
 
 High performance data platforms like Elastic don't like to swap to disk.
 
-First, view your current swap configuration with `swapon --show`
+1) First, view your current swap configuration with `swapon --show`. If swap is active, you'll see the details of the swap partitions or files. Turn off swapping with `sudo swapoff -a`
 
-If swap is active, you'll see the details of the swap partitions or files. 
+2) If there is a swap partition, in the /etc/fstab file, look for the line that defines the swap partition or file and comment it out.  It usually looks something like this:
+`/swapfile none swap sw 0 0`. If there is a swap file, then delete it with, `sudo rm /swap.img` replacing `swapfile.img` with the name of your swap file.
 
-If there is a swap partition, in the /etc/fstab file, look for the line that defines the swap partition or file.  It usually looks something like this:
-`/swapfile none swap sw 0 0`.
-
-If there is a swap file, then use the following command, 
-```
-sudo swapoff -a && sudo rm /swap.img
-```
-replacing `swapfile.img` with the name of your swap file returned with 
-```
-swapon --show
-NAME      TYPE SIZE USED PRIO
-/swap.img file   4G   0B   -2
-```
-Reboot and verify swap is off with `swapon --show`
+3) Verify swap is off with `swapon --show`
 
 #### 3) Download Docker Compose files
 Create a new directory on your server and download `elasticsearch_kibana_compose.yml`, `elastiflow_compose.yml`, and `.env` from [here](https://github.com/elastiflow/ElastiFlow-Tools/edit/main/docker_install)
@@ -107,15 +93,13 @@ If you would like to enable geo IP and ASN enrichment, please do the following:
 EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE: 'true'
 EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE: 'true'
 ```
-To automate steps 2,3,4, download and installation of the Geolite databases, you could run the following commands on your server:
+To automate steps 2 and 3, you could run the following commands on your server:
 Be sure to replace `YOUR_LICENSE_KEY` with your GeoLite2 license key.
 ```
 sudo wget -O ./GeoLite2-ASN.tar.gz "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-ASN&license_key=YOUR_LICENSE_KEY&suffix=tar.gz"
 sudo wget -O ./GeoLite2-City.tar.gz  "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=YOUR_LICENSE_KEY&suffix=tar.gz"
 sudo tar -xvzf GeoLite2-ASN.tar.gz --strip-components 1 -C /etc/elastiflow/maxmind/
 sudo tar -xvzf GeoLite2-City.tar.gz  --strip-components 1 -C /etc/elastiflow/maxmind/
-sed -i "s/^\s*EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE:\s*'false'/      EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE: 'true'/" elastiflow_compose.yml
-sed -i "s/^\s*EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE:\s*'false'/      EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE: 'true'/" elastiflow_compose.yml
 ```
 
 
@@ -133,22 +117,22 @@ Username: `elastic`
 Password: `elastic`
 
 #### 7) Install ElastiFlow dashboards:
-[Download](https://github.com/elastiflow/elastiflow_for_elasticsearch/blob/master/kibana/flow/kibana-8.2.x-flow-codex.ndjson) this dashboard to your local machine.
 
-Log in to Kibana
+1) Download this [dashboards file](https://github.com/elastiflow/elastiflow_for_elasticsearch/blob/master/kibana/flow/kibana-8.2.x-flow-codex.ndjson) to your local machine.
 
-If given the choice, click "Explore on my own"
+2) Log in to Kibana
 
-Do a global search (at the top) for "Saved Objects". Select it 
+3) If given the choice, click "Explore on my own"
 
-Browse for and upload the ndjson file you downloaded. Choose "import" and "overwrite".
+4) Do a global search (at the top) for "Saved Objects". Select it 
+
+5) Browse for and upload the ndjson file you downloaded. Choose "import" and "overwrite".
 
 #### 8) Send Netflow
 Send Netflow to IP_of_your_host 9995. Refer to your hardware vendor for documentation on how to configure netflow export.
 
-#### 9) Visualize netflow
+#### 9) Visualize Netflow
 In Kibana, do a global search (at the top) for the dashboard "ElastiFlow (flow): Overview" and open it. It may be a few minutes for flow records to populate as the system waits for flow templates to arrive.
-
 
 ## Notes
 
