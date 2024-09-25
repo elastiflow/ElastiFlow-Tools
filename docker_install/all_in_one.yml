@@ -144,7 +144,7 @@ services:
       timeout: 10s
       retries: 120
     environment:
-      EF_LICENSE_ACCEPTED: 'true'
+      EF_LICENSE_ACCEPTED: 'false'
       #EF_ACCOUNT_ID: ''
 
       #EF_FLOW_LICENSE_KEY: ''
