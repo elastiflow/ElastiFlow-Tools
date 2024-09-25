@@ -86,7 +86,7 @@ Or run the following in a terminal session:
 sudo wget "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/.env" && sudo wget "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elasticsearch_kibana_compose.yml" && sudo wget "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elastiflow_compose.yml" && sudo wget "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/readme.md"
 ```
 
-#### 4) Download sample yml enrichment files
+#### 4) Download required ElastiFlow support files
 Download ElastiFlow from [here.](https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_7.2.2_linux_amd64.deb) 
 
 Extract the contents of `/etc/elastiflow` in the archive to `/etc/elastiflow`.
@@ -95,6 +95,28 @@ You can instead use a one liner to do everything:
 ```
 sudo wget -O flow-collector_7.2.2_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_7.2.2_linux_amd64.deb && sudo mkdir -p elastiflow_extracted && sudo dpkg-deb -x flow-collector_7.2.2_linux_amd64.deb elastiflow_extracted && sudo mkdir -p /etc/elastiflow && sudo cp -r elastiflow_extracted/etc/elastiflow/. /etc/elastiflow
 ```
+#### OPTIONAL: Geo and ASN Enrichment
+
+If you would like to enable geo IP and ASN enrichment, please do the following:
+
+1) Sign up for [Geolite2](https://www.maxmind.com/en/geolite2/signup) database access.
+2) Download gzip files (GeoLite2 ASN and GeoLite2 City)
+3) Extract their contents to `/etc/elastiflow/maxmind/`
+4) Enable Geo and ASN enrichment in `elastiflow_compose.yml`
+```
+EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE: 'true'
+EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE: 'true'
+```
+To automate the download and installation of the Geolite databases, you could run the following commands on your server:
+Be sure to replace `YOUR_LICENSE_KEY` with your GeoLite2 license key.
+```
+sudo wget -O ./GeoLite2-ASN.tar.gz "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-ASN&license_key=YOUR_LICENSE_KEY&suffix=tar.gz"
+sudo wget -O ./GeoLite2-City.tar.gz  "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=YOUR_LICENSE_KEY&suffix=tar.gz"
+sudo tar -xvzf GeoLite2-ASN.tar.gz --strip-components 1 -C /etc/elastiflow/maxmind/
+sudo tar -xvzf GeoLite2-City.tar.gz  --strip-components 1 -C /etc/elastiflow/maxmind/
+```
+
+
 #### 5) Deploy 
 
 From the directory where you downloaded the yml and .env files, 
