@@ -107,7 +107,7 @@ If you would like to enable geo IP and ASN enrichment, please do the following:
 EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE: 'true'
 EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE: 'true'
 ```
-To automate the download and installation of the Geolite databases, you could run the following commands on your server:
+To automate steps 2,3,4, download and installation of the Geolite databases, you could run the following commands on your server:
 Be sure to replace `YOUR_LICENSE_KEY` with your GeoLite2 license key.
 ```
 sudo wget -O ./GeoLite2-ASN.tar.gz "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-ASN&license_key=YOUR_LICENSE_KEY&suffix=tar.gz"
@@ -117,6 +117,7 @@ sudo tar -xvzf GeoLite2-City.tar.gz  --strip-components 1 -C /etc/elastiflow/max
 sed -i "s/^\s*EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE:\s*'false'/      EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE: 'true'/" elastiflow_compose.yml
 sed -i "s/^\s*EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE:\s*'false'/      EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE: 'true'/" elastiflow_compose.yml
 ```
+
 
 #### 5) Deploy 
 
