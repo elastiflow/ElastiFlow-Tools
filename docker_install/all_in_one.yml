@@ -135,11 +135,11 @@ services:
     volumes:
       - /etc/elastiflow:/etc/elastiflow
     healthcheck:
-        test:
-          [
+      test:
+        [
           "CMD-SHELL",
           "curl -s http://localhost:8080 | grep -q '200 - Ready!'",
-          ]
+        ]
       interval: 10s
       timeout: 10s
       retries: 120
