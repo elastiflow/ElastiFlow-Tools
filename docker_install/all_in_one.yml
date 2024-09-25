@@ -138,7 +138,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "curl -s http://localhost:8080/livez | grep -q '200 - Ready!'",
+          "curl -s http://localhost:8080/readyz | grep -q '200 - Ready!'",
         ]
       interval: 10s
       timeout: 10s
