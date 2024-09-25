@@ -123,15 +123,7 @@ services:
       timeout: 10s
       retries: 120
 
-volumes:
-  certs:
-    driver: local
-  esdata01:
-    driver: local
-  kibanadata:
-    driver: local
-
-# ElastiFlow NetObserv Flow
+  # ElastiFlow NetObserv Flow
   flow-collector:
     image: elastiflow/flow-collector:${ELASTIFLOW_VERSION}
     container_name: flow-collector
@@ -139,17 +131,6 @@ volumes:
     network_mode: 'host'
     volumes:
       - /etc/elastiflow:/etc/elastiflow
-
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "curl -s http://localhost:8080/readyz | grep -q '200 - Ready!'",
-        ]
-      interval: 1s
-      timeout: 3s
-      retries: 120
-      
     environment:
       EF_LICENSE_ACCEPTED: 'true'
       #EF_ACCOUNT_ID: ''
@@ -456,3 +437,12 @@ volumes:
       #EF_OUTPUT_GENERIC_HTTP_TLS_CA_CERT_FILEPATH: ''
       #EF_OUTPUT_GENERIC_HTTP_DROP_FIELDS: ''
       #EF_OUTPUT_GENERIC_HTTP_TIMESTAMP_SOURCE: 'collect'
+
+volumes:
+  certs:
+    driver: local
+  esdata01:
+    driver: local
+  kibanadata:
+    driver: local
+
