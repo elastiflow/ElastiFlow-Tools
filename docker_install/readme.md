@@ -114,7 +114,8 @@ sudo wget -O ./GeoLite2-ASN.tar.gz "https://download.maxmind.com/app/geoip_downl
 sudo wget -O ./GeoLite2-City.tar.gz  "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=YOUR_LICENSE_KEY&suffix=tar.gz"
 sudo tar -xvzf GeoLite2-ASN.tar.gz --strip-components 1 -C /etc/elastiflow/maxmind/
 sudo tar -xvzf GeoLite2-City.tar.gz  --strip-components 1 -C /etc/elastiflow/maxmind/
-sed -i "s/#EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE: 'false'/EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE: 'true'/" elastiflow_compose.yml
+sed -i "s/^\s*EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE:\s*'false'/      EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE: 'true'/" elastiflow_compose.yml
+sed -i "s/^\s*EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE:\s*'false'/      EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE: 'true'/" elastiflow_compose.yml
 ```
 
 #### 5) Deploy 
