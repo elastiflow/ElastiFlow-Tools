@@ -75,7 +75,7 @@ sudo wget "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/do
 #### 4) Download required ElastiFlow support files
 Download ElastiFlow from [here.](https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_7.2.2_linux_amd64.deb) 
 
-Extract the contents of `/etc/elastiflow` in the archive to `/etc/elastiflow`.
+Extract the contents of `/etc/elastiflow/` in the archive to `/etc/elastiflow/`.
 
 You can instead use a one liner to do everything:
 ```
