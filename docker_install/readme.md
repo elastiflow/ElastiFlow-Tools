@@ -135,8 +135,14 @@ Send Netflow to IP_of_your_host 9995. Refer to your hardware vendor for document
 In Kibana, do a global search (at the top) for the dashboard "ElastiFlow (flow): Overview" and open it. It may be a few minutes for flow records to populate as the system waits for flow templates to arrive.
 
 #### 10) Update Credentials
-coming soon
+Now that you have ElastiFlow up and running, we advise that you change your Elasticsearch and Kibana passwords from `elastic` to something else as soon as possible. Here's how to do it:
 
+1) Open your .env file in a text editor like nano.
+2) Specify a new `ELASTIC_PASSWORD` and `KIBANA_PASSWORD`. Save changes.
+3) Redeploy ElasticSearch, Kibana, ElastiFlow
+```
+sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_compose.yml down && sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_compose.yml up -d
+```
 ## Notes
 
 - If you need to make any ElastiFlow configuration changes such as turning options on and off, adding your license information, etc, go ahead and edit the elastiflow_compose.yml and then do a 
