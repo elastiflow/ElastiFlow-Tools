@@ -134,6 +134,9 @@ Send Netflow to IP_of_your_host 9995. Refer to your hardware vendor for document
 #### 9) Visualize Netflow
 In Kibana, do a global search (at the top) for the dashboard "ElastiFlow (flow): Overview" and open it. It may be a few minutes for flow records to populate as the system waits for flow templates to arrive.
 
+#### 10) Update Credentials
+coming soon
+
 ## Notes
 
 - If you need to make any ElastiFlow configuration changes such as turning options on and off, adding your license information, etc, go ahead and edit the elastiflow_compose.yml and then do a 
