@@ -16,9 +16,9 @@ To easily install ElasticSearch, Kibana, and ElastiFlow with Docker Compose. Tes
 - Good copying and pasting skills
 
 - Docker. If you do not have Docker, you can install it with the following one liner:
-```
-sudo bash -c "$(wget -qLO - https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/install_docker.sh)"
-```
+  ```
+  sudo bash -c "$(wget -qLO - https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/install_docker.sh)"
+  ```
 
 ### Instructions:
 
@@ -145,6 +145,8 @@ Now that you have ElastiFlow up and running, we advise that you change your Elas
   ```
   sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_compose.yml down && sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_compose.yml up -d
   ```
+# You did it! ^^^
+ 
 ## Optional Enrichments
 
 ElastiFlow is able to enrich flow records with many different pieces of data, making those records even more valuable, from app id, to threat information, geolocation, DNS hostnames, and more. Please click [here](https://docs.google.com/document/d/1Or-C5l5yVd7McVxwHUfE2mit_DvmtzHLAdUZhjnIKw8/edit?usp=sharing
