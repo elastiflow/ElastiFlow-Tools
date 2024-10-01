@@ -138,7 +138,7 @@ Now that you have ElastiFlow up and running, we advise that you change your Elas
 
 1) Open your .env file in a text editor like nano.
 2) Specify a new `ELASTIC_PASSWORD` and `KIBANA_PASSWORD`. Save changes.
-3) Redeploy ElasticSearch, Kibana, ElastiFlow
+3) Redeploy ElasticSearch, Kibana, ElastiFlow:
 ```
 sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_compose.yml down && sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_compose.yml up -d
 ```
