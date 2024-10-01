@@ -9,9 +9,11 @@ ElastiFlow Docker Deployment Tool
 To easily install ElasticSearch, Kibana, and ElastiFlow with Docker Compose. Tested with Elastic / Kibana 8.15.1 and ElastiFlow 7.2.2.
 
 ### Prerequisites:
-- Internet connected, clean Ubuntu 22 (or greater) Linux server with admin access.
+- Internet connected, clean Ubuntu 22 (or greater) Linux server with admin access
 
-- 16 GB of RAM, 4 CPU cores, and 500 GB of disk space. This will allow you to store roughly 1 month of flow data at 500 FPS.
+- 16 GB of RAM, 4 CPU cores, and 500 GB of disk space. This will allow you to store roughly 1 month of flow data at 500 FPS
+  
+- Good copying and pasting skills
 
 - Docker. If you do not have Docker, you can install it with the following one liner:
 ```
@@ -21,22 +23,22 @@ sudo bash -c "$(wget -qLO - https://raw.githubusercontent.com/elastiflow/ElastiF
 ### Instructions:
 
 #### 1) Add the following recommended kernel tuning parameters to /etc/sysctl.conf
-
-```
-vm.max_map_count=262144
-net.core.netdev_max_backlog=4096
-net.core.rmem_default=262144
-net.core.rmem_max=67108864
-net.ipv4.udp_rmem_min=131072
-net.ipv4.udp_mem=2097152 4194304 8388608
-```
+  
+  ```
+  vm.max_map_count=262144
+  net.core.netdev_max_backlog=4096
+  net.core.rmem_default=262144
+  net.core.rmem_max=67108864
+  net.ipv4.udp_rmem_min=131072
+  net.ipv4.udp_mem=2097152 4194304 8388608
+  ```
 To activate the settings, run `sudo sysctl -p`
 
 You could instead use the following one liner to do everything:
-
-```
-echo -e "\n# Memory mapping limits for Elasticsearch\nvm.max_map_count=262144\n# Network settings for high performance\nnet.core.netdev_max_backlog=4096\nnet.core.rmem_default=262144\nnet.core.rmem_max=67108864\nnet.ipv4.udp_rmem_min=131072\nnet.ipv4.udp_mem=2097152 4194304 8388608" | sudo tee -a /etc/sysctl.conf > /dev/null && sudo sysctl -p
-```
+  
+  ```
+  echo -e "\n# Memory mapping limits for Elasticsearch\nvm.max_map_count=262144\n# Network settings for high performance\nnet.core.netdev_max_backlog=4096\nnet.core.rmem_default=262144\nnet.core.rmem_max=67108864\nnet.ipv4.udp_rmem_min=131072\nnet.ipv4.udp_mem=2097152 4194304 8388608" | sudo tee -a /etc/sysctl.conf > /dev/null && sudo sysctl -p
+  ```
 
 ##### Explanation of parameters:
 
@@ -64,7 +66,7 @@ High performance data platforms like Elastic don't like to swap to disk.
 3) Verify swap is off with `swapon --show`
 
 #### 3) Download Docker Compose files
-Create a new directory on your server and download `elasticsearch_kibana_compose.yml`, `elastiflow_compose.yml`, and `.env` from [here](https://github.com/elastiflow/ElastiFlow-Tools/edit/main/docker_install)
+Create a new directory on your server and download `elasticsearch_kibana_compose.yml`, `elastiflow_compose.yml`, and `.env` from [here].(https://github.com/elastiflow/ElastiFlow-Tools/edit/main/docker_install)
 
 Or run the following in a terminal session:
 
@@ -89,29 +91,30 @@ If you would like to enable geo IP and ASN enrichment, please do the following:
 2) Download gzipped database files (GeoLite2 ASN and GeoLite2 City)
 3) Extract their contents to `/etc/elastiflow/maxmind/`
 4) Enable Geo and ASN enrichment in `elastiflow_compose.yml`
-```
-EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE: 'true'
-EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE: 'true'
-```
+  ```
+  EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE: 'true'
+  EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE: 'true'
+  ```
 To automate steps 2 and 3, you could run the following commands on your server:
 Be sure to replace `YOUR_LICENSE_KEY` with your GeoLite2 license key.
-```
-sudo wget -O ./GeoLite2-ASN.tar.gz "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-ASN&license_key=YOUR_LICENSE_KEY&suffix=tar.gz"
-sudo wget -O ./GeoLite2-City.tar.gz  "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=YOUR_LICENSE_KEY&suffix=tar.gz"
-sudo tar -xvzf GeoLite2-ASN.tar.gz --strip-components 1 -C /etc/elastiflow/maxmind/
-sudo tar -xvzf GeoLite2-City.tar.gz  --strip-components 1 -C /etc/elastiflow/maxmind/
-```
+  ```
+  sudo wget -O ./GeoLite2-ASN.tar.gz "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-ASN&license_key=YOUR_LICENSE_KEY&suffix=tar.gz"
+  sudo wget -O ./GeoLite2-City.tar.gz  "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=YOUR_LICENSE_KEY&suffix=tar.gz"
+  sudo tar -xvzf GeoLite2-ASN.tar.gz --strip-components 1 -C /etc/elastiflow/maxmind/
+  sudo tar -xvzf GeoLite2-City.tar.gz  --strip-components 1 -C /etc/elastiflow/maxmind/
+  ```
 
 #### 5) Deploy 
 
 From the directory where you downloaded the yml and .env files, 
-```
-sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_compose.yml up -d
-```
+  ```
+  sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_compose.yml up -d
+  ```
 #### 6) Log in to Kibana 
 
 After a few minutes, browse to `http://IP_of_your_host:5601`.
 
+Log in with:
 Username: `elastic` 
 Password: `elastic`
 
@@ -119,11 +122,11 @@ Password: `elastic`
 
 1) Download this [dashboards file](https://github.com/elastiflow/elastiflow_for_elasticsearch/blob/master/kibana/flow/kibana-8.2.x-flow-codex.ndjson) to your local machine.
 
-2) Log in to Kibana
+2) Log in to Kibana.
 
-3) If given the choice, click "Explore on my own"
+3) If given the choice, click "Explore on my own".
 
-4) Do a global search (at the top) for "Saved Objects". Select it 
+4) Do a global search (at the top) for "Saved Objects". Select it. 
 
 5) Browse for and upload the ndjson file you downloaded. Choose "import" and "overwrite".
 
@@ -136,29 +139,34 @@ In Kibana, do a global search (at the top) for the dashboard "ElastiFlow (flow):
 #### 10) Update Credentials
 Now that you have ElastiFlow up and running, we advise that you change your Elasticsearch and Kibana passwords from `elastic` to something complex as soon as possible. Here's how to do it:
 
-1) Open your .env file in a text editor like nano.
+1) Open your `.env` file in a text editor like nano.
 2) Specify a new `ELASTIC_PASSWORD` and `KIBANA_PASSWORD`. Save changes.
 3) Redeploy ElasticSearch, Kibana, ElastiFlow:
-```
-sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_compose.yml down && sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_compose.yml up -d
-```
+  ```
+  sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_compose.yml down && sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_compose.yml up -d
+  ```
+## Optional Enrichments
+
+ElastiFlow is able to enrich flow records with many different pieces of data, making those records even more valuable, from app id, to threat information, geolocation, DNS hostnames, and more. Please click [here](https://docs.google.com/document/d/1Or-C5l5yVd7McVxwHUfE2mit_DvmtzHLAdUZhjnIKw8/edit?usp=sharing
+) for information on how to enable various enrichments.
+
 ## Notes
 
 - If you need to make any ElastiFlow configuration changes such as turning options on and off, adding your license information, etc, go ahead and edit the elastiflow_compose.yml and then do a 
-```
-sudo docker compose -f elastiflow_compose.yml down && sudo docker compose -f elastiflow_compose.yml up -d
-```
+  ```
+  sudo docker compose -f elastiflow_compose.yml down && sudo docker compose -f elastiflow_compose.yml up -d
+  ```
 - After making configuration changes, if ElastiFlow starts and then stops or fails to stay running, check the logs by doing
-```
-sudo docker logs flow-collector -f
-```
+  ```
+  sudo docker logs flow-collector -f
+  ```
 - If your server is has a different amount of RAM than 16GB, please view the .env file for guidance on the values for the following keys:
 
-`JVM_HEAP_SIZE`
-
-`MEM_LIMIT_ELASTIC`
-
-`MEM_LIMIT_KIBANA`
+  `JVM_HEAP_SIZE`
+  
+  `MEM_LIMIT_ELASTIC`
+  
+  `MEM_LIMIT_KIBANA`
 
 - If you would like to request a free basic license go [here](https://www.elastiflow.com/basic-license). You can also request a 30 day premium license which unlocks broader device support, much higher flow rates, and [NetIntel enrichments](https://www.elastiflow.com/blog/posts/elastiflow-launches-netintel-to-boost-enterprise-security-against-internal), click [here](https://www.elastiflow.com/get-started).
  
