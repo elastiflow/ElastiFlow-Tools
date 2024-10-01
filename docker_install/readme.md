@@ -66,7 +66,7 @@ High performance data platforms like Elastic don't like to swap to disk.
 3) Verify swap is off with `swapon --show`
 
 #### 3) Download Docker Compose files
-Create a new directory on your server and download `elasticsearch_kibana_compose.yml`, `elastiflow_compose.yml`, and `.env` from [here].(https://github.com/elastiflow/ElastiFlow-Tools/edit/main/docker_install)
+Create a new directory on your server and download `elasticsearch_kibana_compose.yml`, `elastiflow_compose.yml`, and `.env` from [here](https://github.com/elastiflow/ElastiFlow-Tools/edit/main/docker_install)
 
 Or run the following in a terminal session:
 
@@ -77,7 +77,7 @@ sudo wget "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/do
 #### 4) Download required ElastiFlow support files
 Download ElastiFlow from [here.](https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_7.2.2_linux_amd64.deb) 
 
-Extract the contents of `/etc/elastiflow/` in the archive to `/etc/elastiflow/`.
+Extract the contents of `/etc/elastiflow/` in the archive to `/etc/elastiflow/` on your ElastiFlow server.
 
 You can instead use a one liner to do everything:
 ```
