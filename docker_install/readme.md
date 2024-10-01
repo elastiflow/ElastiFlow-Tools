@@ -166,3 +166,12 @@ sudo docker logs flow-collector -f
   [Documentation](https://docs.elastiflow.com) | [Community Forum](https://forum.elastiflow.com) | [Slack](https://elastiflowcommunity.slack.com) 
 - Code in this folder may contain code from [Elastic's Github Repo.](https://github.com/elastic/elasticsearch/tree/8.11/docs/reference/setup/install/docker)
 
+# BONUS
+
+You can complete steps 1-5 by using the following command
+
+```
+sudo bash -c "$(wget -qLO - https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/install.sh)"
+```
+
+
