@@ -102,7 +102,6 @@ sudo tar -xvzf GeoLite2-ASN.tar.gz --strip-components 1 -C /etc/elastiflow/maxmi
 sudo tar -xvzf GeoLite2-City.tar.gz  --strip-components 1 -C /etc/elastiflow/maxmind/
 ```
 
-
 #### 5) Deploy 
 
 From the directory where you downloaded the yml and .env files, 
@@ -135,7 +134,7 @@ Send Netflow to IP_of_your_host 9995. Refer to your hardware vendor for document
 In Kibana, do a global search (at the top) for the dashboard "ElastiFlow (flow): Overview" and open it. It may be a few minutes for flow records to populate as the system waits for flow templates to arrive.
 
 #### 10) Update Credentials
-Now that you have ElastiFlow up and running, we advise that you change your Elasticsearch and Kibana passwords from `elastic` to something else as soon as possible. Here's how to do it:
+Now that you have ElastiFlow up and running, we advise that you change your Elasticsearch and Kibana passwords from `elastic` to something complex as soon as possible. Here's how to do it:
 
 1) Open your .env file in a text editor like nano.
 2) Specify a new `ELASTIC_PASSWORD` and `KIBANA_PASSWORD`. Save changes.
