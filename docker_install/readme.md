@@ -146,6 +146,7 @@ Now that you have ElastiFlow up and running, we advise that you change your Elas
   sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_compose.yml down && sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_compose.yml up -d
   ```
 # You did it! ^^^
+More enrichments and functionality is available with a free [basic license](https://www.elastiflow.com/basic-license). You can also request a 30 day premium license which unlocks broader device support, much higher flow rates, and [NetIntel enrichments](https://www.elastiflow.com/blog/posts/elastiflow-launches-netintel-to-boost-enterprise-security-against-internal), click [here](https://www.elastiflow.com/get-started).
  
 ## Optional Enrichments
 
@@ -170,8 +171,6 @@ ElastiFlow is able to enrich flow records with many different pieces of data, ma
   
   `MEM_LIMIT_KIBANA`
 
-- If you would like to request a free basic license go [here](https://www.elastiflow.com/basic-license). You can also request a 30 day premium license which unlocks broader device support, much higher flow rates, and [NetIntel enrichments](https://www.elastiflow.com/blog/posts/elastiflow-launches-netintel-to-boost-enterprise-security-against-internal), click [here](https://www.elastiflow.com/get-started).
- 
 - Questions?
   [Documentation](https://docs.elastiflow.com) | [Community Forum](https://forum.elastiflow.com) | [Slack](https://elastiflowcommunity.slack.com) 
 - Code in this folder may contain code from [Elastic's Github Repo.](https://github.com/elastic/elasticsearch/tree/8.11/docs/reference/setup/install/docker)
