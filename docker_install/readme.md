@@ -69,7 +69,7 @@ Create a new directory on your server and download `elasticsearch_kibana_compose
 Or run the following in a terminal session:
 
 ```
-sudo wget "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/.env" && sudo wget "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elasticsearch_kibana_compose.yml" && sudo wget "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elastiflow_compose.yml" && sudo wget "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/readme.md"
+sudo wget "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/.env" && sudo wget "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elasticsearch_kibana_compose.yml" && sudo wget "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elastiflow_compose.yml"
 ```
 
 #### 4) Download required ElastiFlow support files
@@ -86,7 +86,7 @@ sudo wget -O flow-collector_7.2.2_linux_amd64.deb https://elastiflow-releases.s3
 If you would like to enable geo IP and ASN enrichment, please do the following:
 
 1) Sign up for [Geolite2](https://www.maxmind.com/en/geolite2/signup) database access.
-2) Download gzip files (GeoLite2 ASN and GeoLite2 City)
+2) Download gzipped database files (GeoLite2 ASN and GeoLite2 City)
 3) Extract their contents to `/etc/elastiflow/maxmind/`
 4) Enable Geo and ASN enrichment in `elastiflow_compose.yml`
 ```
