@@ -155,7 +155,7 @@ ElastiFlow is able to enrich flow records with many different pieces of data, ma
 
 ## Notes
 
-- If you need to make any ElastiFlow configuration changes such as turning options on and off, adding your license information, etc, go ahead and edit the elastiflow_compose.yml and then do a 
+- If you need to make any ElastiFlow configuration changes such as turning options on and off, adding your license information, etc, go ahead and edit the elastiflow_compose.yml and then running the following command: 
   ```
   sudo docker compose -f elastiflow_compose.yml down && sudo docker compose -f elastiflow_compose.yml up -d
   ```
