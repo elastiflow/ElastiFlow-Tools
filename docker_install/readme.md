@@ -176,7 +176,7 @@ Now that you have ElastiFlow up and running, we advise that you change your Elas
   sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_compose.yml down && sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_compose.yml up -d
   ```
 # You did it! ^^^
-More enrichments and functionality are available with a free [basic license](https://www.elastiflow.com/basic-license). You can also request a 30 day premium license which unlocks broader device support, much higher flow rates, and [NetIntel enrichments](https://www.elastiflow.com/blog/posts/elastiflow-launches-netintel-to-boost-enterprise-security-against-internal), click [here](https://www.elastiflow.com/get-started).
+More enrichments and functionality are available with a free [basic license](https://www.elastiflow.com/basic-license). You can also request a [30 day premium license](https://www.elastiflow.com/get-started) which unlocks broader device support, much higher flow rates, and all of the [NetIntel enrichments](https://www.elastiflow.com/blog/posts/elastiflow-launches-netintel-to-boost-enterprise-security-against-internal).
  
 ## Optional Enrichments
 
