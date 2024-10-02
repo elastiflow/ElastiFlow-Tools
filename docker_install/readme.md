@@ -124,16 +124,46 @@ Password: `elastic`
 
 2) Log in to Kibana.
 
-3) If given the choice, click "Explore on my own".
-
-4) Do a global search (at the top) for "Saved Objects". Select it. 
-
-5) Browse for and upload the ndjson file you downloaded. Choose "import" and "overwrite".
+3) Click menu, "Stack Management", then under the heading "Kibana", click "Saved Objects"
+   
+4) Browse for and upload the ndjson file you downloaded. Choose "import" and "overwrite".
 
 #### 8) Send Netflow
-Send Netflow to IP_of_your_host 9995. Refer to your hardware vendor for documentation on how to configure netflow export.
 
-#### 9) Visualize Netflow
+  ##### Option 1: (Best)
+  Send Netflow to IP_of_your_host 9995. Refer to your hardware vendor for documentation on how to configure netflow export.
+  
+  ##### Option 2: (OK)
+
+  1) Install [Pmacct](http://www.pmacct.net/) on a machine somewhere
+      ```
+      sudo apt-get install pmacct
+      ```
+  2) Add the following contents text pmacct configuration to a new file located here `/etc/pmacct/pmacctd.conf`. Be sure to replace `"network_interface_to_monitor"` with the name of an interface and `ELASTIFLOW_IP` with the IP address of your ElastiFlow server.
+    ```
+    daemonize: false
+
+    pcap_interface: network_interface_to_monitor
+    aggregate: src_mac, dst_mac, src_host, dst_host, src_port, dst_port, proto, tos
+    plugins: nfprobe, print
+    nfprobe_receiver: ELASTIFLOW_IP:9995
+    ! nfprobe_receiver: [FD00::2]:2100
+    nfprobe_version: 9
+    ! nfprobe_engine: 1:1
+    nfprobe_timeouts: tcp=15:maxlife=1800
+    !
+    ! networks_file: /path/to/networks.lst
+    !...
+    ```
+  3) Run pmacct: `sudo pmacctd -f /etc/pmacct/pmacctd.conf`
+    
+  ##### Option 3: (Really?) 
+    Generate fake flow data
+    ```
+    sudo docker run -it --rm networkstatic/nflow-generator -t ELASTIFLOW_IP -p 9995
+    ```
+
+#### 9) Visualize your Flow Data
 In Kibana, do a global search (at the top) for the dashboard "ElastiFlow (flow): Overview" and open it. It may be a few minutes for flow records to populate as the system waits for flow templates to arrive.
 
 #### 10) Update Credentials
