@@ -1,5 +1,5 @@
 
-ElastiFlow Docker Deployment Tool
+ElastiFlow Full Stack Deployment
 ================================  
 
 ## Author
