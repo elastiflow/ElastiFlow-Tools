@@ -131,7 +131,7 @@ Password: `elastic`
 #### 8) Send Netflow
 
   ##### Option 1: (Best)
-  Send Netflow to IP_of_your_host 9995. Refer to your hardware vendor for documentation on how to configure netflow export.
+  Send Netflow to IP_of_your_host:9995. Refer to your network hardware vendor for how to configure netflow / IPFIX / sFlow export.
   
   ##### Option 2: (OK)
 
