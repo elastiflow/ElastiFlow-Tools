@@ -1,5 +1,5 @@
 
-ElastiFlow Full Stack Deployment
+ElastiFlow Full Stack Deployment with Docker
 ================================  
 
 ## Author
