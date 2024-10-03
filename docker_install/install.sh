@@ -196,25 +196,30 @@ extract_elastiflow() {
 }
 
 
-prompt_for_elastiflow_extraction_download() {
-    while true; do
-        read -p "Do you want to download the sample YAML enrichment files? (Highly Recommended) (yes/y or no/n): " user_input
+# create xpack.encryptedSavedObjects.encryptionKey and append to .env
+generate_saved_objects_enc_key() {
+  XPACK_SAVED_OBJECTS_KEY=$(openssl rand -base64 32)
+  echo "XPACK_SAVED_OBJECTS_KEY=${XPACK_SAVED_OBJECTS_KEY}" | sudo tee -a $INSTALL_DIR/.env > /dev/null
+}
 
-        case $user_input in
-            [Yy]* )
-                echo "You chose to download the sample YAML enrichment files."
-                extract_elastiflow
-                break
-                ;;
-            [Nn]* )
-                echo "You chose not to download the sample YAML enrichment files."
-                break
-                ;;
-            * )
-                echo "Please answer yes/y or no/n."
-                ;;
-        esac
-    done
+
+# Function to check if openssl is installed and install if missing on Ubuntu/Debian
+install_openssl_if_missing() {
+  # Check if openssl is installed
+  if ! command -v openssl &> /dev/null; then
+    echo "OpenSSL is not installed. Installing OpenSSL..."
+
+    # For Ubuntu/Debian-based systems
+    if [ -f /etc/debian_version ]; then
+      sudo apt update
+      sudo apt install -y openssl
+    else
+      echo "This script is intended for Ubuntu/Debian systems only."
+      exit 1
+    fi
+  else
+    echo "OpenSSL is already installed."
+  fi
 }
 
 
@@ -225,7 +230,8 @@ ask_deploy
 tune_system
 disable_swap_if_swapfile_in_use
 download_files
+install_openssl_if_missing
+generate_saved_objects_enc_key
 check_docker
-prompt_for_elastiflow_extraction_download
 deploy_elastiflow
 echo "ElastiFlow has been deployed successfully!"
