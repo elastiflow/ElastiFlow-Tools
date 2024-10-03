@@ -78,7 +78,10 @@ services:
       - xpack.security.transport.ssl.certificate_authorities=certs/ca/ca.crt
       - xpack.security.transport.ssl.verification_mode=certificate
       - xpack.license.self_generated.type=${LICENSE}
+
+      # to enable stack monitoring without metricbeats
       - xpack.monitoring.collection.enabled=true
+      
       - ES_JAVA_OPTS=-Xms${JVM_HEAP_SIZE}g -Xmx${JVM_HEAP_SIZE}g
 
     mem_limit: ${MEM_LIMIT_ELASTIC}
