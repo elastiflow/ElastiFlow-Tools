@@ -134,34 +134,31 @@ Password: `elastic`
   Send Netflow to IP_of_your_host:9995. Refer to your network hardware vendor for how to configure netflow / IPFIX / sFlow export.
   
   ##### Option 2: (OK)
+  Generate flow data from one of your hosts  
 
   1) Install [Pmacct](http://www.pmacct.net/) on a machine somewhere
       ```
       sudo apt-get install pmacct
       ```
-  2) Add the following contents text pmacct configuration to a new file located here `/etc/pmacct/pmacctd.conf`. Be sure to replace `"network_interface_to_monitor"` with the name of an interface and `ELASTIFLOW_IP` with the IP address of your ElastiFlow server.
-    ```
-    daemonize: false
+  2) Add the following Pmacct configuration to a new file located here `/etc/pmacct/pmacctd.conf`. Be sure to replace `NETWORK_INTERFACE_TO_MONITOR` with the name of an interface and `ELASTIFLOW_IP` with the IP address of your ElastiFlow server.
 
-    pcap_interface: network_interface_to_monitor
+    daemonize: false
+    pcap_interface: NETWORK_INTERFACE_TO_MONITOR
     aggregate: src_mac, dst_mac, src_host, dst_host, src_port, dst_port, proto, tos
     plugins: nfprobe, print
     nfprobe_receiver: ELASTIFLOW_IP:9995
-    ! nfprobe_receiver: [FD00::2]:2100
     nfprobe_version: 9
-    ! nfprobe_engine: 1:1
     nfprobe_timeouts: tcp=15:maxlife=1800
-    !
-    ! networks_file: /path/to/networks.lst
-    !...
-    ```
+    
+    
   3) Run pmacct: `sudo pmacctd -f /etc/pmacct/pmacctd.conf`
     
   ##### Option 3: (Really?) 
-    Generate fake flow data
-    ```
+  Generate fake flow data
+
+  Be sure to replace `ELASTIFLOW_IP` with the IP address of your ElastiFlow server.
+
     sudo docker run -it --rm networkstatic/nflow-generator -t ELASTIFLOW_IP -p 9995
-    ```
 
 #### 9) Visualize your Flow Data
 In Kibana, do a global search (at the top) for the dashboard "ElastiFlow (flow): Overview" and open it. It may be a few minutes for flow records to populate as the system waits for flow templates to arrive.
@@ -180,8 +177,7 @@ More enrichments and functionality are available with a free [basic license](htt
  
 ## Optional Enrichments
 
-ElastiFlow is able to enrich flow records with many different pieces of data, making those records even more valuable, from app id, to threat information, geolocation, DNS hostnames, and more. Please click [here](https://docs.google.com/document/d/1Or-C5l5yVd7McVxwHUfE2mit_DvmtzHLAdUZhjnIKw8/edit?usp=sharing
-) for information on how to enable various enrichments.
+ElastiFlow is able to enrich flow records with many different pieces of data, making those records even more valuable, from app id, to threat information, geolocation, DNS hostnames, and more. Please click [here](https://docs.google.com/document/d/1Or-C5l5yVd7McVxwHUfE2mit_DvmtzHLAdUZhjnIKw8/edit?usp=sharing) for information on how to enable various enrichments.
 
 ## Notes
 
