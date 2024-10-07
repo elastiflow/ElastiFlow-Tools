@@ -1,0 +1,44 @@
+#!/bin/bash
+
+
+# Function to check and disable swap if /swapfile.img is in use
+disable_swap_if_swapfile_img() {
+    # Check if swap is on
+    swap_status=$(swapon --show)
+
+    if [ -n "$swap_status" ]; then
+        echo "Swap is currently on."
+
+        # Check if swap.img is in use by swapon
+        if swapon --show | grep -q '/swapfile.img'; then
+            echo "/swapfile.img is in use."
+
+            # Turn off all swap
+            echo "Turning off swap..."
+            sudo swapoff -a
+
+            # Check if swapoff was successful
+            if [ $? -eq 0 ]; then
+                echo "Swap has been turned off."
+
+                # Delete /swapfile.img
+                echo "Deleting /swapfile.img..."
+                sudo rm -f /swapfile.img
+
+                if [ $? -eq 0 ]; then
+                    echo "/swapfile.img has been deleted."
+                else
+                    echo "Failed to delete /swapfile.img."
+                fi
+            else
+                echo "Failed to turn off swap."
+            fi
+        else
+            echo "No /swapfile.img found in use by swapon."
+        fi
+    else
+        echo "Swap is currently off."
+    fi
+}
+
+disable_swap_if_swapfile_img

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ElastiFlow PoC Configurator for configuring ElastiFlow Virtual Appliance
-# Version: 2.8.4.1
+# Version: 2.8.4.2.1
 # Author: O.J. Wolanyk
 
 # Define color codes
@@ -57,18 +57,21 @@ install_snmp_collector() {
   fi
 
   elastiflow_snmp_config_strings=(
-    "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: \"true\""
+    "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: 'true'"
     "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: \"${elastiflow_account_id}\""
     "EF_SNMP_LICENSE_KEY" "EF_SNMP_LICENSE_KEY: \"${elastiflow_snmp_license_key}\""
-    "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: \"true\""
-    "EF_OUTPUT_ELASTICSEARCH_ADDRESSES" "EF_OUTPUT_ELASTICSEARCH_ADDRESSES: \"127.0.0.1:9200\""
+    "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: 'true'"
+    "EF_OUTPUT_ELASTICSEARCH_ADDRESSES" "EF_OUTPUT_ELASTICSEARCH_ADDRESSES: '127.0.0.1:9200'"
     "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: '$elastic_password'"
-    "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: \"true\""
-    "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION" "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: \"true\""
+    "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: 'true'"
+    "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION" "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: 'true'"
+    "EF_LOGGER_FILE_LOG_ENABLE" "EF_LOGGER_FILE_LOG_ENABLE:  'true'"
+    "EF_LOGGER_FILE_LOG_FILENAME" "EF_LOGGER_FILE_LOG_FILENAME: '/var/log/elastiflow/snmpcoll/snmpcoll.log'"
+    "EF_INPUT_SNMP_PERSIST_ENABLE" "EF_INPUT_SNMP_PERSIST_ENABLE: 'false'"
   )
 
 
-  print_message "Installing ElastiFlow Unified SNMP Collector..." "$GREEN"
+  print_message "Installing ElastiFlow Unified SNMP Collector $elastiflow_snmp_collector_version..." "$GREEN"
   
   # Update package list and install prerequisites
   apt-get update -qq
@@ -87,7 +90,7 @@ install_snmp_collector() {
   systemctl start snmpcoll.service
 
   # Install SNMP dashboards
-  printf "\n\n\n*********Downloading and installing ElastiFlow SNMP dashboards\n\n"
+  printf "\n\n\n*********Downloading and installing ElastiFlow SNMP dashboards $kibana_dashboards_codex_ecs $kibana_dashboards_version\n\n"
 
   # Remove the existing directory if it exists
   if [ -d "/etc/elastiflow_for_elasticsearch" ]; then
@@ -300,7 +303,7 @@ install_flow_collector() {
     local CURRENT_VERSION=$(/usr/share/elastiflow/bin/flowcoll -version 2>/dev/null || echo "None")
 
     echo "Current installed version: ${CURRENT_VERSION}"
-    echo "Remote available version: $REMOTE_VERSION"
+    echo "Remote version: $REMOTE_VERSION"
 
     # Prompt the user to confirm if they want to install the remote version
     read -p "Do you want to install the remote version $REMOTE_VERSION? [y/N]: " CONFIRM
@@ -864,17 +867,9 @@ find_and_replace() {
   done
 }
 
-reload_and_restart_service() {
-  local service=$1
-  printf "Performing daemon-reload\n"
-  systemctl daemon-reload
-  printf "Restarting service $service\n"
-  systemctl restart "$service"
-  echo "done"
-}
-
 reload_and_restart_services() {
   local services=("$@")
+  printf "Performing daemon-reload\n"
   systemctl daemon-reload
   for service in "${services[@]}"; do
     echo "Restarting service: $service"
@@ -892,10 +887,10 @@ check_service_health() {
     if journalctl -u flowcoll.service | grep -q "license error"; then
       print_message "License error found in logs. Exiting to main menu." "$RED"
       restore_latest_backup
-      reload_and_restart_service "flowcoll.service"
+      reload_and_restart_services "flowcoll.service"
     else
       restore_latest_backup
-      reload_and_restart_service "flowcoll.service"
+      reload_and_restart_services "flowcoll.service"
       print_message "Rerunning the configuration routine." "$GREEN"
     fi
     return 1
@@ -975,14 +970,14 @@ configure_trial() {
 
   backup_existing_flowcoll
   find_and_replace "$FILE_PATH" "${STRINGS_TO_REPLACE[@]}"
-  reload_and_restart_service "flowcoll.service"
+  reload_and_restart_services "flowcoll.service"
   if check_service_health configure_trial; then
     print_message "Fully featured trial enabled with the provided ElastiFlow account ID and flow license key." "$GREEN"
   else
     print_message "Failed to enable fully featured trial. Changes reverted. Returning to main menu." "$RED"
   fi
 
-start_elasticsearch_trial
+#start_elasticsearch_trial
 }
 
 start_elasticsearch_trial() {
@@ -1057,7 +1052,7 @@ configure_maxmind() {
   find_and_replace "$FILE_PATH" "${STRINGS_TO_REPLACE[@]}"
 
   if $asn_download_success && $geoip_download_success; then
-    reload_and_restart_service "flowcoll.service"
+    reload_and_restart_services "flowcoll.service"
     if check_service_health configure_maxmind; then
       print_message "MaxMind ASN and Geo enrichment enabled with the provided license key." "$GREEN"
     else
@@ -1434,7 +1429,7 @@ monitor_fps() {
     print_message "Disabling FPS monitoring..." "$GREEN"
     sed -i '/^EF_OUTPUT_MONITOR_ENABLE: "true"/c\EF_OUTPUT_MONITOR_ENABLE: "false"' "$file_path"
     print_message "FPS monitoring disabled." "$GREEN"
-    reload_and_restart_service "flowcoll.service"
+    reload_and_restart_services "flowcoll.service"
     return
   else
     while true; do
@@ -1461,7 +1456,7 @@ monitor_fps() {
     comment_and_add_line "$file_path" "EF_OUTPUT_MONITOR_ENABLE" 'EF_OUTPUT_MONITOR_ENABLE: "true"'
     comment_and_add_line "$file_path" "EF_OUTPUT_MONITOR_INTERVAL" "EF_OUTPUT_MONITOR_INTERVAL: $EF_OUTPUT_MONITOR_INTERVAL"
     print_message "FPS monitoring enabled." "$GREEN"
-    reload_and_restart_service "flowcoll.service"
+    reload_and_restart_services "flowcoll.service"
   fi
 
   print_message "Monitoring FPS..." "$GREEN"
@@ -1678,7 +1673,7 @@ while true; do
             capture_packets
             ;;
           2)
-            reload_and_restart_service "flowcoll.service"
+            reload_and_restart_services "flowcoll.service"
             ;;
           3)
             reload_and_restart_services "elasticsearch.service" "kibana.service" "flowcoll.service"
@@ -1690,7 +1685,7 @@ while true; do
             if ! diff -q /etc/elastiflow/flowcoll.yml "$latest_backup"; then
               read -p "Do you want to reload and restart flowcoll.service? (y/n): " reload_choice
               if [[ $reload_choice == "y" ]]; then
-                reload_and_restart_service "flowcoll.service"
+                reload_and_restart_services "flowcoll.service"
                 check_service_health
               fi
             fi
@@ -1718,7 +1713,7 @@ while true; do
             download_default_conf
             read -p "Do you want to reload and restart flowcoll.service? (y/n): " reload_choice
             if [[ $reload_choice == "y" ]]; then
-              reload_and_restart_service "flowcoll.service"
+              reload_and_restart_services "flowcoll.service"
               check_service_health
             fi
             ;;
@@ -1726,7 +1721,7 @@ while true; do
             restore_latest_backup
             read -p "Do you want to reload and restart flowcoll.service? (y/n): " reload_choice
             if [[ $reload_choice == "y" ]]; then
-              reload_and_restart_service "flowcoll.service"
+              reload_and_restart_services "flowcoll.service"
               check_service_health
             fi
             ;;
