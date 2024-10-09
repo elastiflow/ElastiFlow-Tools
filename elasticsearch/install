@@ -1,9 +1,12 @@
 #!/bin/bash
 
+# run script in non-interactive mode by default
+export DEBIAN_FRONTEND=noninteractive
+
 # Version: 3.0.3
 
 ########################################################
-# If you do not have an ElastiFlow Account ID and ElastiFlow Flow License Key, 
+# If you do not have an ElastiFlow Account ID and ElastiFlow Flow License Key,
 # please go here: https://elastiflow.com/get-started
 # Paste these values on the corresponding line, between the quotes
 elastiflow_account_id=""
@@ -82,13 +85,13 @@ Setup Instructions:  https://sites.google.com/elastiflow.com/elastiflow
 Documentation:       https://docs.elastiflow.com
 Community:           https://forum.elastiflow.com
 Slack:               https://elastiflowcommunity.slack.com
- 
+
 EOF
   )
 
   # Write the new content to /etc/issue
   echo "$banner_content" > /etc/issue
-  
+
   # Write the SSH banner content to /etc/ssh/ssh_banner
   echo "$banner_content" > /etc/ssh/ssh_banner
 
@@ -189,7 +192,7 @@ clean_system_junk() {
 
 # Function to check and disable swap if any swap file is in use
 disable_swap_if_swapfile_in_use() {
-  
+
 printf "\n\n\n*********Disabling swap file is present...\n\n"
 
     # Check if swap is on
@@ -239,7 +242,6 @@ comment_and_replace_line() {
   local FIND=$2
   local REPLACE=$3
   FIND_ESCAPED=$(echo "$FIND" | sed 's/[.[\*^$]/\\&/g')
-  REPLACE_ESCAPED=$(echo "$REPLACE" | sed 's/[&/\]/\\&/g')
 
   if grep -Eq "^[#]*$FIND_ESCAPED" "$FILE"; then
     sed -i.bak "/^[#]*$FIND_ESCAPED/c\\$REPLACE" "$FILE"
@@ -289,7 +291,8 @@ display_system_info() {
 
 check_for_updates() {
   # Dynamically determine the path to the installed script
-  local installed_script=$(realpath "$0")
+  installed_script=$(realpath "$0")
+  local installed_script
   local new_script_url="https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/elasticsearch/install"
   local tmp_script="/tmp/install"
 
@@ -305,8 +308,10 @@ check_for_updates() {
 
   echo "Downloaded remote script to $tmp_script."
 
-  local remote_version=$(grep -m 1 '^# Version: ' "$tmp_script" | awk '{print $3}')
-  local installed_version=$(grep -m 1 '^# Version: ' "$installed_script" | awk '{print $3}')
+  remote_version=$(grep -m 1 '^# Version: ' "$tmp_script" | awk '{print $3}')
+  local remote_version
+  installed_version=$(grep -m 1 '^# Version: ' "$installed_script" | awk '{print $3}')
+  local installed_version
 
   echo "Installed version: $installed_version"
   echo "Remote version: $remote_version"
@@ -318,7 +323,7 @@ check_for_updates() {
 
   if [[ "$remote_version" > "$installed_version" ]]; then
     print_message "Remote version $remote_version available." "$GREEN"
-    
+
     while true; do
       echo -n "Do you want to update to the Remote version? (y/n) [y]: "
       for i in {10..1}; do
@@ -326,10 +331,10 @@ check_for_updates() {
         sleep 1
       done
       echo
-      
-      read -t 1 -n 1 update_choice
+
+      read -rt 1 -n 1 update_choice
       update_choice=${update_choice:-y}
-      
+
       if [[ $update_choice == "y" || $update_choice == "n" ]]; then
         break
       else
@@ -361,7 +366,7 @@ get_host_ip() {
     echo "No suitable network interface found."
     return 1
   else
-    ip_address=$(ip -o -4 addr show dev $INTERFACE | awk '{print $4}' | cut -d/ -f1)
+    ip_address=$(ip -o -4 addr show dev "$INTERFACE" | awk '{print $4}' | cut -d/ -f1)
     if [ -z "$ip_address" ]; then
       echo "No IP address found for interface $INTERFACE."
       return 1
@@ -380,7 +385,7 @@ download_file() {
     chmod +x "$target_path"
     echo "Downloaded and made $target_path executable."
   else
-    echo "Failed to download $target_path.\n\n"
+    echo -e "Failed to download $target_path.\n\n"
   fi
 }
 
@@ -388,9 +393,12 @@ download_file() {
 get_dashboard_url() {
   local kibana_url="http://$ip_address:5601"
   local dashboard_title="$1"
-  local encoded_title=$(echo "$dashboard_title" | sed 's/ /%20/g' | sed 's/:/%3A/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
-  local response=$(curl -s -u "$elastic_username:$elastic_password2" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
-  local dashboard_id=$(echo "$response" | jq -r '.saved_objects[] | select(.attributes.title=="'"$dashboard_title"'") | .id')
+  encoded_title=$(echo "$dashboard_title" | sed 's/ /%20/g' | sed 's/:/%3A/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
+  local encoded_title
+  response=$(curl -s -u "$elastic_username:$elastic_password2" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
+  local response
+  dashboard_id=$(echo "$response" | jq -r '.saved_objects[] | select(.attributes.title=="'"$dashboard_title"'") | .id')
+  local dashboard_id
   if [ -z "$dashboard_id" ]; then
     echo "Dashboard not found"
   else
@@ -415,7 +423,7 @@ handle_error() {
   local error_msg="$1"
   local line_num="$2"
   echo "Error at line $line_num: $error_msg"
-  read -p "Do you wish to continue? (y/n):" user_decision
+  read -rp "Do you wish to continue? (y/n):" user_decision
   if [[ $user_decision != "y" ]]; then
     echo "Exiting..."
     exit 1
@@ -456,13 +464,13 @@ sleep_message() {
   local message=$1
   local duration=$2
   printf "\n\n\n********* %s...\n" "$message"
-  
-  while [ $duration -gt 0 ]; do
-    printf "\rTime remaining: %02d seconds" $duration
+
+  while [ "$duration" -gt 0 ]; do
+    printf "\rTime remaining: %02d seconds" "$duration"
     sleep 1
     ((duration--))
   done
-  
+
   printf "\n\n"
 }
 
@@ -530,8 +538,8 @@ install_elasticsearch() {
   printf "\n\n\n*********Installing ElasticSearch...\n\n"
   wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | gpg --dearmor -o /usr/share/keyrings/elasticsearch-keyring.gpg || handle_error "Failed to add Elasticsearch GPG key." "${LINENO}"
   echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] https://artifacts.elastic.co/packages/8.x/apt stable main" | tee /etc/apt/sources.list.d/elastic-8.x.list || handle_error "Failed to add Elasticsearch repository." "${LINENO}"
-  elastic_install_log=$(apt-get -q update && apt-get -q install elasticsearch=$elasticsearch_version | stdbuf -oL tee /dev/tty) || handle_error "Failed to install Elasticsearch." "${LINENO}"
-  elastic_password=$(echo "$elastic_install_log" | awk -F' : ' '/The generated password for the elastic built-in superuser/{print $2}') 
+  elastic_install_log=$(apt-get -q update && apt-get -q install elasticsearch=$elasticsearch_version | stdbuf -oL tee /dev/console) || handle_error "Failed to install Elasticsearch." "${LINENO}"
+  elastic_password=$(echo "$elastic_install_log" | awk -F' : ' '/The generated password for the elastic built-in superuser/{print $2}')
   elastic_password=$(echo -n "$elastic_password" | tr -cd '[:print:]')
   #printf "\n\n\nElastic password: $elastic_password\n\n"
 }
@@ -540,14 +548,14 @@ configure_jvm_memory() {
   printf "\n\n\n*********Configuring JVM memory usage...\n\n"
   total_mem_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
   one_third_mem_gb=$(echo "$total_mem_kb / 1024 / 1024 / 3" | bc -l)
-  rounded_mem_gb=$(printf "%.0f" $one_third_mem_gb)
-  if [ $rounded_mem_gb -gt 31 ]; then
+  rounded_mem_gb=$(printf "%.0f" "$one_third_mem_gb")
+  if [ "$rounded_mem_gb" -gt 31 ]; then
       jvm_mem_gb=31
   else
       jvm_mem_gb=$rounded_mem_gb
   fi
   jvm_options="-Xms${jvm_mem_gb}g\n-Xmx${jvm_mem_gb}g"
-  echo -e $jvm_options | tee /etc/elasticsearch/jvm.options.d/heap.options > /dev/null
+  echo -e "$jvm_options" | tee /etc/elasticsearch/jvm.options.d/heap.options > /dev/null
   echo "Elasticsearch JVM options set to use $jvm_mem_gb GB for both -Xms and -Xmx."
 }
 
@@ -585,7 +593,7 @@ start_elasticsearch() {
     echo "Elasticsearch is not running."
   fi
   printf "\n\n\n*********Checking if Elastic server is up...\n\n"
-  curl_result=$(curl -s -k -u $elastic_username:$elastic_password https://localhost:9200)
+  curl_result=$(curl -s -k -u $elastic_username:"$elastic_password" https://localhost:9200)
   search_text='cluster_name" : "elasticsearch'
   if echo "$curl_result" | grep -q "$search_text"; then
       echo -e "\e[32mElastic is up! Using authenticated curl.\e[0m\n\n"
@@ -595,12 +603,12 @@ start_elasticsearch() {
 }
 
 install_kibana() {
-  printf "\n\n\n*********Downloading and installing Kibana...\n\n"
+  echo -e "\n\n\n*********Downloading and installing Kibana...\n\n"
   apt-get -q update && apt-get -q install kibana=$kibana_version
 }
 
 configure_kibana() {
-  printf "\n\n\n*********Generating Kibana saved objects encryption key...\n\n"
+  echo -e "\n\n\n*********Generating Kibana saved objects encryption key...\n\n"
   output=$(/usr/share/kibana/bin/kibana-encryption-keys generate -q)
   key_line=$(echo "$output" | grep '^xpack.encryptedSavedObjects.encryptionKey')
   if [[ -n "$key_line" ]]; then
@@ -608,20 +616,20 @@ configure_kibana() {
   else
       echo "No encryption key line found."
   fi
-  printf "\n\n\n*********Generating Kibana enrollment token...\n\n"
+  echo -e "\n\n\n*********Generating Kibana enrollment token...\n\n"
   kibana_token=$(/usr/share/elasticsearch/bin/elasticsearch-create-enrollment-token -s kibana)
-  printf "\n\n\nKibana enrollment token is:\n\n$kibana_token\n\n"
-  printf "\n\n\n*********Enrolling Kibana with Elastic...\n\n"
-  /usr/share/kibana/bin/kibana-setup --enrollment-token $kibana_token
-  printf "\n\n\n*********Enabling and starting Kibana service...\n\n"
+  echo -e "\n\n\nKibana enrollment token is:\n\n$kibana_token\n\n"
+  echo -e "\n\n\n*********Enrolling Kibana with Elastic...\n\n"
+  /usr/share/kibana/bin/kibana-setup --enrollment-token "$kibana_token"
+  echo -e "\n\n\n*********Enabling and starting Kibana service...\n\n"
   systemctl daemon-reload && systemctl enable kibana.service && systemctl start kibana.service
   sleep_message "Giving Kibana service time to stabilize" 20
-  printf "\n\n\n*********Configuring Kibana - set 0.0.0.0 as server.host\n\n"
+  echo -e "\n\n\n*********Configuring Kibana - set 0.0.0.0 as server.host\n\n"
   replace_text "/etc/kibana/kibana.yml" "#server.host: \"localhost\"" "server.host: \"0.0.0.0\"" "${LINENO}"
-  printf "\n\n\n*********Configuring Kibana - set elasticsearch.hosts to localhost instead of interface IP...\n\n"
+  echo -e "\n\n\n*********Configuring Kibana - set elasticsearch.hosts to localhost instead of interface IP...\n\n"
   replace_text "/etc/kibana/kibana.yml" "elasticsearch.hosts: \['https:\/\/[^']*'\]" "elasticsearch.hosts: \['https:\/\/localhost:9200'\]" "${LINENO}"
   replace_text "/etc/kibana/kibana.yml" '#server.publicBaseUrl: ""' 'server.publicBaseUrl: "http://kibana.example.com:5601"' "${LINENO}"
-  printf "\n\n\n*********Configuring Kibana - enabling PNG and PDF report generation...\n\n"
+  echo -e "\n\n\n*********Configuring Kibana - enabling PNG and PDF report generation...\n\n"
   echo -e '\nxpack.reporting.capture.browser.chromium.disableSandbox: true\nxpack.reporting.queue.timeout: 120000\nxpack.reporting.capture.timeouts:\n  openUrl: 30000\n  renderComplete: 30000\n  waitForElements: 30000' >> /etc/kibana/kibana.yml
   systemctl daemon-reload
   systemctl restart kibana.service
@@ -657,13 +665,13 @@ install_elastiflow() {
   "EF_LOGGER_FILE_LOG_FILENAME" "EF_LOGGER_FILE_LOG_FILENAME: '/var/log/elastiflow/flowcoll/flowcoll.log'"
   "EF_OUTPUT_ELASTICSEARCH_TSDS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TSDS_ENABLE: 'true'"
   "EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_ENABLE: 'true'"
-  "EF_PROCESSOR_ENRICH_IPADDR_METADATA_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_METADATA_ENABLE: 'true'"  
+  "EF_PROCESSOR_ENRICH_IPADDR_METADATA_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_METADATA_ENABLE: 'true'"
   "EF_PROCESSOR_ENRICH_IPADDR_METADATA_USERDEF_PATH" "EF_PROCESSOR_ENRICH_IPADDR_METADATA_USERDEF_PATH: '/etc/elastiflow/metadata/ipaddrs.yml'"
   "EF_PROCESSOR_ENRICH_NETIF_METADATA_ENABLE" "EF_PROCESSOR_ENRICH_NETIF_METADATA_ENABLE: 'true'"
   "EF_PROCESSOR_ENRICH_NETIF_METADATA_USERDEF_PATH" "EF_PROCESSOR_ENRICH_NETIF_METADATA_USERDEF_PATH: '/etc/elastiflow/metadata/netifs.yml'"
   "EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE: 'true'"
   "EF_PROCESSOR_ENRICH_IPADDR_DNS_USERDEF_PATH" "EF_PROCESSOR_ENRICH_IPADDR_DNS_USERDEF_PATH: '/etc/elastiflow/hostname/user_defined.yml'"
-  "EF_PROCESSOR_ENRICH_IPADDR_DNS_INCLEXCL_PATH" "EF_PROCESSOR_ENRICH_IPADDR_DNS_INCLEXCL_PATH: '/etc/elastiflow/hostname/incl_excl.yml'"  
+  "EF_PROCESSOR_ENRICH_IPADDR_DNS_INCLEXCL_PATH" "EF_PROCESSOR_ENRICH_IPADDR_DNS_INCLEXCL_PATH: '/etc/elastiflow/hostname/incl_excl.yml'"
   "EF_PROCESSOR_ENRICH_APP_ID_ENABLE" "EF_PROCESSOR_ENRICH_APP_ID_ENABLE: 'true'"
   "EF_PROCESSOR_ENRICH_APP_ID_PATH" "EF_PROCESSOR_ENRICH_APP_ID_PATH: '/etc/elastiflow/app/appid.yml'"
   "EF_PROCESSOR_ENRICH_APP_IPPORT_ENABLE" "EF_PROCESSOR_ENRICH_APP_IPPORT_ENABLE: 'true'"
@@ -672,12 +680,12 @@ install_elastiflow() {
   "EF_PROCESSOR_ENRICH_NETIF_METADATA_USERDEF_PATH" "EF_PROCESSOR_ENRICH_NETIF_METADATA_USERDEF_PATH: '/etc/elastiflow/metadata/netifs.yml'"
   )
 
-  
-  printf "\n\n\n*********Downloading and installing ElastiFlow Flow Collector...\n\n" 
+
+  printf "\n\n\n*********Downloading and installing ElastiFlow Flow Collector...\n\n"
   wget -O flow-collector_"$elastiflow_version"_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_"$elastiflow_version"_linux_amd64.deb
   apt-get -q install ./flow-collector_"$elastiflow_version"_linux_amd64.deb
   change_elasticsearch_password
-  printf "\n\n\n*********Configuring ElastiFlow Flow Collector...\n\n" 
+  printf "\n\n\n*********Configuring ElastiFlow Flow Collector...\n\n"
   find_and_replace "$flowcoll_config_path" "${elastiflow_config_strings[@]}"
   replace_text "/etc/systemd/system/flowcoll.service" "TimeoutStopSec=infinity" "TimeoutStopSec=60" "N/A"
   printf "\n\n\n*********Enabling and starting ElastiFlow service...\n\n"
@@ -688,7 +696,7 @@ install_elastiflow() {
 install_dashboards() {
   printf "\n\n\n*********Downloading and installing ElastiFlow flow dashboards\n\n"
   git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
-  
+
   response=$(curl --connect-timeout 10 -X POST -u $elastic_username:$elastic_password "localhost:5601/api/saved_objects/_import?overwrite=true" -H "kbn-xsrf: true" --form file=@/etc/elastiflow_for_elasticsearch/kibana/flow/kibana-$kibana_dashboards_version-flow-$kibana_dashboards_codex_ecs.ndjson -H 'kbn-xsrf: true')
 
   if [ $? -ne 0 ]; then
@@ -743,20 +751,20 @@ check_dashboards_status() {
 }
 
 display_versions() {
-  printf "*********************************************\n"
-  
+  echo -e "*********************************************\n"
+
   version=$(/usr/share/elastiflow/bin/flowcoll -version)
-  printf "Installed ElastiFlow version: $version\n"
+  echo -e "Installed ElastiFlow version: $version\n"
   version=$kibana_dashboards_version
-  printf "Installed ElastiFlow Dashboards version: $kibana_dashboards_codex_ecs $version\n"
+  echo -e "Installed ElastiFlow Dashboards version: $kibana_dashboards_codex_ecs $version\n"
   version=$(/usr/share/kibana/bin/kibana --version --allow-root | jq -r '.config.serviceVersion.value' 2>/dev/null)
-  printf "Installed Kibana version: $version\n"
+  echo -e "Installed Kibana version: $version\n"
   version=$(/usr/share/elasticsearch/bin/elasticsearch --version | grep -oP 'Version: \K[\d.]+')
-  printf "Installed Elasticsearch version: $version\n" 
+  echo -e "Installed Elasticsearch version: $version\n"
   version=$(java -version 2>&1)
-  printf "Installed Java version: $version\n"
+  echo -e "Installed Java version: $version\n"
   version=$(lsb_release -d | awk -F'\t' '{print $2}')
-  printf "Operating System: $version\n"
+  echo -e "Operating System: $version\n"
   display_version "/home/user/configure"
   display_version "/home/user/support"
   display_system_info
@@ -765,7 +773,8 @@ display_versions() {
 
 display_version() {
   local file="$1"
-  local version=$(grep -m 1 '^# Version: ' "$file" | awk '{print $3}')
+  version=$(grep -m 1 '^# Version: ' "$file" | awk '{print $3}')
+  local version
   if [[ -z "$version" ]]; then
     echo "Failed to detect the version in $file"
   else
@@ -783,7 +792,7 @@ display_dashboard_url() {
 
 remove_update_service(){
   printf "\n\n\n*********Removing Ubuntu update service...\n\n"
-  apt remove -y unattended-upgrades
+  apt-get remove -y unattended-upgrades
 }
 
 append_to_bashrc() {
@@ -798,7 +807,8 @@ append_to_bashrc() {
 }
 
 cleanup (){
-  local installed_script=$(realpath "$0")  
+  installed_script=$(realpath "$0")
+  local installed_script
   #release DHCP address
   dhclient -r
 
