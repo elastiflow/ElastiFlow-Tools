@@ -1,7 +1,7 @@
 services:
   # ElastiFlow NetObserv Flow
   flow-collector:
-    image: elastiflow/flow-collector:${ELASTIFLOW_VERSION}
+    image: elastiflow/flow-collector:7.2.2
     container_name: flow-collector
     ports:
       - "9995:9995/udp"  # Expose the UDP port for flow collection
@@ -191,7 +191,7 @@ services:
       # A comma separated list of Elasticsearch nodes to use. DO NOT include "http://" or "https://"
       EF_OUTPUT_ELASTICSEARCH_ADDRESSES: '127.0.0.1:9200'
       EF_OUTPUT_ELASTICSEARCH_USERNAME: 'elastic'
-      EF_OUTPUT_ELASTICSEARCH_PASSWORD: '${ELASTIC_PASSWORD}'
+      EF_OUTPUT_ELASTICSEARCH_PASSWORD: 'elastic'
       #EF_OUTPUT_ELASTICSEARCH_CLOUD_ID: ''
       #EF_OUTPUT_ELASTICSEARCH_API_KEY: ''
       #EF_OUTPUT_ELASTICSEARCH_CLIENT_CA_CERT_FILEPATH: ''
