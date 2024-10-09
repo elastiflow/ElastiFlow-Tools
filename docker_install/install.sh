@@ -233,5 +233,6 @@ download_files
 install_openssl_if_missing
 generate_saved_objects_enc_key
 check_docker
+extract_elastiflow
 deploy_elastiflow
 echo "ElastiFlow has been deployed successfully!"
