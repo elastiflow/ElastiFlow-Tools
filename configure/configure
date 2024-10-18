@@ -691,9 +691,9 @@ perform_health_check() {
 
     print_message "************* Flowcoll ************" "$NC"
     version=$(/usr/share/elastiflow/bin/flowcoll -version)
-    echo -e "Installed ElastiFlow Flow version: $version\n"
+    echo -e "Installed ElastiFlow Flow version: $version"
     version=$flow_kibana_dashboards_version
-    echo -e "Installed ElastiFlow Flow Dashboards version: $flow_kibana_dashboards_codex_ecs $version\n"
+    echo -e "Installed ElastiFlow Flow Dashboards version: $flow_kibana_dashboards_codex_ecs $version"
     
     verify_ef_flow_configured_pw_for_elastic
     
@@ -843,9 +843,9 @@ perform_health_check() {
     print_message "************* SNMPcoll ************" "$NC"
     
     version=$(/usr/share/elastiflow/bin/snmpcollcoll -version)
-    echo -e "Installed ElastiFlow SNMP version: $version\n"
+    echo -e "Installed ElastiFlow SNMP version: $version"
     version=$snmp_kibana_dashboards_version
-    echo -e "Installed ElastiFlow SNMP Dashboards version: $snmp_kibana_dashboards_codex_ecs $version\n"
+    echo -e "Installed ElastiFlow SNMP Dashboards version: $snmp_kibana_dashboards_codex_ecs $version"
 
     verify_ef_snmp_configured_pw_for_elastic
     
