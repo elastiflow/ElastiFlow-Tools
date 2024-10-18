@@ -644,7 +644,6 @@ install_docker() {
 
 
 display_info() {
-  echo -e "*********************************************\n"
   version=$(java -version 2>&1)
   echo -e "Installed Java version: $version\n"
   version=$(lsb_release -d | awk -F'\t' '{print $2}')
@@ -670,9 +669,9 @@ perform_health_check() {
     print_message "IP address: $ip_address" "$GREEN"
     netplan_file=$(find /etc/netplan -name "*.yaml" | head -n 1)
     print_message "Netplan file: $netplan_file" "$GREEN"
-    printf "----------------"
+    printf "***\n"
     cat "$netplan_file"
-    printf "----------------"
+    printf "***\n"
     default_gateway=$(ip route | grep default | awk '{print $3}')
     if [ -n "$default_gateway" ]; then
       if ping -c 1 $default_gateway &> /dev/null; then
