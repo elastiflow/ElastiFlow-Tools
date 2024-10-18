@@ -1,6 +1,5 @@
 #!/bin/bash
 
-dashboard_title="ElastiFlow (flow): Overview"
 ip_address="192.168.2.80"
 
 get_dashboard_url() {
@@ -20,4 +19,4 @@ get_dashboard_url() {
 }
 
 
-get_dashboard_url
+dashboard_url=$(get_dashboard_url "ElastiFlow (flow): Overview")
