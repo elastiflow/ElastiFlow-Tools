@@ -740,7 +740,7 @@ perform_health_check() {
     curl_result=$(curl -s -k -u elastic:$elastic_password https://localhost:9200)
     search_text='cluster_name" : "elasticsearch'
     if echo "$curl_result" | grep -q "$search_text"; then
-      print_message "Elastic is ready. Used curl." "$GREEN"
+      print_message "Elastic is ready. Used authenticated curl." "$GREEN"
     else
       print_message "Something's wrong with Elastic..." "$RED"
       echo "$curl_result"
