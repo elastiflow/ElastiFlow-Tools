@@ -22,6 +22,17 @@ elastiflow_snmp_config_path="/etc/elastiflow/snmpcoll.yml"
 elastiflow_flow_config_path="/etc/elastiflow/flowcoll.yml"
 
 
+display_version() {
+  local file="$1"
+  version=$(grep -m 1 '^# Version: ' "$file" | awk '{print $3}')
+  local version
+  if [[ -z "$version" ]]; then
+    echo "Failed to detect the version in $file"
+  else
+    echo "Version of $(basename "$file") script: $version"
+  fi
+}
+
 display_versions() {
   echo -e "*********************************************\n"
 
