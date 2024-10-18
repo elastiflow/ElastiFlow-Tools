@@ -1,6 +1,8 @@
 #!/bin/bash
 
 ip_address="192.168.2.80"
+elastic_username=elastic
+elastic_password2=elastic
 
 get_dashboard_url() {
   local kibana_url="http://$ip_address:5601"
