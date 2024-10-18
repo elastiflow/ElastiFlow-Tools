@@ -594,7 +594,7 @@ start_elasticsearch() {
   curl_result=$(curl -s -k -u $elastic_username:"$elastic_password" https://localhost:9200)
   search_text='cluster_name" : "elasticsearch'
   if echo "$curl_result" | grep -q "$search_text"; then
-      echo -e "\e[32mElastic is up! Using authenticated curl.\e[0m\n\n"
+      echo -e "\e[32mElastic is up! Used authenticated curl.\e[0m\n\n"
   else
     echo -e "Something's wrong with Elastic...\n\n"
   fi
