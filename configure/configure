@@ -11,6 +11,10 @@ NC='\033[0m' # No Color
 
 elastiflow_flow_collector_version="7.2.1"
 elastiflow_snmp_collector_version="7.2.1"
+snmp_kibana_dashboards_version="8.2.x"
+snmp_kibana_dashboards_codex_ecs="codex"
+flow_kibana_dashboards_version="8.2.x"
+flow_kibana_dashboards_codex_ecs="codex"
 elastic_username="elastic"
 ip_address=""
 dashboard_url=""
@@ -19,8 +23,7 @@ elastiflow_flow_config_path="/etc/elastiflow/flowcoll.yml"
 
 
 install_snmp_collector() {
-  kibana_dashboards_version="8.2.x"
-  kibana_dashboards_codex_ecs="codex"
+
 
   # Prompt the user for the ElastiFlow Account ID
   while true; do
@@ -90,7 +93,7 @@ install_snmp_collector() {
   systemctl start snmpcoll.service
 
   # Install SNMP dashboards
-  printf "\n\n\n*********Downloading and installing ElastiFlow SNMP dashboards $kibana_dashboards_codex_ecs $kibana_dashboards_version\n\n"
+  printf "\n\n\n*********Downloading and installing ElastiFlow SNMP dashboards $kibana_dashboards_codex_ecs $snmp_kibana_dashboards_version\n\n"
 
   # Remove the existing directory if it exists
   if [ -d "/etc/elastiflow_for_elasticsearch" ]; then
@@ -101,7 +104,7 @@ install_snmp_collector() {
   git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
 
   # Path to the downloaded JSON file
-  json_file="/etc/elastiflow_for_elasticsearch/kibana/snmp/kibana-$kibana_dashboards_version-snmp-$kibana_dashboards_codex_ecs.ndjson"
+  json_file="/etc/elastiflow_for_elasticsearch/kibana/snmp/kibana-$snmp_kibana_dashboards_version-snmp-$snmp_kibana_dashboards_codex_ecs.ndjson"
   
   # Perform find and replace in the JSON file
   sed -i 's/elastiflow-\*-codex-\*/elastiflow-telemetry_\*-codex-\*/g' "$json_file"
@@ -230,8 +233,8 @@ display_versions() {
   printf "*********************************************\n"
   version=$(/usr/share/elastiflow/bin/flowcoll -version)
   printf "Installed ElastiFlow version: $version\n"
-  #version=$kibana_dashboards_version
-  #printf "Installed ElastiFlow Dashboards version: $kibana_dashboards_codex_ecs $version\n"
+  #version=$flow_kibana_dashboards_version
+  #printf "Installed ElastiFlow Dashboards version: $flow_kibana_dashboards_codex_ecs $version\n"
   version=$(/usr/share/kibana/bin/kibana --version --allow-root | jq -r '.config.serviceVersion.value' 2>/dev/null)
   printf "Installed Kibana version: $version\n"
   version=$(/usr/share/elasticsearch/bin/elasticsearch --version | grep -oP 'Version: \K[\d.]+')
