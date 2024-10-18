@@ -176,7 +176,7 @@ reset_elastic_password() {
 }
 
 
-verify_ef_configured_pw_for_elastic(){
+verify_ef_flow_configured_pw_for_elastic(){
   # Extract the Elasticsearch password from the configuration file
   elastic_password=$(grep "^EF_OUTPUT_ELASTICSEARCH_PASSWORD: '" "$elastiflow_flow_config_path" | awk -F"'" '{print $2}')
 
@@ -197,6 +197,29 @@ verify_ef_configured_pw_for_elastic(){
     print_message "Elastic password in flowcoll.yml not correct. Authentication failed with response code: $response" "$RED"
   fi
 }
+
+verify_ef_snmp_configured_pw_for_elastic(){
+  # Extract the Elasticsearch password from the configuration file
+  elastic_password=$(grep "^EF_OUTPUT_ELASTICSEARCH_PASSWORD: '" "$elastiflow_snmp_config_path" | awk -F"'" '{print $2}')
+
+  # Check if the password was successfully extracted
+  if [ -z "$elastic_password" ]; then
+    print_message "Failed to extract Elasticsearch password from $elastiflow_snmp_config_path" '\033[0;31m'
+    exit 1
+  fi
+
+  # Verify the password via Kibana
+  kibana_url="http://localhost:5601"
+  response=$(curl -s -o /dev/null -w "%{http_code}" -u "elastic:$elastic_password" "$kibana_url/api/status")
+
+  # Check the response code
+  if [ "$response" -eq 200 ]; then
+    print_message "Elastic password in snmpcoll.yml is correct. Authentication successful! - \"$elastic_password\"" "$GREEN"
+  else
+    print_message "Elastic password in snmpcoll.yml not correct. Authentication failed with response code: $response" "$RED"
+  fi
+}
+
 
 display_system_info() {
   # Main partition size in GB
@@ -642,7 +665,7 @@ perform_health_check() {
     fi
 
     print_message "************* Flowcoll ************" "$NC"
-    verify_ef_configured_pw_for_elastic
+    verify_ef_flow_configured_pw_for_elastic
     
     get_dashboard_url "ElastiFlow (flow): Overview"
     if [ "$dashboard_url" == "Dashboard not found" ]; then
@@ -777,6 +800,46 @@ perform_health_check() {
     else
         print_message "Kibana is not ready" "$RED"
         echo "$response"
+    fi
+
+
+    print_message "************* SNMPcoll ************" "$NC"
+    verify_ef_snmp_configured_pw_for_elastic
+    
+    get_dashboard_url "ElastiFlow (telemetry): Overview"
+    if [ "$dashboard_url" == "Dashboard not found" ]; then
+      print_message "Dashboard URL: $dashboard_url" "$RED"
+    else
+      print_message "Dashboard URL: $dashboard_url" "$GREEN"
+    fi
+
+    if systemctl is-active --quiet snmpcoll.service; then
+      print_message "snmpcoll.service is running" "$GREEN"
+    else
+      print_message "snmpcoll.service is not running" "$RED"
+    fi
+
+    if journalctl -u snmpcoll.service | grep -iq "level=error"; then
+    print_message "Errors found in snmpcoll.service logs:" "$RED"
+    #journalctl -u snmpcoll.service | grep -i "level=error"
+  else
+    print_message "No errors found in snmpcoll.service logs" "$GREEN"
+  fi
+
+    # Path to the snmpcoll.yml file
+    snmpcoll_file="/etc/elastiflow/snmpcoll.yml"
+
+    if [ -f "$snmpcoll_file" ]; then
+      # Extract values from the snmpcoll.yml file
+      ef_account_id=$(grep '^EF_ACCOUNT_ID: ' "$snmpcoll_file" | awk '{print $2}' | tr -d '"')
+      ef_flow_license_key=$(grep '^EF_FLOW_LICENSE_KEY: ' "$snmpcoll_file" | awk '{print $2}' | tr -d '"')
+      ef_license_accepted=$(grep '^EF_LICENSE_ACCEPTED: ' "$snmpcoll_file" | awk '{print $2}' | tr -d '"')
+    fi
+
+    if [ -n "$ef_account_id" ] && [ -n "$ef_flow_license_key" ] && [ "$ef_license_accepted" == "true" ]; then
+      print_message "EF_LICENSE_ACCEPTED: $ef_license_accepted, EF_ACCOUNT_ID: $ef_account_id, EF_FLOW_LICENSE_KEY: $ef_flow_license_key" "$GREEN"
+    else
+      print_message "ElastiFlow account ID, flow license key, or license accepted is not correctly configured" "$RED"
     fi
 
     print_message "************************************" "$NC"
