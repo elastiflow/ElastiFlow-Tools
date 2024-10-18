@@ -20,4 +20,4 @@ get_dashboard_url() {
 
 
 dashboard_url=$(get_dashboard_url "ElastiFlow (flow): Overview")
-printf $dashboard_url
+printf "$dashboard_url"
