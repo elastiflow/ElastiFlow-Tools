@@ -9,12 +9,12 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-flow_collector_version="7.2.1"
+flow_collector_version="7.3.2"
 flow_kibana_dashboards_version="8.2.x"
 flow_kibana_dashboards_codex_ecs="codex"
 flow_config_path="/etc/elastiflow/flowcoll.yml"
 
-snmp_collector_version="7.2.1"
+snmp_collector_version="7.3.2"
 snmp_kibana_dashboards_version="8.2.x"
 snmp_kibana_dashboards_codex_ecs="codex"
 snmp_config_path="/etc/elastiflow/snmpcoll.yml"
