@@ -65,32 +65,8 @@ display_version() {
   fi
 }
 
-display_versions() {
-  echo -e "*********************************************\n"
-
-  version=$(/usr/share/elastiflow/bin/flowcoll -version)
-  echo -e "Installed ElastiFlow Flow version: $version\n"
-  version=$(/usr/share/elastiflow/bin/snmpcollcoll -version)
-  echo -e "Installed ElastiFlow SNMP version: $version\n"
-  version=$kibana_dashboards_version
-  echo -e "Installed ElastiFlow Dashboards version: $kibana_dashboards_codex_ecs $version\n"
-  version=$(/usr/share/kibana/bin/kibana --version --allow-root | jq -r '.config.serviceVersion.value' 2>/dev/null)
-  echo -e "Installed Kibana version: $version\n"
-  version=$(/usr/share/elasticsearch/bin/elasticsearch --version | grep -oP 'Version: \K[\d.]+')
-  echo -e "Installed Elasticsearch version: $version\n"
-  version=$(java -version 2>&1)
-  echo -e "Installed Java version: $version\n"
-  version=$(lsb_release -d | awk -F'\t' '{print $2}')
-  echo -e "Operating System: $version\n"
-  display_version "/home/user/configure"
-  display_version "/home/user/support"
-  display_system_info
-
-}
-
 
 install_snmp_collector() {
-
 
   # Prompt the user for the ElastiFlow Account ID
   while true; do
@@ -317,25 +293,6 @@ display_system_info() {
   # Total number of cores
   total_cores=$((physical_cpus * cores_per_cpu))
   echo "Total number of cores: $total_cores"
-}
-
-display_versions() {
-  printf "*********************************************\n"
-  version=$(/usr/share/elastiflow/bin/flowcoll -version)
-  printf "Installed ElastiFlow version: $version\n"
-  #version=$flow_kibana_dashboards_version
-  #printf "Installed ElastiFlow Dashboards version: $flow_kibana_dashboards_codex_ecs $version\n"
-  version=$(/usr/share/kibana/bin/kibana --version --allow-root | jq -r '.config.serviceVersion.value' 2>/dev/null)
-  printf "Installed Kibana version: $version\n"
-  version=$(/usr/share/elasticsearch/bin/elasticsearch --version | grep -oP 'Version: \K[\d.]+')
-  printf "Installed Elasticsearch version: $version\n" 
-  version=$(java -version 2>&1)
-  printf "Installed Java version: $version\n"
-  version=$(lsb_release -d | awk -F'\t' '{print $2}')
-  printf "Operating System: $version\n"
-  display_version "/home/user/configure"
-  display_version "/home/user/support"
-  display_system_info
 }
 
 # Function to install ElastiFlow Flow Collector from a dynamically scraped URL with verification
@@ -686,6 +643,16 @@ install_docker() {
 }
 
 
+display_info() {
+  echo -e "*********************************************\n"
+  version=$(java -version 2>&1)
+  echo -e "Installed Java version: $version\n"
+  version=$(lsb_release -d | awk -F'\t' '{print $2}')
+  echo -e "Operating System: $version\n"
+  display_system_info
+}
+
+
 perform_health_check() {
   clear
   # Create a timestamped file
@@ -699,12 +666,13 @@ perform_health_check() {
     get_host_ip
     
     print_message "\n\n************* General *************" "$NC"
-    display_versions
-    display_system_info
+    display_info
     print_message "IP address: $ip_address" "$GREEN"
     netplan_file=$(find /etc/netplan -name "*.yaml" | head -n 1)
     print_message "Netplan file: $netplan_file" "$GREEN"
+    printf "----------------"
     cat "$netplan_file"
+    printf "----------------"
     default_gateway=$(ip route | grep default | awk '{print $3}')
     if [ -n "$default_gateway" ]; then
       if ping -c 1 $default_gateway &> /dev/null; then
@@ -723,6 +691,11 @@ perform_health_check() {
     fi
 
     print_message "************* Flowcoll ************" "$NC"
+    version=$(/usr/share/elastiflow/bin/flowcoll -version)
+    echo -e "Installed ElastiFlow Flow version: $version\n"
+    version=$flow_kibana_dashboards_version
+    echo -e "Installed ElastiFlow Flow Dashboards version: $flow_kibana_dashboards_codex_ecs $version\n"
+    
     verify_ef_flow_configured_pw_for_elastic
     
     get_dashboard_url "ElastiFlow (flow): Overview"
@@ -802,6 +775,10 @@ perform_health_check() {
     fi
 
     print_message "********** Elasticsearch **********" "$NC"
+    
+    version=$(/usr/share/elasticsearch/bin/elasticsearch --version | grep -oP 'Version: \K[\d.]+')
+    echo -e "Installed Elasticsearch version: $version\n"
+
     if systemctl is-active --quiet elasticsearch.service; then
       print_message "elasticsearch.service is running" "$GREEN"
     else
@@ -831,6 +808,9 @@ perform_health_check() {
     fi
 
     print_message "************** Kibana *************" "$NC"
+    version=$(/usr/share/kibana/bin/kibana --version --allow-root | jq -r '.config.serviceVersion.value' 2>/dev/null)
+    echo -e "Installed Kibana version: $version\n"
+
     if systemctl is-active --quiet kibana.service; then
       print_message "kibana.service is running" "$GREEN"
     else
@@ -862,6 +842,12 @@ perform_health_check() {
 
 
     print_message "************* SNMPcoll ************" "$NC"
+    
+    version=$(/usr/share/elastiflow/bin/snmpcollcoll -version)
+    echo -e "Installed ElastiFlow SNMP version: $version\n"
+    version=$snmp_kibana_dashboards_version
+    echo -e "Installed ElastiFlow SNMP Dashboards version: $snmp_kibana_dashboards_codex_ecs $version\n"
+
     verify_ef_snmp_configured_pw_for_elastic
     
     get_dashboard_url "ElastiFlow (telemetry): Overview"
