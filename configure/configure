@@ -9,17 +9,19 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-elastiflow_flow_collector_version="7.2.1"
-elastiflow_snmp_collector_version="7.2.1"
-snmp_kibana_dashboards_version="8.2.x"
-snmp_kibana_dashboards_codex_ecs="codex"
+flow_collector_version="7.2.1"
 flow_kibana_dashboards_version="8.2.x"
 flow_kibana_dashboards_codex_ecs="codex"
+flow_config_path="/etc/elastiflow/flowcoll.yml"
+
+snmp_collector_version="7.2.1"
+snmp_kibana_dashboards_version="8.2.x"
+snmp_kibana_dashboards_codex_ecs="codex"
+snmp_config_path="/etc/elastiflow/snmpcoll.yml"
+
 elastic_username="elastic"
 ip_address=""
 dashboard_url=""
-elastiflow_snmp_config_path="/etc/elastiflow/snmpcoll.yml"
-elastiflow_flow_config_path="/etc/elastiflow/flowcoll.yml"
 
 
 display_system_info() {
@@ -82,10 +84,10 @@ install_snmp_collector() {
 
   # Prompt the user for the SNMP flow key
   while true; do
-    read -p "Enter your ElastiFlow SNMP License Key (or 'q' to quit): " elastiflow_snmp_license_key
-    if [[ $elastiflow_snmp_license_key == "q" ]]; then
+    read -p "Enter your ElastiFlow SNMP License Key (or 'q' to quit): " snmp_license_key
+    if [[ $snmp_license_key == "q" ]]; then
       return
-    elif [[ -z $elastiflow_snmp_license_key ]]; then
+    elif [[ -z $snmp_license_key ]]; then
       print_message "ElastiFlow SNMP License Key cannot be empty. Please enter a valid key." "$RED"
     else
       break
@@ -94,18 +96,18 @@ install_snmp_collector() {
 
 
   # Extract the Elasticsearch password from the configuration file
-  elastic_password=$(grep "^EF_OUTPUT_ELASTICSEARCH_PASSWORD: '" "$elastiflow_flow_config_path" | awk -F"'" '{print $2}')
+  elastic_password=$(grep "^EF_OUTPUT_ELASTICSEARCH_PASSWORD: '" "$flow_config_path" | awk -F"'" '{print $2}')
 
 
   if [ -z "$elastic_password" ]; then
-    print_message "Failed to extract Elasticsearch password from $elastiflow_flow_config_path" "$RED"
+    print_message "Failed to extract Elasticsearch password from $flow_config_path" "$RED"
     return
   fi
 
-  elastiflow_snmp_config_strings=(
+  snmp_config_strings=(
     "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: 'true'"
     "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: \"${elastiflow_account_id}\""
-    "EF_SNMP_LICENSE_KEY" "EF_SNMP_LICENSE_KEY: \"${elastiflow_snmp_license_key}\""
+    "EF_SNMP_LICENSE_KEY" "EF_SNMP_LICENSE_KEY: \"${snmp_license_key}\""
     "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: 'true'"
     "EF_OUTPUT_ELASTICSEARCH_ADDRESSES" "EF_OUTPUT_ELASTICSEARCH_ADDRESSES: '127.0.0.1:9200'"
     "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: '$elastic_password'"
@@ -117,19 +119,19 @@ install_snmp_collector() {
   )
 
 
-  print_message "Installing ElastiFlow Unified SNMP Collector $elastiflow_snmp_collector_version..." "$GREEN"
+  print_message "Installing ElastiFlow Unified SNMP Collector $snmp_collector_version..." "$GREEN"
   
   # Update package list and install prerequisites
   apt-get update -qq
   apt-get install -qq -y snmp snmpd snmp-mibs-downloader curl apt-transport-https gnupg
   
   # Download the ElastiFlow SNMP collector package
-  wget -q -O elastiflow-snmpcollector.deb "https://elastiflow-releases.s3.us-east-2.amazonaws.com/snmp-collector/snmp-collector_${elastiflow_snmp_collector_version}_linux_amd64.deb"
+  wget -q -O elastiflow-snmpcollector.deb "https://elastiflow-releases.s3.us-east-2.amazonaws.com/snmp-collector/snmp-collector_${snmp_collector_version}_linux_amd64.deb"
 
   # Install the package
   dpkg -i elastiflow-snmpcollector.deb
 
-  find_and_replace "$elastiflow_snmp_config_path" "${elastiflow_snmp_config_strings[@]}"
+  find_and_replace "$snmp_config_path" "${snmp_config_strings[@]}"
 
   # Enable and start the SNMP collector service
   systemctl enable snmpcoll.service
@@ -210,7 +212,7 @@ reset_elastic_password() {
 
   # Update password in Elastiflow
   elastiflow_config_strings=("EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: '$new_elastic_password'")
-  find_and_replace "$elastiflow_flow_config_path" "${elastiflow_config_strings[@]}"
+  find_and_replace "$flow_config_path" "${elastiflow_config_strings[@]}"
 
   # Restart all services
   reload_and_restart_services "flowcoll.service"
@@ -221,11 +223,11 @@ reset_elastic_password() {
 
 verify_ef_flow_configured_pw_for_elastic(){
   # Extract the Elasticsearch password from the configuration file
-  elastic_password=$(grep "^EF_OUTPUT_ELASTICSEARCH_PASSWORD: '" "$elastiflow_flow_config_path" | awk -F"'" '{print $2}')
+  elastic_password=$(grep "^EF_OUTPUT_ELASTICSEARCH_PASSWORD: '" "$flow_config_path" | awk -F"'" '{print $2}')
 
   # Check if the password was successfully extracted
   if [ -z "$elastic_password" ]; then
-    print_message "Failed to extract Elasticsearch password from $elastiflow_flow_config_path" '\033[0;31m'
+    print_message "Failed to extract Elasticsearch password from $flow_config_path" '\033[0;31m'
     exit 1
   fi
 
@@ -243,11 +245,11 @@ verify_ef_flow_configured_pw_for_elastic(){
 
 verify_ef_snmp_configured_pw_for_elastic(){
   # Extract the Elasticsearch password from the configuration file
-  elastic_password=$(grep "^EF_OUTPUT_ELASTICSEARCH_PASSWORD: '" "$elastiflow_snmp_config_path" | awk -F"'" '{print $2}')
+  elastic_password=$(grep "^EF_OUTPUT_ELASTICSEARCH_PASSWORD: '" "$snmp_config_path" | awk -F"'" '{print $2}')
 
   # Check if the password was successfully extracted
   if [ -z "$elastic_password" ]; then
-    print_message "Failed to extract Elasticsearch password from $elastiflow_snmp_config_path" '\033[0;31m'
+    print_message "Failed to extract Elasticsearch password from $snmp_config_path" '\033[0;31m'
     exit 1
   fi
 
@@ -296,8 +298,7 @@ display_system_info() {
 }
 
 # Function to install ElastiFlow Flow Collector from a dynamically scraped URL with verification
-# Function to install ElastiFlow Flow Collector with checksum and GPG verification
-install_flow_collector() {
+update_flow_collector() {
     local DOC_URL="https://docs.elastiflow.com/docs/flowcoll/install_linux"
 
     echo "Scraping $DOC_URL for download details..."
@@ -488,6 +489,199 @@ fi
 }
 
 
+# Function to install ElastiFlow Flow Collector from a dynamically scraped URL with verification
+update_snmp_collector() {
+    local DOC_URL="https://docs.elastiflow.com/docs/snmpcoll/install_linux"
+
+    echo "Scraping $DOC_URL for download details..."
+
+    # Function to validate a URL
+    validate_url() {
+        if curl --output /dev/null --silent --head --fail "$1"; then
+            echo "$1"
+        else
+            echo ""
+        fi
+    }
+
+    # Scrape and validate the first valid URL for the .deb file
+    local DEB_URL=$(curl -sL $DOC_URL | grep -oP 'https://[^\"]+snmp-collector_[0-9]+\.[0-9]+\.[0-9]+_linux_amd64\.deb' | head -n 1)
+    DEB_URL=$(validate_url "$DEB_URL")
+
+    # Scrape and validate the first valid URL for the .sha256 checksum file
+    local SHA256_URL=$(curl -sL $DOC_URL | grep -oP 'https://[^\"]+snmp-collector_[0-9]+\.[0-9]+\.[0-9]+_linux_amd64\.deb\.sha256' | head -n 1)
+    SHA256_URL=$(validate_url "$SHA256_URL")
+
+    # Scrape and validate the first valid URL for the GPG signature file (.deb.sig)
+    local GPG_SIG_URL=$(curl -sL $DOC_URL | grep -oP 'https://[^\"]+snmp-collector_[0-9]+\.[0-9]+\.[0-9]+_linux_amd64\.deb\.sig' | head -n 1)
+    GPG_SIG_URL=$(validate_url "$GPG_SIG_URL")
+
+    # Scrape for the GPG key ID
+    local GPG_KEY_ID=$(curl -sL $DOC_URL | grep -oP 'class="token plain">echo &quot;\K[A-F0-9]{40}' | head -n 1)
+
+    # Scrape and validate the URL for the public key (.pgp)
+    local GPG_PUBKEY_URL=$(curl -sL $DOC_URL | grep -oP 'https://[^\"]+elastiflow\.pgp' | head -n 1)
+    GPG_PUBKEY_URL=$(validate_url "$GPG_PUBKEY_URL")
+
+    # Check if the DEB_URL was found and is valid
+    if [ -z "$DEB_URL" ]; then
+        echo "Error: Could not find a valid .deb file URL in $DOC_URL."
+        exit 1
+    fi
+
+    echo "Found DEB URL: $DEB_URL"
+    echo "Found SHA256 URL: $SHA256_URL"
+    echo "Found GPG Signature URL: $GPG_SIG_URL"
+    echo "Found GPG Key ID: $GPG_KEY_ID"
+    echo "Found GPG public key URL: $GPG_PUBKEY_URL"
+
+
+    # Extract the filename from the URL
+    local FILENAME=$(basename "$DEB_URL")
+
+    # Extract the version number from the filename
+    local REMOTE_VERSION=$(echo "$FILENAME" | grep -oP 'snmp-collector_\K[0-9]+\.[0-9]+\.[0-9]+')
+
+    # Check the currently installed version of ElastiFlow SNMP Collector
+    local CURRENT_VERSION=$(/usr/share/elastiflow/bin/snmpcoll -version 2>/dev/null || echo "None")
+
+    echo "Current installed version: ${CURRENT_VERSION}"
+    echo "Remote version: $REMOTE_VERSION"
+
+    # Prompt the user to confirm if they want to install the remote version
+    read -p "Do you want to install the remote version $REMOTE_VERSION? [y/N]: " CONFIRM
+    if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+        echo "Installation aborted by user."
+        exit 0
+    fi
+
+    # Download all files to /tmp
+    local DOWNLOAD_DIR="/tmp"
+    # Extract the filename from the URL and combine it with the download directory path
+    local DEB_FILE="$DOWNLOAD_DIR/$FILENAME"
+    echo "DEB file will be downloaded to: $DEB_FILE"
+
+    # Download the .deb file
+    wget -O "$DEB_FILE" "$DEB_URL" || {
+        echo "Error: Failed to download .deb file."
+        exit 1
+    }
+
+    # Attempt to download the checksum file
+    if [ -n "$SHA256_URL" ]; then
+        wget -O "$DOWNLOAD_DIR/$(basename $SHA256_URL)" "$SHA256_URL" || {
+            echo "Warning: Failed to download checksum file."
+            read -p "Do you want to continue without checksum verification? [y/N]: " CONFIRM
+            if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+                echo "Installation aborted by user."
+                exit 1
+            fi
+            SHA256_URL=""
+        }
+    fi
+
+    # Attempt to download the GPG signature file
+    if [ -n "$GPG_SIG_URL" ]; then
+        wget -O "$DOWNLOAD_DIR/$(basename $GPG_SIG_URL)" "$GPG_SIG_URL" || {
+            echo "Warning: Failed to download GPG signature file."
+            read -p "Do you want to continue without GPG signature verification? [y/N]: " CONFIRM
+            if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+                echo "Installation aborted by user."
+                exit 1
+            fi
+            GPG_SIG_URL=""
+        }
+    fi
+
+
+# Attempt to download the GPG public key file
+if [ -n "$GPG_PUBKEY_URL" ]; then
+    GPG_PUBKEY_FILE="$DOWNLOAD_DIR/$(basename $GPG_PUBKEY_URL)"
+    wget -O "$GPG_PUBKEY_FILE" "$GPG_PUBKEY_URL" || {
+        echo "Warning: Failed to download GPG public key file."
+        read -p "Do you want to continue without the GPG public key? [y/N]: " CONFIRM
+        if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+            echo "Installation aborted by user."
+            exit 1
+        fi
+        GPG_PUBKEY_URL=""
+    }
+fi
+
+# Import GPG public key
+if [ -n "$GPG_PUBKEY_FILE" ] && [ -f "$GPG_PUBKEY_FILE" ]; then
+    echo "Importing GPG public key..."
+    gpg --import "$GPG_PUBKEY_FILE" || {
+        echo "Warning: Failed to import GPG public key."
+        read -p "Do you want to continue without importing the GPG public key? [y/N]: " CONFIRM
+        if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+            echo "Installation aborted by user."
+            exit 1
+        fi
+    }
+else
+    echo "No GPG public key file found. Skipping GPG key import."
+fi
+
+    # Import and trust the GPG key
+    if [ -n "$GPG_KEY_ID" ]; then
+        echo "Importing and trusting the GPG key..."
+        echo "$GPG_KEY_ID:6:" | gpg --import-ownertrust || {
+            echo "Warning: Failed to import GPG key."
+            read -p "Do you want to continue without GPG key import? [y/N]: " CONFIRM
+            if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+                echo "Installation aborted by user."
+                exit 1
+            fi
+        }
+
+    else
+        echo "No GPG key ID found. Skipping GPG key import."
+    fi
+
+    # Verify the checksum if the checksum file was downloaded
+    if [ -n "$SHA256_URL" ]; then
+        echo "Verifying checksum..."
+        local ACTUAL_CHECKSUM=$(sha256sum $DEB_FILE | awk '{print $1}')
+        local EXPECTED_CHECKSUM=$(cat "$DOWNLOAD_DIR/$(basename $SHA256_URL)" | awk '{print $1}')
+        if [ "$ACTUAL_CHECKSUM" != "$EXPECTED_CHECKSUM" ]; then
+            echo "Error: Checksum verification failed."
+            rm -f $DEB_FILE "$DOWNLOAD_DIR/$(basename $SHA256_URL)"
+            exit 1
+        else
+            echo "Checksum verification passed."
+        fi
+    else
+        echo "Skipping checksum verification."
+    fi
+
+    # Verify the GPG signature if the signature file was downloaded
+    if [ -n "$GPG_SIG_URL" ]; then
+        echo "Verifying GPG signature..."
+        gpg --verify "$DOWNLOAD_DIR/$(basename $GPG_SIG_URL)" $DEB_FILE || {
+            echo "Warning: GPG verification failed. Continuing without GPG verification."
+        }
+        echo "GPG verification passed."
+    else
+        echo "No GPG signature file found. Skipping GPG verification."
+    fi
+
+    # Install the .deb package using apt
+    echo "Installing the downloaded .deb file using apt..."
+    sudo apt install -y $DEB_FILE || {
+        echo "Error: Failed to install the package."
+        exit 1
+    }
+
+    # Clean up the downloaded files
+    echo "Cleaning up..."
+    rm -f $DEB_FILE "$DOWNLOAD_DIR/$(basename $SHA256_URL)" "$DOWNLOAD_DIR/$(basename $GPG_SIG_URL)"
+
+    echo "Installation completed successfully."
+}
+
+
+
 change_elasticsearch_password() {
   while true; do
     # Prompt for current password
@@ -539,7 +733,7 @@ change_elasticsearch_password() {
   # Update password in Elastiflow
   elastiflow_config_strings=("EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: '$new_elastic_password'")
 
-  find_and_replace "$elastiflow_flow_config_path" "${elastiflow_config_strings[@]}"
+  find_and_replace "$flow_config_path" "${elastiflow_config_strings[@]}"
 
   # Restart all services
   reload_and_restart_services "flowcoll.service"
@@ -912,7 +1106,7 @@ get_dashboard_url() {
   
   get_host_ip
   local kibana_url="http://$ip_address:5601"
-  elastic_password=$(grep "^EF_OUTPUT_ELASTICSEARCH_PASSWORD: '" "$elastiflow_flow_config_path" | awk -F"'" '{print $2}')
+  elastic_password=$(grep "^EF_OUTPUT_ELASTICSEARCH_PASSWORD: '" "$flow_config_path" | awk -F"'" '{print $2}')
   local dashboard_title="$1"
   local encoded_title=$(echo "$dashboard_title" | sed 's/ /%20/g' | sed 's/:/%3A/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
   local response=$(curl -s -u "$elastic_username:$elastic_password" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
@@ -1030,8 +1224,8 @@ restore_latest_backup() {
 }
 
 download_default_conf() {
-  wget -P /tmp -O flow-collector_"$elastiflow_flow_collector_version"_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_"$elastiflow_flow_collector_version"_linux_amd64.deb
-  dpkg-deb -xv flow-collector_"$elastiflow_flow_collector_version"_linux_amd64.deb /tmp/elastiflow > /dev/null
+  wget -P /tmp -O flow-collector_"$flow_collector_version"_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_"$flow_collector_version"_linux_amd64.deb
+  dpkg-deb -xv flow-collector_"$flow_collector_version"_linux_amd64.deb /tmp/elastiflow > /dev/null
   mkdir -p /etc/elastiflow/
   cp /tmp/elastiflow/etc/elastiflow/flowcoll.yml /etc/elastiflow/
   rm -rf /tmp/elastiflow
@@ -1061,10 +1255,10 @@ configure_trial() {
   done
 
   while true; do
-    read -p "Enter your ElastiFlow flow license key (or 'q' to quit): " elastiflow_flow_license_key
-    if [[ $elastiflow_flow_license_key == "q" ]]; then
+    read -p "Enter your ElastiFlow flow license key (or 'q' to quit): " flow_license_key
+    if [[ $flow_license_key == "q" ]]; then
       return
-    elif [[ -z $elastiflow_flow_license_key ]]; then
+    elif [[ -z $flow_license_key ]]; then
       print_message "ElastiFlow flow license key cannot be empty. Please enter a valid key." "$RED"
     else
       break
@@ -1074,7 +1268,7 @@ configure_trial() {
   STRINGS_TO_REPLACE=(
     "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: \"true\""
     "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: \"${elastiflow_account_id}\""
-    "EF_FLOW_LICENSE_KEY" "EF_FLOW_LICENSE_KEY: \"${elastiflow_flow_license_key}\""
+    "EF_FLOW_LICENSE_KEY" "EF_FLOW_LICENSE_KEY: \"${flow_license_key}\""
   )
 
   backup_existing_flowcoll
@@ -1091,7 +1285,7 @@ configure_trial() {
 
 start_elasticsearch_trial() {
   # Extract the Elasticsearch password from the configuration file
-  elastic_password=$(grep "^EF_OUTPUT_ELASTICSEARCH_PASSWORD: '" "$elastiflow_flow_config_path" | awk -F"'" '{print $2}')
+  elastic_password=$(grep "^EF_OUTPUT_ELASTICSEARCH_PASSWORD: '" "$flow_config_path" | awk -F"'" '{print $2}')
   
   # Run the curl command and capture the output
   curl_result=$(curl -s -k -u "$elastic_username:$elastic_password" -X POST "https://localhost:9200/_license/start_trial?acknowledge=true&pretty")
@@ -1773,8 +1967,9 @@ while true; do
         echo "15. Watch kibana.service log"
         echo "16. Install SNMP Collector"
         echo "17. Reset Elasticsearch password"
-        echo "18. Update ElastiFlow NetObserv"
-        echo "19. Back"
+        echo "18. Update ElastiFlow Flow Collector"
+        echo "19. Update ElastiFlow SNMP Collector"
+        echo "20. Back"
         read -p "Enter your choice (1-19): " utility_choice
         clear
         case $utility_choice in
@@ -1853,9 +2048,12 @@ while true; do
             reset_elastic_password
             ;;
           18)
-            install_flow_collector
+            update_flow_collector
             ;;
           19)
+            update_snmp_collector
+            ;;
+          20)
             break
             ;;
           *)
