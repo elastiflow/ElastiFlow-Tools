@@ -1,5 +1,7 @@
 #!/bin/bash
 
+dashboard_title="ElastiFlow (flow): Overview"
+ip_address="192.168.2.80"
 
 get_dashboard_url() {
   local kibana_url="http://$ip_address:5601"
