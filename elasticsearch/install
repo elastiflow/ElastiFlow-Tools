@@ -13,11 +13,11 @@ elastiflow_account_id=""
 elastiflow_flow_license_key=""
 ########################################################
 
-elastiflow_version="7.2.2"
-elasticsearch_version="8.15.1"
-kibana_version="8.15.1"
-kibana_dashboards_version="8.2.x"
-kibana_dashboards_codex_ecs="codex"
+flowcoll_version="7.3.2"
+elasticsearch_version="8.15.3"
+kibana_version="8.15.3"
+flow_dashboards_version="8.2.x"
+flow_dashboards_codex_ecs="codex"
 flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
 elastic_username="elastic"
 elastic_password2="elastic"
@@ -678,8 +678,8 @@ install_elastiflow() {
 
 
   printf "\n\n\n*********Downloading and installing ElastiFlow Flow Collector...\n\n"
-  wget -O flow-collector_"$elastiflow_version"_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_"$elastiflow_version"_linux_amd64.deb
-  apt-get -q install ./flow-collector_"$elastiflow_version"_linux_amd64.deb
+  wget -O flow-collector_"$flowcoll_version"_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_"$flowcoll_version"_linux_amd64.deb
+  apt-get -q install ./flow-collector_"$flowcoll_version"_linux_amd64.deb
   change_elasticsearch_password
   printf "\n\n\n*********Configuring ElastiFlow Flow Collector...\n\n"
   find_and_replace "$flowcoll_config_path" "${elastiflow_config_strings[@]}"
@@ -693,7 +693,7 @@ install_dashboards() {
   printf "\n\n\n*********Downloading and installing ElastiFlow flow dashboards\n\n"
   git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
 
-  response=$(curl --connect-timeout 10 -X POST -u $elastic_username:$elastic_password "localhost:5601/api/saved_objects/_import?overwrite=true" -H "kbn-xsrf: true" --form file=@/etc/elastiflow_for_elasticsearch/kibana/flow/kibana-$kibana_dashboards_version-flow-$kibana_dashboards_codex_ecs.ndjson -H 'kbn-xsrf: true')
+  response=$(curl --connect-timeout 10 -X POST -u $elastic_username:$elastic_password "localhost:5601/api/saved_objects/_import?overwrite=true" -H "kbn-xsrf: true" --form file=@/etc/elastiflow_for_elasticsearch/kibana/flow/kibana-$flow_dashboards_version-flow-$flow_dashboards_codex_ecs.ndjson -H 'kbn-xsrf: true')
 
   if [ $? -ne 0 ]; then
     printf "Error: %s\n" "$response"
@@ -753,8 +753,8 @@ display_info() {
   echo -e "Installed ElastiFlow Flow version: $version\n"
   version=$(/usr/share/elastiflow/bin/snmpcollcoll -version)
   echo -e "Installed ElastiFlow SNMP version: $version\n"
-  version=$kibana_dashboards_version
-  echo -e "Installed ElastiFlow Dashboards version: $kibana_dashboards_codex_ecs $version\n"
+  version=$flow_dashboards_version
+  echo -e "Installed ElastiFlow Dashboards version: $flow_dashboards_codex_ecs $version\n"
   version=$(/usr/share/kibana/bin/kibana --version --allow-root | jq -r '.config.serviceVersion.value' 2>/dev/null)
   echo -e "Installed Kibana version: $version\n"
   version=$(/usr/share/elasticsearch/bin/elasticsearch --version | grep -oP 'Version: \K[\d.]+')
