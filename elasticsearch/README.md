@@ -16,4 +16,6 @@ Requirements:
 
 Instructions:
 ----------------
+```
 sudo bash -c "$(wget -qLO - https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/elasticsearch/install)"
+```
