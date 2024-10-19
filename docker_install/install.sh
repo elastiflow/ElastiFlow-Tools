@@ -82,7 +82,7 @@ check_docker() {
 tune_system() {
 printf "\n\n\n*********System tuning starting...\n\n"
 kernel_tuning=$(cat <<EOF
-#####ElastiFlow tuning parameters######
+#####ElastiFlow flow tuning parameters######
 #For light to moderate ingest rates (less than 75000 flows per second: https://docs.elastiflow.com/docs/flowcoll/requirements/
 net.core.netdev_max_backlog=4096
 net.core.rmem_default=262144
@@ -106,9 +106,9 @@ EOF
 }
 
 
-# Function to deploy ElastiFlow using Docker Compose
-deploy_elastiflow() {
-  echo "Deploying ElastiFlow..."
+# Function to deploy ElastiFlow Flow Collector using Docker Compose
+deploy_elastiflow_flow() {
+  echo "Deploying ElastiFlow Flow..."
   cd "$INSTALL_DIR"
   docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_flow_compose.yml up -d
 }
@@ -159,12 +159,12 @@ printf "\n\n\n*********Disabling swap file if present...\n\n"
 }
 
 
-# Function to download and extract ElastiFlow .deb
-extract_elastiflow() {
+# Function to download and extract ElastiFlow flow .deb
+extract_elastiflow_flow() {
     # Set variables
     DEB_URL="https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_7.2.2_linux_amd64.deb"
     DEB_FILE="flow-collector_7.2.2_linux_amd64.deb"
-    TEMP_DIR="/tmp/elastiflow_deb"
+    TEMP_DIR="/tmp/elastiflow_flow_deb"
     TARGET_DIR="/etc/elastiflow"
 
     # Download the .deb file
@@ -192,7 +192,7 @@ extract_elastiflow() {
     echo "Cleaning up..."
     rm -rf "$TEMP_DIR" "$DEB_FILE"
 
-    echo "ElastiFlow yml files have been extracted!"
+    echo "ElastiFlow flow yml files have been extracted!"
 }
 
 
@@ -233,6 +233,6 @@ download_files
 install_openssl_if_missing
 generate_saved_objects_enc_key
 check_docker
-extract_elastiflow
-deploy_elastiflow
-echo "ElastiFlow has been deployed successfully!"
+extract_elastiflow_flow
+deploy_elastiflow_flow
+echo "ElastiFlow flow collector has been deployed successfully!"
