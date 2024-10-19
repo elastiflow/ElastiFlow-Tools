@@ -133,9 +133,11 @@ deploy_elastic_elastiflow_flow() {
   docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_flow_compose.yml up -d
 }
 
-# Function to deploy ElastiFlow Flow Collector using Docker Compose
+# Function to deploy ElastiFlow SNMP Collector using Docker Compose
 deploy_elastic_elastiflow_snmp() {
   echo "Deploying ElastiFlow SNMP..."
+  cd /etc/elastiflow
+  git clone https://github.com/elastiflow/snmp.git
   cd "$INSTALL_DIR"
   docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_flow_compose.yml down -d
   docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_flow_compose.yml -f elastiflow_snmp_compose.yml up -d
