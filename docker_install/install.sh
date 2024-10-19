@@ -39,7 +39,7 @@ download_files() {
   echo "Downloading files to $INSTALL_DIR..."
   curl -L -o "$INSTALL_DIR/.env" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/.env"
   curl -L -o "$INSTALL_DIR/elasticsearch_kibana_compose.yml" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elasticsearch_kibana_compose.yml"
-  curl -L -o "$INSTALL_DIR/elastiflow_compose.yml" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elastiflow_compose.yml"
+  curl -L -o "$INSTALL_DIR/elastiflow_flow_compose.yml" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elastiflow_flow_compose.yml"
   curl -L -o "$INSTALL_DIR/install_docker.sh" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/install_docker.sh"
 }
 
@@ -110,7 +110,7 @@ EOF
 deploy_elastiflow() {
   echo "Deploying ElastiFlow..."
   cd "$INSTALL_DIR"
-  docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_compose.yml up -d
+  docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_flow_compose.yml up -d
 }
 
 # Function to check and disable swap if any swap file is in use
