@@ -1,5 +1,5 @@
 
-ElastiFlow NetObserv Flow Full Stack Deployment with Docker
+ElastiFlow NetObserv Flow + Elastic Full Stack Deployment with Docker
 ================================  
 
 ## Author
