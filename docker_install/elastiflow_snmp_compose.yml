@@ -2,7 +2,7 @@ version: '3'
 services:
   # ElastiFlow NetObserv SNMP
   snmp-collector:
-    image: elastiflow/snmp-collector:7.3.2
+    image: elastiflow/snmp-collector:${ELASTIFLOW_SNMP_VERSION}
     container_name: snmp-collector
     restart: 'unless-stopped'
     volumes:
