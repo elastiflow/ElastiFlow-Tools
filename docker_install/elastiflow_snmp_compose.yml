@@ -8,9 +8,9 @@ services:
       - /etc/elastiflow:/etc/elastiflow
     environment:
       EF_LICENSE_ACCEPTED: 'true'
-      #EF_ACCOUNT_ID: ''
-
-      #EF_SNMP_LICENSE_KEY: ''
+      EF_ACCOUNT_ID: '${ELASTIFLOW_ACCOUNT_ID}'
+      EF_SNMP_LICENSE_KEY: '${ELASTIFLOW_SNMP_KEY}'
+     
       #EF_SNMP_LICENSED_UNITS:
 
       #EF_INSTANCE_NAME: default
