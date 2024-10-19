@@ -8,8 +8,8 @@ check_root() {
   fi
 }
 
-# Function to ask the user if they want to deploy ElastiFlow
-ask_deploy() {
+# Function to ask the user if they want to deploy ElastiFlow Flow Collector
+ask_deploy_elastiflow_flow() {
   while true; do
     read -p "Do you want to deploy ElastiFlow Flow Collector? (y/n): " answer
     case "$answer" in
@@ -17,7 +17,26 @@ ask_deploy() {
         break
         ;;
       [nN]|[nN][oO])
-        echo "Exiting without deploying ElastiFlow."
+        echo "Exiting without deploying ElastiFlow Flow Collector."
+        exit 0
+        ;;
+      *)
+        echo "Please answer y/yes or n/no."
+        ;;
+    esac
+  done
+}
+
+# Function to ask the user if they want to deploy ElastiFlow SNMP Collector
+ask_deploy_elastiflow_snmp() {
+  while true; do
+    read -p "Do you want to deploy ElastiFlow SNMP Collector? (y/n): " answer
+    case "$answer" in
+      [yY]|[yY][eE][sS]) 
+        break
+        ;;
+      [nN]|[nN][oO])
+        echo "Exiting without deploying ElastiFlow SNMP Collector."
         exit 0
         ;;
       *)
@@ -40,6 +59,7 @@ download_files() {
   curl -L -o "$INSTALL_DIR/.env" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/.env"
   curl -L -o "$INSTALL_DIR/elasticsearch_kibana_compose.yml" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elasticsearch_kibana_compose.yml"
   curl -L -o "$INSTALL_DIR/elastiflow_flow_compose.yml" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elastiflow_flow_compose.yml"
+  curl -L -o "$INSTALL_DIR/elastiflow_snmp_compose.yml" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elastiflow_snmp_compose.yml"
   curl -L -o "$INSTALL_DIR/install_docker.sh" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/install_docker.sh"
 }
 
@@ -106,37 +126,19 @@ EOF
 }
 
 
-deploy_elastiflow_snmp_collector() {
-    while true; do
-        read -p "Would you like to deploy ElastiFlow SNMP collector? (y/n): " response
-
-        # Normalize the user response to lowercase for easier comparison
-        response=$(echo "$response" | tr '[:upper:]' '[:lower:]')
-
-        # Check for valid inputs
-        if [[ "$response" == "y" || "$response" == "yes" ]]; then
-            echo "Stopping current ElastiFlow services..."
-            docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_flow_compose.yml down -d
-            
-            echo "Deploying ElastiFlow SNMP collector..."
-            docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_flow_compose.yml -f elastiflow_snmp_compose.yml up -d
-            echo "ElastiFlow SNMP collector deployed successfully."
-            break
-        elif [[ "$response" == "n" || "$response" == "no" ]]; then
-            echo "ElastiFlow SNMP collector deployment canceled."
-            break
-        else
-            echo "Invalid input. Please enter 'y' for yes or 'n' for no."
-        fi
-    done
-}
-
-
 # Function to deploy ElastiFlow Flow Collector using Docker Compose
-deploy_elastiflow_flow() {
+deploy_elastic_elastiflow_flow() {
   echo "Deploying ElastiFlow Flow..."
   cd "$INSTALL_DIR"
   docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_flow_compose.yml up -d
+}
+
+# Function to deploy ElastiFlow Flow Collector using Docker Compose
+deploy_elastic_elastiflow_snmp() {
+  echo "Deploying ElastiFlow SNMP..."
+  cd "$INSTALL_DIR"
+  docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_flow_compose.yml down -d
+  docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_flow_compose.yml -f elastiflow_snmp_compose.yml up -d
 }
 
 # Function to check and disable swap if any swap file is in use
@@ -252,7 +254,7 @@ install_openssl_if_missing() {
 
 # Main script execution
 check_root
-ask_deploy
+ask_deploy_elastiflow_flow
 tune_system
 disable_swap_if_swapfile_in_use
 download_files
@@ -260,5 +262,10 @@ install_openssl_if_missing
 generate_saved_objects_enc_key
 check_docker
 extract_elastiflow_flow
-deploy_elastiflow_flow
-echo "ElastiFlow flow collector has been deployed successfully!"
+deploy_elastic_elastiflow_flow
+echo "ElastiFlow Flow Collector has been deployed successfully!"
+ask_deploy_elastiflow_snmp
+deploy_elastic_elastiflow_snmp
+echo "ElastiFlow SNMP Collector has been deployed successfully!"
+
+
