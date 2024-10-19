@@ -9,9 +9,8 @@ services:
       - /etc/elastiflow:/etc/elastiflow
     environment:
       EF_LICENSE_ACCEPTED: 'true'
-      #EF_ACCOUNT_ID: ''
-
-      #EF_FLOW_LICENSE_KEY: ''
+      EF_ACCOUNT_ID: '${ELASTIFLOW_FLOW_ACCOUNT_ID}'
+      EF_FLOW_LICENSE_KEY: '${ELASTIFLOW_FLOW_KEY}'
       #EF_FLOW_LICENSED_UNITS:
 
       #EF_INSTANCE_NAME: default
