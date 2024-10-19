@@ -1,7 +1,7 @@
 services:
   # ElastiFlow NetObserv Flow
   flow-collector:
-    image: elastiflow/flow-collector:${ELASTIFLOW_VERSION}
+    image: elastiflow/flow-collector:${ELASTIFLOW_FLOW_VERSION}
     container_name: flow-collector
     restart: 'unless-stopped'
     network_mode: 'host'
