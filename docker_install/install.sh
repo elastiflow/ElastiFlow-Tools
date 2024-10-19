@@ -132,7 +132,7 @@ printf "\n\n\n*********Disabling swap file if present...\n\n"
 
             # Turn off swap
             echo "Turning off swap..."
-            sudo swapoff -a
+            swapoff -a
 
             # Check if swapoff was successful
             if [ $? -eq 0 ]; then
@@ -140,7 +140,7 @@ printf "\n\n\n*********Disabling swap file if present...\n\n"
 
                 # Delete the detected swap file
                 echo "Deleting $swapfile..."
-                sudo rm -f "$swapfile"
+                rm -f "$swapfile"
 
                 if [ $? -eq 0 ]; then
                     echo "$swapfile has been deleted."
@@ -199,7 +199,7 @@ extract_elastiflow() {
 # create xpack.encryptedSavedObjects.encryptionKey and append to .env
 generate_saved_objects_enc_key() {
   XPACK_SAVED_OBJECTS_KEY=$(openssl rand -base64 32)
-  echo "XPACK_SAVED_OBJECTS_KEY=${XPACK_SAVED_OBJECTS_KEY}" | sudo tee -a $INSTALL_DIR/.env > /dev/null
+  echo "XPACK_SAVED_OBJECTS_KEY=${XPACK_SAVED_OBJECTS_KEY}" | tee -a $INSTALL_DIR/.env > /dev/null
 }
 
 
@@ -211,8 +211,8 @@ install_openssl_if_missing() {
 
     # For Ubuntu/Debian-based systems
     if [ -f /etc/debian_version ]; then
-      sudo apt update
-      sudo apt install -y openssl
+      apt update
+      apt install -y openssl
     else
       echo "This script is intended for Ubuntu/Debian systems only."
       exit 1
