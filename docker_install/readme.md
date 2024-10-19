@@ -66,12 +66,12 @@ High performance data platforms like Elastic don't like to swap to disk.
 3) Verify swap is off with `swapon --show`
 
 #### 3) Download Docker Compose files
-Create a new directory on your server and download `elasticsearch_kibana_compose.yml`, `elastiflow_compose.yml`, and `.env` from [here](https://github.com/elastiflow/ElastiFlow-Tools/edit/main/docker_install)
+Create a new directory on your server and download `elasticsearch_kibana_compose.yml`, `elastiflow_flow_compose.yml`, and `.env` from [here](https://github.com/elastiflow/ElastiFlow-Tools/edit/main/docker_install)
 
 Or run the following in a terminal session:
 
 ```
-sudo wget "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/.env" && sudo wget "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elasticsearch_kibana_compose.yml" && sudo wget "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elastiflow_compose.yml"
+sudo wget "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/.env" && sudo wget "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elasticsearch_kibana_compose.yml" && sudo wget "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elastiflow_flow_compose.yml"
 ```
 
 #### 4) Download required ElastiFlow support files
@@ -90,7 +90,7 @@ If you would like to enable geo IP and ASN enrichment, please do the following:
 1) Sign up for [Geolite2](https://www.maxmind.com/en/geolite2/signup) database access.
 2) Download gzipped database files (GeoLite2 ASN and GeoLite2 City)
 3) Extract their contents to `/etc/elastiflow/maxmind/`
-4) Enable Geo and ASN enrichment in `elastiflow_compose.yml`
+4) Enable Geo and ASN enrichment in `elastiflow_flow_compose.yml`
   ```
   EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE: 'true'
   EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE: 'true'
@@ -108,7 +108,7 @@ Be sure to replace `YOUR_LICENSE_KEY` with your GeoLite2 license key.
 
 From the directory where you downloaded the yml and .env files, 
   ```
-  sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_compose.yml up -d
+  sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_flow_compose.yml up -d
   ```
 #### 6) Log in to Kibana 
 
@@ -170,7 +170,7 @@ Now that you have ElastiFlow up and running, we advise that you change your Elas
 2) Specify a new `ELASTIC_PASSWORD` and `KIBANA_PASSWORD`. Save changes.
 3) Redeploy ElasticSearch, Kibana, ElastiFlow:
   ```
-  sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_compose.yml down && sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_compose.yml up -d
+  sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_flow_compose.yml down && sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_flow_compose.yml up -d
   ```
 # You did it! ^^^
 More enrichments and functionality are available with a free [basic license](https://www.elastiflow.com/basic-license). You can also request a [30 day premium license](https://www.elastiflow.com/get-started) which unlocks broader device support, much higher flow rates, and all of the [NetIntel enrichments](https://www.elastiflow.com/blog/posts/elastiflow-launches-netintel-to-boost-enterprise-security-against-internal).
@@ -181,9 +181,9 @@ ElastiFlow is able to enrich flow records with many different pieces of data, ma
 
 ## Notes
 
-- If you need to make any ElastiFlow configuration changes such as turning options on and off, adding your license information, etc, go ahead and edit the elastiflow_compose.yml and then running the following command: 
+- If you need to make any ElastiFlow configuration changes such as turning options on and off, adding your license information, etc, go ahead and edit the elastiflow_flow_compose.yml and then running the following command: 
   ```
-  sudo docker compose -f elastiflow_compose.yml down && sudo docker compose -f elastiflow_compose.yml up -d
+  sudo docker compose -f elastiflow_flow_compose.yml down && sudo docker compose -f elastiflow_flow_compose.yml up -d
   ```
 - After making configuration changes, if ElastiFlow starts and then stops or fails to stay running, check the logs by doing
   ```
