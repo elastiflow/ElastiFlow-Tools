@@ -106,6 +106,32 @@ EOF
 }
 
 
+deploy_elastiflow_snmp_collector() {
+    while true; do
+        read -p "Would you like to deploy ElastiFlow SNMP collector? (y/n): " response
+
+        # Normalize the user response to lowercase for easier comparison
+        response=$(echo "$response" | tr '[:upper:]' '[:lower:]')
+
+        # Check for valid inputs
+        if [[ "$response" == "y" || "$response" == "yes" ]]; then
+            echo "Stopping current ElastiFlow services..."
+            docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_flow_compose.yml down -d
+            
+            echo "Deploying ElastiFlow SNMP collector..."
+            docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_flow_compose.yml -f elastiflow_snmp_compose.yml up -d
+            echo "ElastiFlow SNMP collector deployed successfully."
+            break
+        elif [[ "$response" == "n" || "$response" == "no" ]]; then
+            echo "ElastiFlow SNMP collector deployment canceled."
+            break
+        else
+            echo "Invalid input. Please enter 'y' for yes or 'n' for no."
+        fi
+    done
+}
+
+
 # Function to deploy ElastiFlow Flow Collector using Docker Compose
 deploy_elastiflow_flow() {
   echo "Deploying ElastiFlow Flow..."
