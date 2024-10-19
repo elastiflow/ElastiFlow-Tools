@@ -8,7 +8,7 @@ services:
     volumes:
       - /etc/elastiflow:/etc/elastiflow
     environment:
-      EF_LICENSE_ACCEPTED: 'false'
+      EF_LICENSE_ACCEPTED: 'true'
       #EF_ACCOUNT_ID: ''
 
       #EF_SNMP_LICENSE_KEY: ''
@@ -38,7 +38,7 @@ services:
       #EF_INPUT_SNMP_DEVICE_GROUP_DEFINITIONS_DIRECTORY_PATH: '/etc/elastiflow/snmp/device_groups'
       #EF_INPUT_SNMP_OBJECT_GROUP_DEFINITIONS_DIRECTORY_PATH: '/etc/elastiflow/snmp/object_groups'
       #EF_INPUT_SNMP_OBJECT_DEFINITIONS_DIRECTORY_PATH: '/etc/elastiflow/snmp/objects'
-      #EF_INPUT_SNMP_PERSIST_ENABLE: 'true'
+      EF_INPUT_SNMP_PERSIST_ENABLE: 'false'
       #EF_INPUT_SNMP_PERSIST_DIRECTORY_PATH: '/usr/share/elastiflow/snmpcoll'
 
       #EF_PROCESSOR_SNMP_ENUM_DEFINITIONS_DIRECTORY_PATH: '/etc/elastiflow/snmp/enums'
