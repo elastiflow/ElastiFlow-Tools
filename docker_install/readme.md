@@ -1,12 +1,12 @@
 
-ElastiFlow Full Stack Deployment with Docker
+ElastiFlow NetObserv Flow Full Stack Deployment with Docker
 ================================  
 
 ## Author
 [O.J. Wolanyk]
 
 ### Purpose:
-To easily install ElasticSearch, Kibana, and ElastiFlow with Docker Compose. Tested with Elastic / Kibana 8.15.1 and ElastiFlow 7.2.2.
+To easily install ElasticSearch, Kibana, and ElastiFlow NetObserv Flow with Docker Compose. Tested with Elastic / Kibana 8.15.1 and ElastiFlow NetObserv Flow 7.2.2.
 
 ### Prerequisites:
 - Internet connected, clean Ubuntu 22 (or greater) Linux server with admin access
@@ -74,10 +74,10 @@ Or run the following in a terminal session:
 sudo wget "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/.env" && sudo wget "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elasticsearch_kibana_compose.yml" && sudo wget "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elastiflow_flow_compose.yml"
 ```
 
-#### 4) Download required ElastiFlow support files
+#### 4) Download required ElastiFlow NetObserv Flow support files
 Download ElastiFlow from [here.](https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_7.2.2_linux_amd64.deb) 
 
-Extract the contents of `/etc/elastiflow/` in the archive to `/etc/elastiflow/` on your ElastiFlow server.
+Extract the contents of `/etc/elastiflow/` in the archive to `/etc/elastiflow/` on your ElastiFlow NetObserv Flow server.
 
 You can instead use a one liner to do everything:
 ```
@@ -118,7 +118,7 @@ Log in with:
 Username: `elastic` 
 Password: `elastic`
 
-#### 7) Install ElastiFlow dashboards:
+#### 7) Install ElastiFlow NetObserv Flow dashboards:
 
 1) Download this [dashboards file](https://github.com/elastiflow/elastiflow_for_elasticsearch/blob/master/kibana/flow/kibana-8.2.x-flow-codex.ndjson) to your local machine.
 
@@ -140,13 +140,13 @@ Password: `elastic`
       ```
       sudo apt-get install pmacct
       ```
-  2) Add the following Pmacct configuration to a new file located here `/etc/pmacct/pmacctd.conf`. Be sure to replace `NETWORK_INTERFACE_TO_MONITOR` with the name of an interface and `ELASTIFLOW_IP` with the IP address of your ElastiFlow server.
+  2) Add the following Pmacct configuration to a new file located here `/etc/pmacct/pmacctd.conf`. Be sure to replace `NETWORK_INTERFACE_TO_MONITOR` with the name of an interface and `ELASTIFLOW_IP` with the IP address of your ElastiFlow NetObserv Flow server.
 
     daemonize: false
     pcap_interface: NETWORK_INTERFACE_TO_MONITOR
     aggregate: src_mac, dst_mac, src_host, dst_host, src_port, dst_port, proto, tos
     plugins: nfprobe, print
-    nfprobe_receiver: ELASTIFLOW_IP:9995
+    nfprobe_receiver: ElastiFlow_NetObserv_Flow_IP:9995
     nfprobe_version: 9
     nfprobe_timeouts: tcp=15:maxlife=1800
     
@@ -156,19 +156,19 @@ Password: `elastic`
   ##### Option 3: (Really?) 
   Generate fake flow data
 
-  Be sure to replace `ELASTIFLOW_IP` with the IP address of your ElastiFlow server.
+  Be sure to replace `ElastiFlow_NetObserv_Flow_IP` with the IP address of your ElastiFlow NetObserv Flow server.
 
-    sudo docker run -it --rm networkstatic/nflow-generator -t ELASTIFLOW_IP -p 9995
+    sudo docker run -it --rm networkstatic/nflow-generator -t ElastiFlow_NetObserv_Flow_IP -p 9995
 
 #### 9) Visualize your Flow Data
 In Kibana, do a global search (at the top) for the dashboard "ElastiFlow (flow): Overview" and open it. It may be a few minutes for flow records to populate as the system waits for flow templates to arrive.
 
 #### 10) Update Credentials
-Now that you have ElastiFlow up and running, we advise that you change your Elasticsearch and Kibana passwords from `elastic` to something complex as soon as possible. Here's how to do it:
+Now that you have ElastiFlow NetObserv Flow up and running, we advise that you change your Elasticsearch and Kibana passwords from `elastic` to something complex as soon as possible. Here's how to do it:
 
 1) Open your `.env` file in a text editor like nano.
 2) Specify a new `ELASTIC_PASSWORD` and `KIBANA_PASSWORD`. Save changes.
-3) Redeploy ElasticSearch, Kibana, ElastiFlow:
+3) Redeploy ElasticSearch, Kibana, ElastiFlow NetObserv Flow:
   ```
   sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_flow_compose.yml down && sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_flow_compose.yml up -d
   ```
@@ -177,15 +177,15 @@ More enrichments and functionality are available with a free [basic license](htt
  
 ## Optional Enrichments
 
-ElastiFlow is able to enrich flow records with many different pieces of data, making those records even more valuable, from app id, to threat information, geolocation, DNS hostnames, and more. Please click [here](https://docs.google.com/document/d/1Or-C5l5yVd7McVxwHUfE2mit_DvmtzHLAdUZhjnIKw8/edit?usp=sharing) for information on how to enable various enrichments.
+ElastiFlow NetObserv Flow is able to enrich flow records with many different pieces of data, making those records even more valuable, from app id, to threat information, geolocation, DNS hostnames, and more. Please click [here](https://docs.google.com/document/d/1Or-C5l5yVd7McVxwHUfE2mit_DvmtzHLAdUZhjnIKw8/edit?usp=sharing) for information on how to enable various enrichments.
 
 ## Notes
 
-- If you need to make any ElastiFlow configuration changes such as turning options on and off, adding your license information, etc, go ahead and edit the elastiflow_flow_compose.yml and then running the following command: 
+- If you need to make any ElastiFlow NetObserv Flow configuration changes such as turning options on and off, adding your license information, etc, go ahead and edit the elastiflow_flow_compose.yml and then running the following command: 
   ```
   sudo docker compose -f elastiflow_flow_compose.yml down && sudo docker compose -f elastiflow_flow_compose.yml up -d
   ```
-- After making configuration changes, if ElastiFlow starts and then stops or fails to stay running, check the logs by doing
+- After making configuration changes, if ElastiFlow NetObserv Flow starts and then stops or fails to stay running, check the logs by doing
   ```
   sudo docker logs flow-collector -f
   ```
