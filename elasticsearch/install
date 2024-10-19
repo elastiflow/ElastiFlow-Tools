@@ -751,10 +751,8 @@ display_info() {
 
   version=$(/usr/share/elastiflow/bin/flowcoll -version)
   echo -e "Installed ElastiFlow Flow version: $version\n"
-  version=$(/usr/share/elastiflow/bin/snmpcollcoll -version)
-  echo -e "Installed ElastiFlow SNMP version: $version\n"
   version=$flow_dashboards_version
-  echo -e "Installed ElastiFlow Dashboards version: $flow_dashboards_codex_ecs $version\n"
+  echo -e "Installed ElastiFlow Flow Dashboards version: $flow_dashboards_codex_ecs $version\n"
   version=$(/usr/share/kibana/bin/kibana --version --allow-root | jq -r '.config.serviceVersion.value' 2>/dev/null)
   echo -e "Installed Kibana version: $version\n"
   version=$(/usr/share/elasticsearch/bin/elasticsearch --version | grep -oP 'Version: \K[\d.]+')
@@ -763,21 +761,8 @@ display_info() {
   echo -e "Installed Java version: $version\n"
   version=$(lsb_release -d | awk -F'\t' '{print $2}')
   echo -e "Operating System: $version\n"
-  display_version "/home/user/configure"
-  display_version "/home/user/support"
   display_system_info
 
-}
-
-display_version() {
-  local file="$1"
-  version=$(grep -m 1 '^# Version: ' "$file" | awk '{print $3}')
-  local version
-  if [[ -z "$version" ]]; then
-    echo "Failed to detect the version in $file"
-  else
-    echo "Version of $(basename "$file") script: $version"
-  fi
 }
 
 display_dashboard_url() {
