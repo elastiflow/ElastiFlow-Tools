@@ -27,6 +27,28 @@ ask_deploy_elastiflow_flow() {
   done
 }
 
+install_prerequisites() {
+  printf "\n\n\n*********Installing prerequisites...\n\n"
+
+  echo "Updating package list..."
+  apt-get -qq update > /dev/null 2>&1
+
+  # List of packages to be installed
+  packages=(jq net-tools git bc gpg curl wget unzip apt-transport-https)
+
+  # Loop through the list and install each package
+  for package in "${packages[@]}"; do
+    echo "Installing $package..."
+    apt-get -qq install -y "$package" > /dev/null 2>&1
+    if [ $? -eq 0 ]; then
+      echo "$package installed successfully."
+    else
+      echo "Failed to install $package."
+    fi
+  done
+}
+
+
 install_dashboards() {
   local elastiflow_product=$1
 
