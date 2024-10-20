@@ -34,12 +34,9 @@ install_dashboards() {
   git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
 
   # Path to the downloaded JSON file
-  json_file="/etc/elastiflow_for_elasticsearch/kibana/snmp/kibana-$elastiflow_product-$snmp_kibana_dashboards_codex_ecs.ndjson"
+  json_file="/etc/elastiflow_for_elasticsearch/kibana/$elastiflow_product/kibana-${DASHBOARDS_VERSION}-$elastiflow_product_${DASHBOARDS_CODEX_ECS}.ndjson"
   
-  # Perform find and replace in the JSON file
-  sed -i 's/elastiflow-\*-codex-\*/elastiflow-telemetry_\*-codex-\*/g' "$json_file"
-
-  response=$(curl --silent --show-error --fail --connect-timeout 10 -X POST -u "$elastic_username:$elastic_password" \
+  response=$(curl --silent --show-error --fail --connect-timeout 10 -X POST -u "elastic:${ELASTIC_PASSWORD" \
     "localhost:5601/api/saved_objects/_import?overwrite=true" \
     -H "kbn-xsrf: true" \
     --form file=@"$json_file" \
@@ -54,16 +51,7 @@ install_dashboards() {
     echo "Debug: API response:"
     echo "$response"
   fi
-
-  # Check the status of the service
-  if systemctl is-active --quiet snmpcoll.service; then
-    print_message "ElastiFlow Unified SNMP Collector installed and running." "$GREEN"
-  else
-    print_message "Failed to start ElastiFlow Unified SNMP Collector." "$RED"
-  fi
 }
-
-
 
 
 # Function to ask the user if they want to deploy ElastiFlow SNMP Collector
