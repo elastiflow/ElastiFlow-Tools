@@ -45,9 +45,9 @@ install_dashboards() {
   dashboards_success=$(echo "$response" | jq -r '.success')
 
   if [ "$dashboards_success" == "true" ]; then
-    print_message "SNMP dashboards installed successfully." "$GREEN"
+    print_message "$elastiflow_product dashboards installed successfully." "$GREEN"
   else
-    print_message "SNMP dashboards not installed successfully." "$RED"
+    print_message "$elastiflow_product dashboards not installed successfully." "$RED"
     echo "Debug: API response:"
     echo "$response"
   fi
