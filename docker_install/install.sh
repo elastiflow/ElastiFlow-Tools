@@ -54,11 +54,12 @@ install_dashboards() {
 
   # Clone the repository
   git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
+  
 
   # Path to the downloaded JSON file
   json_file="/etc/elastiflow_for_elasticsearch/kibana/$elastiflow_product/kibana-${DASHBOARDS_VERSION}-$elastiflow_product_${DASHBOARDS_CODEX_ECS}.ndjson"
   
-  response=$(curl --silent --show-error --fail --connect-timeout 10 -X POST -u "elastic:${ELASTIC_PASSWORD" \
+  response=$(curl --silent --show-error --fail --connect-timeout 10 -X POST -u "elastic:${ELASTIC_PASSWORD}" \
     "localhost:5601/api/saved_objects/_import?overwrite=true" \
     -H "kbn-xsrf: true" \
     --form file=@"$json_file" \
