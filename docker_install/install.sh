@@ -28,11 +28,13 @@ ask_deploy_elastiflow_flow() {
 }
 
 install_dashboards() {
- # Clone the repository
+  local elastiflow_product=$1
+
+  # Clone the repository
   git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
 
   # Path to the downloaded JSON file
-  json_file="/etc/elastiflow_for_elasticsearch/kibana/snmp/kibana-$snmp_kibana_dashboards_version-snmp-$snmp_kibana_dashboards_codex_ecs.ndjson"
+  json_file="/etc/elastiflow_for_elasticsearch/kibana/snmp/kibana-$elastiflow_product-$snmp_kibana_dashboards_codex_ecs.ndjson"
   
   # Perform find and replace in the JSON file
   sed -i 's/elastiflow-\*-codex-\*/elastiflow-telemetry_\*-codex-\*/g' "$json_file"
@@ -60,6 +62,7 @@ install_dashboards() {
     print_message "Failed to start ElastiFlow Unified SNMP Collector." "$RED"
   fi
 }
+
 
 
 
