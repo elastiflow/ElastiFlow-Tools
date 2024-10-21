@@ -41,7 +41,7 @@ install_prerequisites() {
   apt-get -qq update > /dev/null 2>&1
 
   # List of packages to be installed
-  packages=(jq net-tools git bc gpg curl wget unzip apt-transport-https)
+  packages=(jq net-tools git bc gpg curl wget unzip apt-transport-https openssl)
 
   # Loop through the list and install each package
   for package in "${packages[@]}"; do
@@ -73,6 +73,8 @@ install_dashboards() {
   # Clone the repository
   git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
   
+  check_kibana_status
+
   # Path to the downloaded JSON file
   json_file="/etc/elastiflow_for_elasticsearch/kibana/$elastiflow_product/kibana-$DASHBOARDS_VERSION-$elastiflow_product-$DASHBOARDS_CODEX_ECS.ndjson"
 
@@ -198,6 +200,8 @@ deploy_elastic_elastiflow_flow() {
   echo "Deploying ElastiFlow Flow..."
   cd "$INSTALL_DIR"
   docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_flow_compose.yml up -d
+  echo "ElastiFlow Flow Collector has been deployed successfully!"
+
 }
 
 # Function to deploy ElastiFlow SNMP Collector using Docker Compose
@@ -208,6 +212,8 @@ deploy_elastic_elastiflow_snmp() {
   cd "$INSTALL_DIR"
   docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_flow_compose.yml down -d
   docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_flow_compose.yml -f elastiflow_snmp_compose.yml up -d
+  echo "ElastiFlow SNMP Collector has been deployed successfully!"
+
 }
 
 # Function to check and disable swap if any swap file is in use
@@ -300,25 +306,6 @@ generate_saved_objects_enc_key() {
 }
 
 
-# Function to check if openssl is installed and install if missing on Ubuntu/Debian
-install_openssl_if_missing() {
-  # Check if openssl is installed
-  if ! command -v openssl &> /dev/null; then
-    echo "OpenSSL is not installed. Installing OpenSSL..."
-
-    # For Ubuntu/Debian-based systems
-    if [ -f /etc/debian_version ]; then
-      apt update
-      apt install -y openssl
-    else
-      echo "This script is intended for Ubuntu/Debian systems only."
-      exit 1
-    fi
-  else
-    echo "OpenSSL is already installed."
-  fi
-}
-
 check_kibana_status() {
     url="http://localhost:5601/api/status"
     timeout=120  # 2 minutes
@@ -350,22 +337,16 @@ check_kibana_status() {
 # Main script execution
 check_root
 ask_deploy_elastiflow_flow
-tune_system
 disable_swap_if_swapfile_in_use
+tune_system
 download_files
 load_env
-install_openssl_if_missing
 generate_saved_objects_enc_key
 check_docker
 extract_elastiflow_flow
 deploy_elastic_elastiflow_flow
-echo "ElastiFlow Flow Collector has been deployed successfully!"
-check_kibana_status
 install_dashboards "flow"
 ask_deploy_elastiflow_snmp
 deploy_elastic_elastiflow_snmp
-check_kibana_status
 install_dashboards "snmp"
-echo "ElastiFlow SNMP Collector has been deployed successfully!"
-
 
