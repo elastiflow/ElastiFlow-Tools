@@ -58,12 +58,13 @@ install_prerequisites() {
 load_env(){
 # Load the .env file from the current directory
 if [ -f /home/user/elastiflow_install/.env ]; then
-    source .env
+    source /home/user/elastiflow_install/.env
 else
     echo "Error: .env file not found"
     exit 1
 fi
 }
+
 
 install_dashboards() {
   local elastiflow_product=$1
@@ -72,12 +73,8 @@ install_dashboards() {
   git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
   
   # Path to the downloaded JSON file
-  json_file="/etc/elastiflow_for_elasticsearch/kibana/$elastiflow_product/kibana-$DASHBOARDS_VERSION-$elastiflow_product_$DASHBOARDS_CODEX_ECS.ndjson"
-  printf "path to json file to install: $json_file"
-  printf "dashboards version $DASHBOARDS_VERSION"
-  printf "dashboards flavor $DASHBOARDS_CODEX_ECS"
-  
-  
+  json_file="/etc/elastiflow_for_elasticsearch/kibana/$elastiflow_product/kibana-$DASHBOARDS_VERSION-$elastiflow_product-$DASHBOARDS_CODEX_ECS.ndjson"
+
   response=$(curl --silent --show-error --fail --connect-timeout 10 -X POST -u "elastic:${ELASTIC_PASSWORD}" \
     "localhost:5601/api/saved_objects/_import?overwrite=true" \
     -H "kbn-xsrf: true" \
@@ -351,11 +348,11 @@ check_kibana_status() {
 
 # Main script execution
 check_root
-load_env
 ask_deploy_elastiflow_flow
 tune_system
 disable_swap_if_swapfile_in_use
 download_files
+load_env
 install_openssl_if_missing
 generate_saved_objects_enc_key
 check_docker
