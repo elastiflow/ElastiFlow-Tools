@@ -27,6 +27,7 @@ ask_deploy_elastiflow_flow() {
   done
 }
 
+
 print_message() {
   local message=$1
   local color=$2
@@ -93,6 +94,8 @@ install_dashboards() {
     echo "Debug: API response:"
     echo "$response"
   fi
+
+  rm -rf "/etc/elastiflow_for_elasticsearch/"
 }
 
 
