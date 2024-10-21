@@ -203,7 +203,7 @@ ElastiFlow NetObserv Flow is able to enrich flow records with many different pie
 
 # BONUS
 
-You can complete steps 1-5 by using the following command
+You can alternatively complete the whole installation with the following command
 
 ```
 sudo bash -c "$(wget -qLO - https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/install.sh)"
