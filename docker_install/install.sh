@@ -27,6 +27,13 @@ ask_deploy_elastiflow_flow() {
   done
 }
 
+print_message() {
+  local message=$1
+  local color=$2
+  echo -e "${color}${message}${NC}"
+}
+
+
 install_prerequisites() {
   printf "\n\n\n*********Installing prerequisites...\n\n"
 
