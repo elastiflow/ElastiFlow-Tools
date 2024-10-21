@@ -59,6 +59,7 @@ load_env(){
 # Load the .env file from the current directory
 if [ -f /home/user/elastiflow_install/.env ]; then
     source /home/user/elastiflow_install/.env
+    printf "Environment variables loaded\n"
 else
     echo "Error: .env file not found"
     exit 1
