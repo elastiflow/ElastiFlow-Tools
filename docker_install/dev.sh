@@ -58,7 +58,7 @@ install_prerequisites() {
 
 load_env(){
 # Load the .env file from the current directory
-if [ -f /home/user/elastiflow_install/.env ]; then
+if [ -f $INSTALL_DIR/.env ]; then
     source /home/user/elastiflow_install/.env
     printf "Environment variables loaded\n"
 else
