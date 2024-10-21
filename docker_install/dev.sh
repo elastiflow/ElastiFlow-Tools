@@ -203,6 +203,7 @@ deploy_elastic_elastiflow_flow() {
   echo "Deploying ElastiFlow Flow..."
   cd "$INSTALL_DIR"
   docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_flow_compose.yml up -d
+  install_dashboards "flow"
   echo "ElastiFlow Flow Collector has been deployed successfully!"
 
 }
@@ -215,8 +216,8 @@ deploy_elastic_elastiflow_snmp() {
   cd "$INSTALL_DIR"
   docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_flow_compose.yml down
   docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_flow_compose.yml -f elastiflow_snmp_compose.yml up -d
+  install_dashboards "snmp"
   echo "ElastiFlow SNMP Collector has been deployed successfully!"
-
 }
 
 # Function to check and disable swap if any swap file is in use
@@ -348,8 +349,6 @@ generate_saved_objects_enc_key
 check_docker
 extract_elastiflow_flow
 deploy_elastic_elastiflow_flow
-install_dashboards "flow"
 ask_deploy_elastiflow_snmp
 deploy_elastic_elastiflow_snmp
-install_dashboards "snmp"
 
