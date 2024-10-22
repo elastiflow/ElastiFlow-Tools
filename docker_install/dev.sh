@@ -135,10 +135,26 @@ get_dashboard_status(){
     fi
 }
 
+get_host_ip() {
+  INTERFACE=$(ip -o link show | awk -F': ' '{print $2}' | grep -vE '^(docker|lo)' | head -n 1)
+  if [ -z "$INTERFACE" ]; then
+    echo "No suitable network interface found."
+    return 1
+  else
+    ip_address=$(ip -o -4 addr show dev $INTERFACE | awk '{print $4}' | cut -d/ -f1)
+    if [ -z "$ip_address" ]; then
+      echo "No IP address found for interface $INTERFACE."
+      return 1
+    else
+      return 0
+    fi
+  fi
+}
 
 
 get_dashboard_url() {
-  local kibana_url="http://localhost:5601"
+  get_host_ip
+  local kibana_url="http://$ip_address:5601"
   local dashboard_title="$1"
   local encoded_title=$(echo "$dashboard_title" | sed 's/ /%20/g' | sed 's/:/%3A/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
   local response=$(curl -s -u "elastic:$ELASTIC_PASSWORD" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
