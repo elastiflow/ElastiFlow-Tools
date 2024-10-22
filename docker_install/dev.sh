@@ -31,9 +31,9 @@ check_system_health(){
 get_dashboard_status(){
  get_dashboard_url "$1"
     if [ "$dashboard_url" == "Dashboard not found" ]; then
-      print_message "Dashboard URL: $dashboard_url" "$RED"
+      print_message "Dashboard $1: URL: $dashboard_url" "$RED"
     else
-      print_message "Dashboard URL: $dashboard_url" "$GREEN"
+      print_message "Dashboard $1: URL: $dashboard_url" "$GREEN"
     fi
 }
 
@@ -93,7 +93,7 @@ check_elastiflow_snmp_open_ports(){
 
 check_elastic_ready(){
   curl_result=$(curl -s -k -u elastic:$ELASTIC_PASSWORD https://localhost:9200)
-     search_text='cluster_name" : "elasticsearch'
+     search_text='"tagline" : "You Know, for Search"'
      if echo "$curl_result" | grep -q "$search_text"; then
        print_message "Elastic is ready. Used authenticated curl." "$GREEN"
      else
@@ -106,14 +106,12 @@ check_kibana_ready(){
   response=$(curl -s -X GET "http://localhost:5601/api/status")
     
     if [[ $response == *'"status":{"overall":{"level":"available"}}'* ]]; then
-        print_message "Kibana is ready. Used curl" "$GREEN"
+        print_message "Kibana is ready. Used curl." "$GREEN"
     else
         print_message "Kibana is not ready" "$RED"
         echo "$response"
     fi
 }
-
-
 
 
 # Function to ask the user if they want to deploy ElastiFlow Flow Collector
