@@ -8,6 +8,31 @@ check_root() {
   fi
 }
 
+
+check_system_health(){
+
+  check_elastic_ready
+  check_kibana_ready
+  check elastiflow_flow_open_ports
+  check elastiflow_snmp_open_ports
+  check_elastiflow_readyz
+  check_elastiflow_livez
+  get_dashboard_status "ElastiFlow (flow): Overview"
+  get_dashboard_status "ElastiFlow (SNMP): Overview"
+
+}
+
+get_dashboard_status(){
+ get_dashboard_url "$1"
+    if [ "$dashboard_url" == "Dashboard not found" ]; then
+      print_message "Dashboard URL: $dashboard_url" "$RED"
+    else
+      print_message "Dashboard URL: $dashboard_url" "$GREEN"
+    fi
+}
+
+
+
 get_dashboard_url() {
   local kibana_url="http://localhost:5601"
   local dashboard_title="$1"
@@ -40,8 +65,18 @@ check_elastiflow_livez(){
     fi
 }
 
-check elastiflow_open_ports(){
+check elastiflow_flow_open_ports(){
   for port in 2055 4739 6343 9995; do
+      if netstat -tuln | grep -q ":$port"; then
+        print_message "Port $port is open" "$GREEN"
+      else
+        print_message "Port $port is not open" "$RED"
+      fi
+    done
+}
+
+check elastiflow_snmp_open_ports(){
+  for port in 161; do
       if netstat -tuln | grep -q ":$port"; then
         print_message "Port $port is open" "$GREEN"
       else
@@ -62,7 +97,7 @@ check_elastic_ready(){
 }
 
 check_kibana_ready(){
-  response=$(curl -s -X GET "http://$ip_address:5601/api/status")
+  response=$(curl -s -X GET "http://localhost:5601/api/status")
     
     if [[ $response == *'"status":{"overall":{"level":"available"}}'* ]]; then
         print_message "Kibana is ready. Used curl" "$GREEN"
@@ -479,3 +514,4 @@ load_env_vars
 ask_deploy_elastic_kibana
 ask_deploy_elastiflow_flow
 ask_deploy_elastiflow_snmp
+check_system_health
