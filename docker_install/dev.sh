@@ -58,7 +58,6 @@ check_system_health(){
   check_elastic_ready
   check_kibana_ready
   check_elastiflow_flow_open_ports
-  check_elastiflow_snmp_open_ports
   check_elastiflow_readyz
   check_elastiflow_livez
   get_dashboard_status "ElastiFlow (flow): Overview"
@@ -109,25 +108,30 @@ check_elastiflow_livez(){
     fi
 }
 
-check_elastiflow_flow_open_ports(){
-  for port in 2055 4739 6343 9995; do
-      if netstat -tuln | grep -q ":$port"; then
-        print_message "ElastiFlow Flow Collector is ready for flow on port $port." "$GREEN"
-      else
-        print_message "ElastiFlow Flow Collector is not ready for flow on $port." "$RED"
-      fi
-    done
+check_elastiflow_flow_open_ports() {
+  # Path to the .env file (you can adjust the path if necessary)
+  local env_file="$INSTALL_DIR.env"
+
+  # Extract the EF_FLOW_SERVER_UDP_PORT variable from the .env file (ignoring commented lines)
+  local port_list=$(grep -v '^#' "$env_file" | grep 'EF_FLOW_SERVER_UDP_PORT' | cut -d '=' -f2 | tr -d ' ')
+
+  # Check if the variable is empty
+  if [ -z "$port_list" ]; then
+    echo "No ports found in the EF_FLOW_SERVER_UDP_PORT variable."
+    return
+  fi
+
+  # Split the port list by commas and check each port
+  IFS=',' read -ra ports <<< "$port_list"
+  for port in "${ports[@]}"; do
+    if netstat -tuln | grep -q ":$port"; then
+      print_message "ElastiFlow Flow Collector is ready for flow on port $port." "$GREEN"
+    else
+      print_message "ElastiFlow Flow Collector is not ready for flow on $port." "$RED"
+    fi
+  done
 }
 
-check_elastiflow_snmp_open_ports(){
-  for port in 161; do
-      if netstat -tuln | grep -q ":$port"; then
-        print_message "ElastiFlow SNMP Collector is ready on port $port" "$GREEN"
-      else
-        print_message "ElastiFlow SNMP Collector is not ready on $port" "$RED"
-      fi
-    done
-}
 
 check_elastic_ready(){
   curl_result=$(curl -s -k -u elastic:$ELASTIC_PASSWORD https://localhost:9200)
