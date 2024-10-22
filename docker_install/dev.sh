@@ -12,7 +12,7 @@ check_root() {
 ask_deploy_elastiflow_flow() {
   
   if [ "$FULL_AUTO" -eq 1 ]; then
-    echo "FULL_AUTO is set to 1. Skipping prompt and deploying Elastic and Kibana."
+    echo "FULL_AUTO is set to 1. Skipping prompt and deploying ElastiFlow Flow Collector."
     deploy_elastiflow_flow
     return 0
   fi  
@@ -38,8 +38,8 @@ ask_deploy_elastiflow_flow() {
 # Function to ask the user if they want to deploy ElastiFlow SNMP Collector
 ask_deploy_elastiflow_snmp() {
   if [ "$FULL_AUTO" -eq 1 ]; then
-    echo "FULL_AUTO is set to 1. Skipping prompt and deploying Elastic and Kibana."
-    deploy_elastic_snmp
+    echo "FULL_AUTO is set to 1. Skipping prompt and deploying Elastiflow SNMP Collector."
+    deploy_elastflow_snmp
     return 0
   fi
   
@@ -251,7 +251,7 @@ EOF
 }
 
 
-# Function to deploy ElastiFlow Flow Collector using Docker Compose
+# Function to deploy Elastic and Kibana using Docker Compose
 deploy_elastic_kibana() {
   echo "Deploying Elastic and Kibana..."
   disable_swap_if_swapfile_in_use
