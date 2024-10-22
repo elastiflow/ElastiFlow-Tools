@@ -15,6 +15,42 @@ check_root() {
 }
 
 
+edit_env_file() {
+  local env_file="$INSTALL_DIR/.env"  # Change this path to your actual .env file location
+  local answer
+
+  while true; do
+    echo "Would you like to edit the .env file before proceeding? (y/n) [Default: no in 20 seconds]"
+
+    # Read user input with a timeout of 20 seconds
+    read -t 20 -p "Enter your choice (y/n): " answer
+
+    # If the user doesn't respond in time
+    if [ $? -ne 0 ]; then
+      echo "No response. Proceeding after 20 seconds."
+      return 0  # Proceed without editing
+    fi
+
+    # Check the user's response
+    case "$answer" in
+      [yY]|[yY][eE][sS])
+        echo "Opening .env file for editing..."
+        sudo nano "$env_file"  # Open the .env file with sudo nano
+        return 0  # Exit after editing
+        ;;
+      [nN]|[nN][oO]|"")
+        echo "Proceeding without editing the .env file."
+        return 0  # Exit the function without editing
+        ;;
+      *)
+        echo "Invalid input. Please answer y/yes or n/no."
+        ;;
+    esac
+  done
+}
+
+
+
 check_system_health(){
 
   printf "\n\n*********************************"
@@ -515,6 +551,7 @@ check_kibana_status() {
 check_root
 install_prerequisites
 download_files
+edit_env_file
 load_env_vars
 check_docker
 ask_deploy_elastic_kibana
