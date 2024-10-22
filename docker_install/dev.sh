@@ -72,9 +72,6 @@ check_all_containers_up_for_10_seconds() {
   done
 }
 
- 
-
-
 
 edit_env_file() {
   local env_file="$INSTALL_DIR/.env"  # Change this path to your actual .env file location
@@ -109,7 +106,6 @@ edit_env_file() {
     esac
   done
 }
-
 
 
 check_system_health(){
