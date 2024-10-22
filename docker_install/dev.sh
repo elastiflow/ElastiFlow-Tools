@@ -14,11 +14,12 @@ ask_deploy_elastiflow_flow() {
     read -p "Do you want to deploy ElastiFlow Flow Collector? (y/n): " answer
     case "$answer" in
       [yY]|[yY][eE][sS]) 
+        deploy_elastiflow_flow
         break
         ;;
       [nN]|[nN][oO])
-        echo "Exiting without deploying ElastiFlow Flow Collector."
-        exit 0
+        echo "Exiting without deploying ElastiFlow."
+        return 0  # Exit the function but not the script
         ;;
       *)
         echo "Please answer y/yes or n/no."
@@ -26,6 +27,48 @@ ask_deploy_elastiflow_flow() {
     esac
   done
 }
+
+# Function to ask the user if they want to deploy ElastiFlow SNMP Collector
+ask_deploy_elastiflow_snmp() {
+  while true; do
+    read -p "Do you want to deploy ElastiFlow SNMP Collector? (y/n): " answer
+    case "$answer" in
+      [yY]|[yY][eE][sS]) 
+        deploy_elastiflow_snmp
+        break
+        ;;
+      [nN]|[nN][oO])
+        echo "Exiting without deploying ElastiFlow SNMP Collector."
+        return 0  # Exit the function but not the script
+        ;;
+      *)
+        echo "Please answer y/yes or n/no."
+        ;;
+    esac
+  done
+}
+
+
+# Function to ask the user if they want to deploy Elastic and Kibana
+ask_deploy_elastic_kibana() {
+  while true; do
+    read -p "Do you want to deploy Elastic and Kibana? (y/n): " answer
+    case "$answer" in
+      [yY]|[yY][eE][sS]) 
+        deploy_elastic_kibana
+        break
+        ;;
+      [nN]|[nN][oO])
+        echo "Exiting without deploying Elastic and Kibana."
+        return 0  # Exit the function but not the script
+        ;;
+      *)
+        echo "Please answer y/yes or n/no."
+        ;;
+    esac
+  done
+}
+
 
 
 print_message() {
@@ -46,17 +89,21 @@ install_prerequisites() {
 
   # Loop through the list and install each package
   for package in "${packages[@]}"; do
-    echo "Installing $package..."
-    apt-get -qq install -y "$package" > /dev/null 2>&1
-    if [ $? -eq 0 ]; then
-      echo "$package installed successfully."
+    if dpkg-query -W -f='${Status}' "$package" 2>/dev/null | grep -q "install ok installed"; then
+      echo "$package is already installed."
     else
-      echo "Failed to install $package."
+      echo "Installing $package..."
+      apt-get -qq install -y "$package" > /dev/null 2>&1
+      if [ $? -eq 0 ]; then
+        echo "$package installed successfully."
+      else
+        echo "Failed to install $package."
+      fi
     fi
   done
 }
 
-load_env(){
+load_env_vars(){
 # Load the .env file from the current directory
 if [ -f $INSTALL_DIR/.env ]; then
     source /home/user/elastiflow_install/.env
@@ -99,24 +146,6 @@ install_dashboards() {
 }
 
 
-# Function to ask the user if they want to deploy ElastiFlow SNMP Collector
-ask_deploy_elastiflow_snmp() {
-  while true; do
-    read -p "Do you want to deploy ElastiFlow SNMP Collector? (y/n): " answer
-    case "$answer" in
-      [yY]|[yY][eE][sS]) 
-        break
-        ;;
-      [nN]|[nN][oO])
-        echo "Exiting without deploying ElastiFlow SNMP Collector."
-        exit 0
-        ;;
-      *)
-        echo "Please answer y/yes or n/no."
-        ;;
-    esac
-  done
-}
 
 # Function to download the required files (overwriting existing files)
 download_files() {
@@ -127,7 +156,7 @@ download_files() {
   mkdir -p "$INSTALL_DIR"
   
   # Download files (force overwrite existing files)
-  echo "Downloading files to $INSTALL_DIR..."
+  echo "Downloading setup files to $INSTALL_DIR..."
   curl -L -o "$INSTALL_DIR/.env" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/.env"
   curl -L -o "$INSTALL_DIR/elasticsearch_kibana_compose.yml" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elasticsearch_kibana_compose.yml"
   curl -L -o "$INSTALL_DIR/elastiflow_flow_compose.yml" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elastiflow_flow_compose.yml"
@@ -199,18 +228,31 @@ EOF
 
 
 # Function to deploy ElastiFlow Flow Collector using Docker Compose
-deploy_elastic_elastiflow_flow() {
-  echo "Deploying ElastiFlow Flow..."
+deploy_elastic_kibana() {
+  echo "Deploying Elastic and Kibana..."
+  disable_swap_if_swapfile_in_use
+  tune_system
+  generate_saved_objects_enc_key
   cd "$INSTALL_DIR"
-  docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_flow_compose.yml up -d
-  install_dashboards "flow"
-  echo "ElastiFlow Flow Collector has been deployed successfully!"
-
+  docker compose -f elasticsearch_kibana_compose.yml up -d
+  echo "Elastic and Kibana have been deployed successfully!"
 }
 
+
+# Function to deploy ElastiFlow Flow Collector using Docker Compose
+deploy_elastiflow_flow() {
+  echo "Deploying ElastiFlow Flow Collector..."
+  extract_elastiflow_flow
+  cd "$INSTALL_DIR"
+  docker compose -f elastiflow_flow_compose.yml up -d
+  install_dashboards "flow"
+  echo "ElastiFlow Flow Collector has been deployed successfully!"
+}
+
+
 # Function to deploy ElastiFlow SNMP Collector using Docker Compose
-deploy_elastic_elastiflow_snmp() {
-  echo "Deploying ElastiFlow SNMP..."
+deploy_elastiflow_snmp() {
+  echo "Deploying ElastiFlow SNMP Collector..."
   cd /etc/elastiflow
   git clone https://github.com/elastiflow/snmp.git
   cd "$INSTALL_DIR"
@@ -339,15 +381,10 @@ check_kibana_status() {
 
 # Main script execution
 check_root
-ask_deploy_elastiflow_flow
 install_prerequisites
-disable_swap_if_swapfile_in_use
-tune_system
 download_files
-load_env
-generate_saved_objects_enc_key
 check_docker
-extract_elastiflow_flow
-deploy_elastic_elastiflow_flow
+load_env_vars
+ask_deploy_elastic_kibana
+ask_deploy_elastiflow_flow
 ask_deploy_elastiflow_snmp
-deploy_elastic_elastiflow_snmp
