@@ -10,6 +10,13 @@ check_root() {
 
 # Function to ask the user if they want to deploy ElastiFlow Flow Collector
 ask_deploy_elastiflow_flow() {
+  
+  if [ "$FULL_AUTO" -eq 1 ]; then
+    echo "FULL_AUTO is set to 1. Skipping prompt and deploying Elastic and Kibana."
+    deploy_elastiflow_flow
+    return 0
+  fi  
+  
   while true; do
     read -p "Do you want to deploy ElastiFlow Flow Collector? (y/n): " answer
     case "$answer" in
@@ -30,6 +37,12 @@ ask_deploy_elastiflow_flow() {
 
 # Function to ask the user if they want to deploy ElastiFlow SNMP Collector
 ask_deploy_elastiflow_snmp() {
+  if [ "$FULL_AUTO" -eq 1 ]; then
+    echo "FULL_AUTO is set to 1. Skipping prompt and deploying Elastic and Kibana."
+    deploy_elastic_snmp
+    return 0
+  fi
+  
   while true; do
     read -p "Do you want to deploy ElastiFlow SNMP Collector? (y/n): " answer
     case "$answer" in
@@ -49,8 +62,13 @@ ask_deploy_elastiflow_snmp() {
 }
 
 
-# Function to ask the user if they want to deploy Elastic and Kibana
 ask_deploy_elastic_kibana() {
+  if [ "$FULL_AUTO" -eq 1 ]; then
+    echo "FULL_AUTO is set to 1. Skipping prompt and deploying Elastic and Kibana."
+    deploy_elastic_kibana
+    return 0
+  fi
+
   while true; do
     read -p "Do you want to deploy Elastic and Kibana? (y/n): " answer
     case "$answer" in
@@ -68,7 +86,6 @@ ask_deploy_elastic_kibana() {
     esac
   done
 }
-
 
 
 print_message() {
@@ -168,6 +185,13 @@ download_files() {
 check_docker() {
   if ! command -v docker &> /dev/null; then
     echo "Docker is not installed. This is required."
+    
+  if [ "$FULL_AUTO" -eq 1 ]; then
+    echo "FULL_AUTO is set to 1. Skipping prompt and deploying Docker."
+    deploy_elastic_kibana
+    return 0
+  fi
+    
     while true; do
       read -p "Do you want to install Docker? (y/n): " choice
       case "$choice" in
