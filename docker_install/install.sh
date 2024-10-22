@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Define color codes
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+
 # Function to check if the user is root
 check_root() {
   if [ "$EUID" -ne 0 ]; then
@@ -8,17 +14,293 @@ check_root() {
   fi
 }
 
+check_all_containers_up_for_10_seconds() {
+  local check_interval=1  # Check every 1 second
+  local required_time=10  # Total check time of 10 seconds
+  local elapsed_time=0
+  declare -A container_status_summary  # Associative array to store status of each container
+
+  # Define color codes
+  local GREEN='\033[0;32m'
+  local RED='\033[0;31m'
+  local NC='\033[0m' # No Color
+
+  # Get a list of all running Docker containers' IDs and Names
+  local containers=($(docker ps --format "{{.ID}}:{{.Names}}"))
+
+  if [ ${#containers[@]} -eq 0 ]; then
+    echo "No running containers found."
+    return 1
+  fi
+
+  echo "Checking if all Docker containers remain 'Up' for at least 10 seconds..."
+
+  # Initialize the summary array with "stable" for each container
+  for container in "${containers[@]}"; do
+    container_id=$(echo "$container" | cut -d':' -f1)
+    container_name=$(echo "$container" | cut -d':' -f2)
+    container_status_summary["$container_name"]="stable"
+  done
+
+  # Check each container every second
+  while [ $elapsed_time -lt $required_time ]; do
+    for container in "${containers[@]}"; do
+      container_id=$(echo "$container" | cut -d':' -f1)
+      container_name=$(echo "$container" | cut -d':' -f2)
+
+      # Check the status of the container using docker ps
+      status=$(docker ps --filter "id=$container_id" --format "{{.Status}}")
+
+      # If the container is not "Up", mark it as "not stable"
+      if [[ "$status" != Up* ]]; then
+        container_status_summary["$container_name"]="not stable"
+      fi
+    done
+
+    sleep $check_interval
+    elapsed_time=$((elapsed_time + check_interval))
+  done
+
+  # Output the summary of all containers (without duplicates)
+  echo -e "\nSummary of Docker container statuses after $required_time seconds:"
+  for container_name in "${!container_status_summary[@]}"; do
+    if [ "${container_status_summary[$container_name]}" == "stable" ]; then
+      print_message "Container '$container_name' is stable." "$GREEN"
+    else
+      print_message "Container '$container_name' is not stable." "$RED"
+    fi
+  done
+}
+
+
+edit_env_file() {
+  local env_file="$INSTALL_DIR/.env"  # Change this path to your actual .env file location
+  local answer
+
+  while true; do
+    echo "Would you like to edit the .env file before proceeding? (y/n) [Default: no in 20 seconds]"
+
+    # Read user input with a timeout of 20 seconds
+    read -t 20 -p "Enter your choice (y/n): " answer
+
+    # If the user doesn't respond in time
+    if [ $? -ne 0 ]; then
+      echo "No response. Proceeding after 20 seconds."
+      return 0  # Proceed without editing
+    fi
+
+    # Check the user's response
+    case "$answer" in
+      [yY]|[yY][eE][sS])
+        echo "Opening .env file for editing..."
+        sudo nano "$env_file"  # Open the .env file with sudo nano
+        return 0  # Exit after editing
+        ;;
+      [nN]|[nN][oO]|"")
+        echo "Proceeding without editing the .env file."
+        return 0  # Exit the function without editing
+        ;;
+      *)
+        echo "Invalid input. Please answer y/yes or n/no."
+        ;;
+    esac
+  done
+}
+
+
+check_system_health(){
+
+  printf "\n\n*********************************"
+  printf "*********************************\n"
+  check_all_containers_up_for_10_seconds
+  check_elastic_ready
+  check_kibana_ready
+  check_elastiflow_flow_open_ports
+  check_elastiflow_readyz
+  check_elastiflow_livez
+  get_dashboard_status "ElastiFlow (flow): Overview"
+  get_dashboard_status "ElastiFlow (telemetry): Overview"
+}
+
+get_dashboard_status(){
+ get_dashboard_url "$1"
+    if [ "$dashboard_url" == "Dashboard not found" ]; then
+      print_message "Dashboard $1: URL: $dashboard_url" "$RED"
+    else
+      print_message "Dashboard $1: URL: $dashboard_url" "$GREEN"
+    fi
+}
+
+get_host_ip() {
+  INTERFACE=$(ip -o link show | awk -F': ' '{print $2}' | grep -vE '^(docker|lo)' | head -n 1)
+  if [ -z "$INTERFACE" ]; then
+    echo "No suitable network interface found."
+    return 1
+  else
+    ip_address=$(ip -o -4 addr show dev $INTERFACE | awk '{print $4}' | cut -d/ -f1)
+    if [ -z "$ip_address" ]; then
+      echo "No IP address found for interface $INTERFACE."
+      return 1
+    else
+      return 0
+    fi
+  fi
+}
+
+
+get_dashboard_url() {
+  get_host_ip
+  local kibana_url="http://$ip_address:5601"
+  local dashboard_title="$1"
+  local encoded_title=$(echo "$dashboard_title" | sed 's/ /%20/g' | sed 's/:/%3A/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
+  local response=$(curl -s -u "elastic:$ELASTIC_PASSWORD" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
+  local dashboard_id=$(echo "$response" | jq -r '.saved_objects[] | select(.attributes.title=="'"$dashboard_title"'") | .id')
+  if [ -z "$dashboard_id" ]; then
+    dashboard_url="Dashboard not found"
+  else
+    dashboard_url="$kibana_url/app/kibana#/dashboard/$dashboard_id"
+  fi
+}
+
+
+ check_elastiflow_readyz(){
+   response=$(curl -s http://localhost:8080/readyz)
+      if echo "$response" | grep -q "200"; then
+        print_message "ElastiFlow Flow Collector is $response" "$GREEN"
+      else
+        print_message "ElastiFlow Flow Collector Readyz: $response" "$RED"
+      fi
+  }
+
+check_elastiflow_livez(){
+  response=$(curl -s http://localhost:8080/livez)
+    if echo "$response" | grep -q "200"; then
+      print_message "ElastiFlow Flow Collector is $response" "$GREEN"
+    else
+      print_message "ElastiFlow Flow Collector Livez: $response" "$RED"
+    fi
+}
+
+check_elastiflow_flow_open_ports() {
+  # Path to the .env file (you can adjust the path if necessary)
+  local env_file="$INSTALL_DIR/elastiflow_flow_compose.yml"
+
+  # Extract the EF_FLOW_SERVER_UDP_PORT variable from the .env file (ignoring commented lines)
+  local port_list=$(grep -v '^#' "$env_file" | grep 'EF_FLOW_SERVER_UDP_PORT' | cut -d ':' -f2 | tr -d ' ')
+
+  # Check if the variable is empty
+  if [ -z "$port_list" ]; then
+    echo "No ports found in the EF_FLOW_SERVER_UDP_PORT variable."
+    return
+  fi
+
+  # Split the port list by commas and check each port
+  IFS=',' read -ra ports <<< "$port_list"
+  for port in "${ports[@]}"; do
+    if netstat -tuln | grep -q ":$port"; then
+      print_message "ElastiFlow Flow Collector port $port is open." "$GREEN"
+    else
+      print_message "ElastiFlow Flow Collector is not ready for flow on $port." "$RED"
+    fi
+  done
+}
+
+
+
+check_elastic_ready(){
+  curl_result=$(curl -s -k -u elastic:$ELASTIC_PASSWORD https://localhost:9200)
+     search_text='"tagline" : "You Know, for Search"'
+     if echo "$curl_result" | grep -q "$search_text"; then
+       print_message "Elastic is ready. Used authenticated curl." "$GREEN"
+     else
+       print_message "Elastic is not ready." "$RED"
+       echo "$curl_result"
+     fi
+}
+
+check_kibana_ready(){
+  response=$(curl -s -X GET "http://localhost:5601/api/status")
+    
+    if [[ $response == *'"status":{"overall":{"level":"available"}}'* ]]; then
+        print_message "Kibana is ready. Used curl." "$GREEN"
+    else
+        print_message "Kibana is not ready" "$RED"
+        echo "$response"
+    fi
+}
+
+
 # Function to ask the user if they want to deploy ElastiFlow Flow Collector
 ask_deploy_elastiflow_flow() {
+  
+  if [ "$FULL_AUTO" -eq 1 ]; then
+    echo "FULL_AUTO is set to 1. Skipping prompt and deploying ElastiFlow Flow Collector."
+    deploy_elastiflow_flow
+    return 0
+  fi  
+  
   while true; do
     read -p "Do you want to deploy ElastiFlow Flow Collector? (y/n): " answer
     case "$answer" in
       [yY]|[yY][eE][sS]) 
+        deploy_elastiflow_flow
         break
         ;;
       [nN]|[nN][oO])
-        echo "Exiting without deploying ElastiFlow Flow Collector."
-        exit 0
+        echo "Exiting without deploying ElastiFlow."
+        return 0  # Exit the function but not the script
+        ;;
+      *)
+        echo "Please answer y/yes or n/no."
+        ;;
+    esac
+  done
+}
+
+# Function to ask the user if they want to deploy ElastiFlow SNMP Collector
+ask_deploy_elastiflow_snmp() {
+  if [ "$FULL_AUTO" -eq 1 ]; then
+    echo "FULL_AUTO is set to 1. Skipping prompt and deploying Elastiflow SNMP Collector."
+    deploy_elastiflow_snmp
+    return 0
+  fi
+  
+  while true; do
+    read -p "Do you want to deploy ElastiFlow SNMP Collector? (y/n): " answer
+    case "$answer" in
+      [yY]|[yY][eE][sS]) 
+        deploy_elastiflow_snmp
+        break
+        ;;
+      [nN]|[nN][oO])
+        echo "Exiting without deploying ElastiFlow SNMP Collector."
+        return 0  # Exit the function but not the script
+        ;;
+      *)
+        echo "Please answer y/yes or n/no."
+        ;;
+    esac
+  done
+}
+
+
+ask_deploy_elastic_kibana() {
+  if [ "$FULL_AUTO" -eq 1 ]; then
+    echo "FULL_AUTO is set to 1. Skipping prompt and deploying Elastic and Kibana."
+    deploy_elastic_kibana
+    return 0
+  fi
+
+  while true; do
+    read -p "Do you want to deploy Elastic and Kibana? (y/n): " answer
+    case "$answer" in
+      [yY]|[yY][eE][sS]) 
+        deploy_elastic_kibana
+        break
+        ;;
+      [nN]|[nN][oO])
+        echo "Exiting without deploying Elastic and Kibana."
+        return 0  # Exit the function but not the script
         ;;
       *)
         echo "Please answer y/yes or n/no."
@@ -46,17 +328,21 @@ install_prerequisites() {
 
   # Loop through the list and install each package
   for package in "${packages[@]}"; do
-    echo "Installing $package..."
-    apt-get -qq install -y "$package" > /dev/null 2>&1
-    if [ $? -eq 0 ]; then
-      echo "$package installed successfully."
+    if dpkg-query -W -f='${Status}' "$package" 2>/dev/null | grep -q "install ok installed"; then
+      echo "$package is already installed."
     else
-      echo "Failed to install $package."
+      echo "Installing $package..."
+      apt-get -qq install -y "$package" > /dev/null 2>&1
+      if [ $? -eq 0 ]; then
+        echo "$package installed successfully."
+      else
+        echo "Failed to install $package."
+      fi
     fi
   done
 }
 
-load_env(){
+load_env_vars(){
 # Load the .env file from the current directory
 if [ -f $INSTALL_DIR/.env ]; then
     source /home/user/elastiflow_install/.env
@@ -99,24 +385,6 @@ install_dashboards() {
 }
 
 
-# Function to ask the user if they want to deploy ElastiFlow SNMP Collector
-ask_deploy_elastiflow_snmp() {
-  while true; do
-    read -p "Do you want to deploy ElastiFlow SNMP Collector? (y/n): " answer
-    case "$answer" in
-      [yY]|[yY][eE][sS]) 
-        break
-        ;;
-      [nN]|[nN][oO])
-        echo "Exiting without deploying ElastiFlow SNMP Collector."
-        exit 0
-        ;;
-      *)
-        echo "Please answer y/yes or n/no."
-        ;;
-    esac
-  done
-}
 
 # Function to download the required files (overwriting existing files)
 download_files() {
@@ -127,7 +395,7 @@ download_files() {
   mkdir -p "$INSTALL_DIR"
   
   # Download files (force overwrite existing files)
-  echo "Downloading files to $INSTALL_DIR..."
+  echo "Downloading setup files to $INSTALL_DIR..."
   curl -L -o "$INSTALL_DIR/.env" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/.env"
   curl -L -o "$INSTALL_DIR/elasticsearch_kibana_compose.yml" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elasticsearch_kibana_compose.yml"
   curl -L -o "$INSTALL_DIR/elastiflow_flow_compose.yml" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elastiflow_flow_compose.yml"
@@ -139,6 +407,14 @@ download_files() {
 check_docker() {
   if ! command -v docker &> /dev/null; then
     echo "Docker is not installed. This is required."
+    
+  if [ "$FULL_AUTO" -eq 1 ]; then
+    echo "FULL_AUTO is set to 1. Skipping prompt and deploying Docker."
+      chmod +x "$INSTALL_DIR/install_docker.sh"
+      bash "$INSTALL_DIR/install_docker.sh"
+    return 0
+  fi
+    
     while true; do
       read -p "Do you want to install Docker? (y/n): " choice
       case "$choice" in
@@ -198,19 +474,32 @@ EOF
 }
 
 
-# Function to deploy ElastiFlow Flow Collector using Docker Compose
-deploy_elastic_elastiflow_flow() {
-  echo "Deploying ElastiFlow Flow..."
+# Function to deploy Elastic and Kibana using Docker Compose
+deploy_elastic_kibana() {
+  echo "Deploying Elastic and Kibana..."
+  disable_swap_if_swapfile_in_use
+  tune_system
+  generate_saved_objects_enc_key
   cd "$INSTALL_DIR"
-  docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_flow_compose.yml up -d
-  install_dashboards "flow"
-  echo "ElastiFlow Flow Collector has been deployed successfully!"
-
+  docker compose -f elasticsearch_kibana_compose.yml up -d
+  echo "Elastic and Kibana have been deployed successfully!"
 }
 
+
+# Function to deploy ElastiFlow Flow Collector using Docker Compose
+deploy_elastiflow_flow() {
+  echo "Deploying ElastiFlow Flow Collector..."
+  extract_elastiflow_flow
+  cd "$INSTALL_DIR"
+  docker compose -f elastiflow_flow_compose.yml up -d
+  install_dashboards "flow"
+  echo "ElastiFlow Flow Collector has been deployed successfully!"
+}
+
+
 # Function to deploy ElastiFlow SNMP Collector using Docker Compose
-deploy_elastic_elastiflow_snmp() {
-  echo "Deploying ElastiFlow SNMP..."
+deploy_elastiflow_snmp() {
+  echo "Deploying ElastiFlow SNMP Collector..."
   cd /etc/elastiflow
   git clone https://github.com/elastiflow/snmp.git
   cd "$INSTALL_DIR"
@@ -339,15 +628,12 @@ check_kibana_status() {
 
 # Main script execution
 check_root
-ask_deploy_elastiflow_flow
 install_prerequisites
-disable_swap_if_swapfile_in_use
-tune_system
 download_files
-load_env
-generate_saved_objects_enc_key
+edit_env_file
+load_env_vars
 check_docker
-extract_elastiflow_flow
-deploy_elastic_elastiflow_flow
+ask_deploy_elastic_kibana
+ask_deploy_elastiflow_flow
 ask_deploy_elastiflow_snmp
-deploy_elastic_elastiflow_snmp
+check_system_health
