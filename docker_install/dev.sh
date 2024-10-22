@@ -65,7 +65,7 @@ check_elastiflow_livez(){
     fi
 }
 
-check elastiflow_flow_open_ports(){
+check_elastiflow_flow_open_ports(){
   for port in 2055 4739 6343 9995; do
       if netstat -tuln | grep -q ":$port"; then
         print_message "Port $port is open" "$GREEN"
@@ -75,7 +75,7 @@ check elastiflow_flow_open_ports(){
     done
 }
 
-check elastiflow_snmp_open_ports(){
+check_elastiflow_snmp_open_ports(){
   for port in 161; do
       if netstat -tuln | grep -q ":$port"; then
         print_message "Port $port is open" "$GREEN"
