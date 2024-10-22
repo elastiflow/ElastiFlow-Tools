@@ -13,12 +13,12 @@ check_system_health(){
 
   check_elastic_ready
   check_kibana_ready
-  check elastiflow_flow_open_ports
-  check elastiflow_snmp_open_ports
+  check_elastiflow_flow_open_ports
+  check_elastiflow_snmp_open_ports
   check_elastiflow_readyz
   check_elastiflow_livez
   get_dashboard_status "ElastiFlow (flow): Overview"
-  get_dashboard_status "ElastiFlow (SNMP): Overview"
+  get_dashboard_status "ElastiFlow (telemetry): Overview"
 
 }
 
@@ -509,8 +509,8 @@ check_kibana_status() {
 check_root
 install_prerequisites
 download_files
-check_docker
 load_env_vars
+check_docker
 ask_deploy_elastic_kibana
 ask_deploy_elastiflow_flow
 ask_deploy_elastiflow_snmp
