@@ -17,7 +17,7 @@ check_root() {
 
 check_system_health(){
 
-  printf "*********************************\n\n"
+  printf "\n\n*********************************"
   printf "*********************************\n"
   check_elastic_ready
   check_kibana_ready
