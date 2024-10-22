@@ -340,6 +340,7 @@ check_kibana_status() {
 # Main script execution
 check_root
 ask_deploy_elastiflow_flow
+install_prerequisites
 disable_swap_if_swapfile_in_use
 tune_system
 download_files
@@ -350,4 +351,3 @@ extract_elastiflow_flow
 deploy_elastic_elastiflow_flow
 ask_deploy_elastiflow_snmp
 deploy_elastic_elastiflow_snmp
-
