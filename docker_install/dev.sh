@@ -39,7 +39,7 @@ ask_deploy_elastiflow_flow() {
 ask_deploy_elastiflow_snmp() {
   if [ "$FULL_AUTO" -eq 1 ]; then
     echo "FULL_AUTO is set to 1. Skipping prompt and deploying Elastiflow SNMP Collector."
-    deploy_elastflow_snmp
+    deploy_elastiflow_snmp
     return 0
   fi
   
