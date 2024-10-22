@@ -14,6 +14,7 @@ check_root() {
   fi
 }
 
+
 check_all_containers_up_for_10_seconds() {
   local check_interval=1  # Check every 1 second
   local required_time=10  # Total check time of 10 seconds
@@ -109,7 +110,6 @@ edit_env_file() {
 
 
 check_system_health(){
-
   printf "\n\n*********************************"
   printf "*********************************\n"
   check_all_containers_up_for_10_seconds
@@ -122,6 +122,7 @@ check_system_health(){
   get_dashboard_status "ElastiFlow (telemetry): Overview"
 }
 
+
 get_dashboard_status(){
  get_dashboard_url "$1"
     if [ "$dashboard_url" == "Dashboard not found" ]; then
@@ -130,6 +131,7 @@ get_dashboard_status(){
       print_message "Dashboard $1: URL: $dashboard_url" "$GREEN"
     fi
 }
+
 
 get_host_ip() {
   INTERFACE=$(ip -o link show | awk -F': ' '{print $2}' | grep -vE '^(docker|lo)' | head -n 1)
@@ -172,6 +174,7 @@ get_dashboard_url() {
       fi
   }
 
+
 check_elastiflow_livez(){
   response=$(curl -s http://localhost:8080/livez)
     if echo "$response" | grep -q "200"; then
@@ -180,6 +183,7 @@ check_elastiflow_livez(){
       print_message "ElastiFlow Flow Collector Livez: $response" "$RED"
     fi
 }
+
 
 check_elastiflow_flow_open_ports() {
   # Path to the .env file (you can adjust the path if necessary)
@@ -206,7 +210,6 @@ check_elastiflow_flow_open_ports() {
 }
 
 
-
 check_elastic_ready(){
   curl_result=$(curl -s -k -u elastic:$ELASTIC_PASSWORD https://localhost:9200)
      search_text='"tagline" : "You Know, for Search"'
@@ -217,6 +220,7 @@ check_elastic_ready(){
        echo "$curl_result"
      fi
 }
+
 
 check_kibana_ready(){
   response=$(curl -s -X GET "http://localhost:5601/api/status")
@@ -256,6 +260,7 @@ ask_deploy_elastiflow_flow() {
     esac
   done
 }
+
 
 # Function to ask the user if they want to deploy ElastiFlow SNMP Collector
 ask_deploy_elastiflow_snmp() {
@@ -342,6 +347,7 @@ install_prerequisites() {
   done
 }
 
+
 load_env_vars(){
 # Load the .env file from the current directory
 if [ -f $INSTALL_DIR/.env ]; then
@@ -385,7 +391,6 @@ install_dashboards() {
 }
 
 
-
 # Function to download the required files (overwriting existing files)
 download_files() {
   SCRIPT_DIR="$(dirname "$(realpath "$0")")"
@@ -402,6 +407,7 @@ download_files() {
   curl -L -o "$INSTALL_DIR/elastiflow_snmp_compose.yml" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elastiflow_snmp_compose.yml"
   curl -L -o "$INSTALL_DIR/install_docker.sh" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/install_docker.sh"
 }
+
 
 # Function to check if Docker is installed and install if necessary
 check_docker() {
@@ -507,6 +513,7 @@ deploy_elastiflow_snmp() {
   install_dashboards "snmp"
   echo "ElastiFlow SNMP Collector has been deployed successfully!"
 }
+
 
 # Function to check and disable swap if any swap file is in use
 disable_swap_if_swapfile_in_use() {
@@ -625,6 +632,7 @@ check_kibana_status() {
     echo "[$(date)] Kibana not ready within the timeout period"
     return 1  # Exit with failure
 }
+
 
 # Main script execution
 check_root
