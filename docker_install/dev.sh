@@ -336,7 +336,8 @@ check_docker() {
     
   if [ "$FULL_AUTO" -eq 1 ]; then
     echo "FULL_AUTO is set to 1. Skipping prompt and deploying Docker."
-    deploy_elastic_kibana
+      chmod +x "$INSTALL_DIR/install_docker.sh"
+      bash "$INSTALL_DIR/install_docker.sh"
     return 0
   fi
     
