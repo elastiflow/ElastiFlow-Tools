@@ -15,6 +15,50 @@ check_root() {
 }
 
 
+check_docker_container_running() {
+  local container_name=$1
+  local check_interval=1  # Check every 1 second
+  local required_time=10  # Check for 10 seconds
+  local elapsed_time=0
+
+  while [ $elapsed_time -lt $required_time ]; do
+    container_status=$(docker inspect -f '{{.State.Status}}' "$container_name" 2>/dev/null)
+
+    if [ "$container_status" != "running" ]; then
+      echo "Container '$container_name' is not running (status: $container_status)."
+      return 1  # Exit with failure if the container is not running
+    fi
+
+    echo "Container '$container_name' is running. Checking again in $check_interval second(s)..."
+    sleep $check_interval
+    elapsed_time=$((elapsed_time + check_interval))
+  done
+
+  echo "Container '$container_name' remained in 'running' state for $required_time seconds."
+  return 0  # Exit with success if the container remained running for the required time
+}
+
+check_containers() {
+  echo "Checking if Docker containers 'flow' and 'snmp' remain in a running state for 10 seconds."
+
+  check_docker_container_running "flow"
+  if [ $? -eq 0 ]; then
+    echo "Docker container 'flow' is stable."
+  else
+    echo "Docker container 'flow' did not remain stable."
+  fi
+
+  check_docker_container_running "snmp"
+  if [ $? -eq 0 ]; then
+    echo "Docker container 'snmp' is stable."
+  else
+    echo "Docker container 'snmp' did not remain stable."
+  fi
+}
+
+
+
+
 edit_env_file() {
   local env_file="$INSTALL_DIR/.env"  # Change this path to your actual .env file location
   local answer
