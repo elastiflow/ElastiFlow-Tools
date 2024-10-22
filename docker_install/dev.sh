@@ -116,6 +116,7 @@ check_system_health(){
 
   printf "\n\n*********************************"
   printf "*********************************\n"
+  check_all_containers_up_for_10_seconds
   check_elastic_ready
   check_kibana_ready
   check_elastiflow_flow_open_ports
@@ -123,7 +124,6 @@ check_system_health(){
   check_elastiflow_livez
   get_dashboard_status "ElastiFlow (flow): Overview"
   get_dashboard_status "ElastiFlow (telemetry): Overview"
-
 }
 
 get_dashboard_status(){
@@ -186,7 +186,7 @@ check_elastiflow_flow_open_ports() {
   IFS=',' read -ra ports <<< "$port_list"
   for port in "${ports[@]}"; do
     if netstat -tuln | grep -q ":$port"; then
-      print_message "ElastiFlow Flow Collector is ready for flow on port $port." "$GREEN"
+      print_message "ElastiFlow Flow Collector port $port is open." "$GREEN"
     else
       print_message "ElastiFlow Flow Collector is not ready for flow on $port." "$RED"
     fi
@@ -625,4 +625,3 @@ ask_deploy_elastic_kibana
 ask_deploy_elastiflow_flow
 ask_deploy_elastiflow_snmp
 check_system_health
-check_all_containers_up_for_10_seconds
