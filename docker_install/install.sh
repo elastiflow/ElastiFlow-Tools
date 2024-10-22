@@ -339,7 +339,6 @@ check_kibana_status() {
 
 # Main script execution
 check_root
-ask_deploy_elastiflow_flow
 install_prerequisites
 disable_swap_if_swapfile_in_use
 tune_system
