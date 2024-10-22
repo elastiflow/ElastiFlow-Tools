@@ -8,6 +8,73 @@ check_root() {
   fi
 }
 
+get_dashboard_url() {
+  local kibana_url="http://localhost:5601"
+  local dashboard_title="$1"
+  local encoded_title=$(echo "$dashboard_title" | sed 's/ /%20/g' | sed 's/:/%3A/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
+  local response=$(curl -s -u "elastic:$ELASTIC_PASSWORD" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
+  local dashboard_id=$(echo "$response" | jq -r '.saved_objects[] | select(.attributes.title=="'"$dashboard_title"'") | .id')
+  if [ -z "$dashboard_id" ]; then
+    dashboard_url="Dashboard not found"
+  else
+    dashboard_url="$kibana_url/app/kibana#/dashboard/$dashboard_id"
+  fi
+}
+
+
+ check_elastiflow_readyz(){
+   response=$(curl -s http://localhost:8080/readyz)
+      if echo "$response" | grep -q "200"; then
+        print_message "Readyz: $response" "$GREEN"
+      else
+        print_message "Readyz: $response" "$RED"
+      fi
+  }
+
+check_elastiflow_livez(){
+  response=$(curl -s http://localhost:8080/livez)
+    if echo "$response" | grep -q "200"; then
+      print_message "Livez: $response" "$GREEN"
+    else
+      print_message "Livez: $response" "$RED"
+    fi
+}
+
+check elastiflow_open_ports(){
+  for port in 2055 4739 6343 9995; do
+      if netstat -tuln | grep -q ":$port"; then
+        print_message "Port $port is open" "$GREEN"
+      else
+        print_message "Port $port is not open" "$RED"
+      fi
+    done
+}
+
+check_elastic_ready(){
+  curl_result=$(curl -s -k -u elastic:$ELASTIC_PASSWORD https://localhost:9200)
+     search_text='cluster_name" : "elasticsearch'
+     if echo "$curl_result" | grep -q "$search_text"; then
+       print_message "Elastic is ready. Used authenticated curl." "$GREEN"
+     else
+       print_message "Something's wrong with Elastic..." "$RED"
+       echo "$curl_result"
+     fi
+}
+
+check_kibana_ready(){
+  response=$(curl -s -X GET "http://$ip_address:5601/api/status")
+    
+    if [[ $response == *'"status":{"overall":{"level":"available"}}'* ]]; then
+        print_message "Kibana is ready. Used curl" "$GREEN"
+    else
+        print_message "Kibana is not ready" "$RED"
+        echo "$response"
+    fi
+}
+
+
+
+
 # Function to ask the user if they want to deploy ElastiFlow Flow Collector
 ask_deploy_elastiflow_flow() {
   
