@@ -110,7 +110,7 @@ check_elastiflow_livez(){
 
 check_elastiflow_flow_open_ports() {
   # Path to the .env file (you can adjust the path if necessary)
-  local env_file="$INSTALL_DIR.env"
+  local env_file="$INSTALL_DIR/.env"
 
   # Extract the EF_FLOW_SERVER_UDP_PORT variable from the .env file (ignoring commented lines)
   local port_list=$(grep -v '^#' "$env_file" | grep 'EF_FLOW_SERVER_UDP_PORT' | cut -d '=' -f2 | tr -d ' ')
