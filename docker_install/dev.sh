@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Define color codes
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+
 # Function to check if the user is root
 check_root() {
   if [ "$EUID" -ne 0 ]; then
