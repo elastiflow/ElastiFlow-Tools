@@ -17,6 +17,8 @@ check_root() {
 
 check_system_health(){
 
+  printf "*********************************\n\n"
+  printf "*********************************\n"
   check_elastic_ready
   check_kibana_ready
   check_elastiflow_flow_open_ports
@@ -56,27 +58,27 @@ get_dashboard_url() {
  check_elastiflow_readyz(){
    response=$(curl -s http://localhost:8080/readyz)
       if echo "$response" | grep -q "200"; then
-        print_message "Readyz: $response" "$GREEN"
+        print_message "ElastiFlow Flow Collector is $response" "$GREEN"
       else
-        print_message "Readyz: $response" "$RED"
+        print_message "ElastiFlow Flow Collector Readyz: $response" "$RED"
       fi
   }
 
 check_elastiflow_livez(){
   response=$(curl -s http://localhost:8080/livez)
     if echo "$response" | grep -q "200"; then
-      print_message "Livez: $response" "$GREEN"
+      print_message "ElastiFlow Flow Collector is $response" "$GREEN"
     else
-      print_message "Livez: $response" "$RED"
+      print_message "ElastiFlow Flow Collector Livez: $response" "$RED"
     fi
 }
 
 check_elastiflow_flow_open_ports(){
   for port in 2055 4739 6343 9995; do
       if netstat -tuln | grep -q ":$port"; then
-        print_message "Port $port is open" "$GREEN"
+        print_message "ElastiFlow Flow Collector is ready for flow on port $port." "$GREEN"
       else
-        print_message "Port $port is not open" "$RED"
+        print_message "ElastiFlow Flow Collector is not ready for flow on $port." "$RED"
       fi
     done
 }
@@ -84,9 +86,9 @@ check_elastiflow_flow_open_ports(){
 check_elastiflow_snmp_open_ports(){
   for port in 161; do
       if netstat -tuln | grep -q ":$port"; then
-        print_message "Port $port is open" "$GREEN"
+        print_message "ElastiFlow SNMP Collector is ready on port $port" "$GREEN"
       else
-        print_message "Port $port is not open" "$RED"
+        print_message "ElastiFlow SNMP Collector is not ready on $port" "$RED"
       fi
     done
 }
@@ -97,7 +99,7 @@ check_elastic_ready(){
      if echo "$curl_result" | grep -q "$search_text"; then
        print_message "Elastic is ready. Used authenticated curl." "$GREEN"
      else
-       print_message "Something's wrong with Elastic..." "$RED"
+       print_message "Elastic is not ready." "$RED"
        echo "$curl_result"
      fi
 }
