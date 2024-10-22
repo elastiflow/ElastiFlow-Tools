@@ -14,48 +14,65 @@ check_root() {
   fi
 }
 
-
-check_docker_container_running() {
-  local container_name=$1
+check_all_containers_up_for_10_seconds() {
   local check_interval=1  # Check every 1 second
-  local required_time=10  # Check for 10 seconds
+  local required_time=10  # Total check time of 10 seconds
   local elapsed_time=0
+  declare -A container_status_summary  # Associative array to store status of each container
 
+  # Define color codes
+  local GREEN='\033[0;32m'
+  local RED='\033[0;31m'
+  local NC='\033[0m' # No Color
+
+  # Get a list of all running Docker containers' IDs and Names
+  local containers=($(docker ps --format "{{.ID}}:{{.Names}}"))
+
+  if [ ${#containers[@]} -eq 0 ]; then
+    echo "No running containers found."
+    return 1
+  fi
+
+  echo "Checking if all Docker containers remain 'Up' for at least 10 seconds..."
+
+  # Initialize the summary array with "stable" for each container
+  for container in "${containers[@]}"; do
+    container_id=$(echo "$container" | cut -d':' -f1)
+    container_name=$(echo "$container" | cut -d':' -f2)
+    container_status_summary["$container_name"]="stable"
+  done
+
+  # Check each container every second
   while [ $elapsed_time -lt $required_time ]; do
-    container_status=$(docker inspect -f '{{.State.Status}}' "$container_name" 2>/dev/null)
+    for container in "${containers[@]}"; do
+      container_id=$(echo "$container" | cut -d':' -f1)
+      container_name=$(echo "$container" | cut -d':' -f2)
 
-    if [ "$container_status" != "running" ]; then
-      echo "Container '$container_name' is not running (status: $container_status)."
-      return 1  # Exit with failure if the container is not running
-    fi
+      # Check the status of the container using docker ps
+      status=$(docker ps --filter "id=$container_id" --format "{{.Status}}")
 
-    echo "Container '$container_name' is running. Checking again in $check_interval second(s)..."
+      # If the container is not "Up", mark it as "not stable"
+      if [[ "$status" != Up* ]]; then
+        container_status_summary["$container_name"]="not stable"
+      fi
+    done
+
     sleep $check_interval
     elapsed_time=$((elapsed_time + check_interval))
   done
 
-  echo "Container '$container_name' remained in 'running' state for $required_time seconds."
-  return 0  # Exit with success if the container remained running for the required time
+  # Output the summary of all containers (without duplicates)
+  echo -e "\nSummary of Docker container statuses after $required_time seconds:"
+  for container_name in "${!container_status_summary[@]}"; do
+    if [ "${container_status_summary[$container_name]}" == "stable" ]; then
+      print_message "Container '$container_name' is stable." "$GREEN"
+    else
+      print_message "Container '$container_name' is not stable." "$RED"
+    fi
+  done
 }
 
-check_containers() {
-  echo "Checking if Docker containers 'flow' and 'snmp' remain in a running state for 10 seconds."
-
-  check_docker_container_running "flow"
-  if [ $? -eq 0 ]; then
-    echo "Docker container 'flow' is stable."
-  else
-    echo "Docker container 'flow' did not remain stable."
-  fi
-
-  check_docker_container_running "snmp"
-  if [ $? -eq 0 ]; then
-    echo "Docker container 'snmp' is stable."
-  else
-    echo "Docker container 'snmp' did not remain stable."
-  fi
-}
-
+ 
 
 
 
@@ -608,3 +625,4 @@ ask_deploy_elastic_kibana
 ask_deploy_elastiflow_flow
 ask_deploy_elastiflow_snmp
 check_system_health
+check_all_containers_up_for_10_seconds
