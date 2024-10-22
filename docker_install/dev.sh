@@ -113,7 +113,7 @@ check_elastiflow_flow_open_ports() {
   local env_file="$INSTALL_DIR/elastiflow_flow_compose.yml"
 
   # Extract the EF_FLOW_SERVER_UDP_PORT variable from the .env file (ignoring commented lines)
-  local port_list=$(grep -v '^#' "$env_file" | grep 'EF_FLOW_SERVER_UDP_PORT' | cut -d '=' -f2 | tr -d ' ')
+  local port_list=$(grep -v '^#' "$env_file" | grep 'EF_FLOW_SERVER_UDP_PORT' | cut -d ':' -f2 | tr -d ' ')
 
   # Check if the variable is empty
   if [ -z "$port_list" ]; then
@@ -131,6 +131,7 @@ check_elastiflow_flow_open_ports() {
     fi
   done
 }
+
 
 
 check_elastic_ready(){
