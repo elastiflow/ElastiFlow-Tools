@@ -87,16 +87,18 @@ fi
 
 # If the input file is a zip file, unzip it first
 if [[ "$input_file" == *.zip ]]; then
+    dir_name=$(dirname "$input_file")  # Get the directory of the zip file
     unzip -o "$input_file" -d temp_dir
     input_file=$(ls temp_dir/*.pcap)  # Get the first pcap file in the directory
     if [[ -z "$input_file" ]]; then
         echo "Error: No pcap file found in the zip."
         exit 1
     fi
+else
+    dir_name=$(dirname "$input_file")  # Use the directory of the original pcap file
 fi
 
-# Get the directory and filename for the modified output
-dir_name=$(dirname "$input_file")
+# Get the base name and define the modified file path
 base_name=$(basename "$input_file" .pcap)
 modified_file="$dir_name/${base_name}_modified.pcap"
 
