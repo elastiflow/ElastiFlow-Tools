@@ -1,16 +1,15 @@
 #!/bin/bash
 
-# Function to install tcpreplay and tcprewrite on Ubuntu
+# Function to install tcpreplay, tcprewrite, and tcpdump on Ubuntu
 install_tools() {
-    echo "tcpreplay and tcprewrite are not installed. Would you like to install them? (y/n)"
+    echo "tcpreplay, tcprewrite, and tcpdump are not installed. Would you like to install them? (y/n)"
     read -p "Install tools? (default: y): " install_choice
     install_choice=${install_choice:-y}
 
     if [[ "$install_choice" =~ ^[Yy]$ ]]; then
-        echo "Installing tcpreplay and tcprewrite..."
+        echo "Installing tcpreplay, tcprewrite, and tcpdump..."
         sudo apt-get update
-        sudo apt-get install -y tcpreplay
-        sudo apt-get install -y tcprewrite
+        sudo apt-get install -y tcpreplay tcpdump
         echo "Installation complete."
     else
         echo "Installation aborted. Exiting."
@@ -18,13 +17,13 @@ install_tools() {
     fi
 }
 
-# Check for tcprewrite and tcpreplay
-if ! command -v tcprewrite &> /dev/null || ! command -v tcpreplay &> /dev/null; then
+# Check for tcprewrite, tcpreplay, and tcpdump
+if ! command -v tcprewrite &> /dev/null || ! command -v tcpreplay &> /dev/null || ! command -v tcpdump &> /dev/null; then
     # Check if the OS is Ubuntu
     if [[ -f /etc/os-release && $(grep -w 'ID=ubuntu' /etc/os-release) ]]; then
         install_tools
     else
-        echo "Error: tcprewrite and/or tcpreplay are not installed. Please install them to proceed."
+        echo "Error: tcprewrite, tcpreplay, and/or tcpdump are not installed. Please install them to proceed."
         exit 1
     fi
 fi
@@ -43,13 +42,30 @@ if [[ ! -f "$input_file" ]]; then
     exit 1
 fi
 
+# Check for SLL headers and convert to Ethernet if necessary
+base_name=$(basename "$input_file" .pcap)
+temp_file="$dir_name/${base_name}_temp.pcap"
+
+echo "Checking for SLL headers and converting to Ethernet if necessary..."
+tcpdump -r "$input_file" -w "$temp_file" -s 0 2>&1 | grep -q 'cooked'
+if [[ $? -eq 0 ]]; then
+    echo "SLL headers detected and converted to Ethernet format."
+    mv "$temp_file" "$input_file"  # Replace original file with converted file
+else
+    rm "$temp_file"  # Clean up temp file if no conversion was needed
+    echo "No SLL headers detected, or already in Ethernet format."
+fi
+
+# Prompt for new destination MAC address
+read -p "Enter new destination MAC address (e.g., 00:1a:2b:3c:4d:5e): " new_dest_mac
+if [[ -z "$new_dest_mac" ]]; then
+    echo "No destination MAC address provided, exiting."
+    exit 1
+fi
+
 # Prompt for destination IP
 read -p "Enter destination IP (default: 192.168.2.80): " dest_ip
 dest_ip=${dest_ip:-192.168.2.80}
-
-# Prompt for destination port
-read -p "Enter destination port (default: 9995): " dest_port
-dest_port=${dest_port:-9995}
 
 # List available network interfaces and prompt for one
 echo "Available network interfaces:"
@@ -74,52 +90,23 @@ if [[ "$interface" != "eth0" && " ${interfaces[@]} " =~ " eth0 " ]]; then
     interface="eth0"
 fi
 
-# Prompt for topspeed option
-read -p "Use topspeed for replay? (y/n, default: n): " topspeed
-topspeed=${topspeed:-n}
+# Get the directory name for the input file
+dir_name=$(dirname "$input_file")
 
-# Set topspeed flag for tcpreplay
-if [[ "$topspeed" =~ ^[Yy]$ ]]; then
-    topspeed_flag="--pps=1000000"  # Set an arbitrary high value for topspeed
-else
-    topspeed_flag=""
-fi
-
-# If the input file is a zip file, unzip it first
-if [[ "$input_file" == *.zip ]]; then
-    dir_name=$(dirname "$input_file")  # Get the directory of the zip file
-    unzip -o "$input_file" -d temp_dir
-    input_file=$(ls temp_dir/*.pcap)  # Get the first pcap file in the directory
-    if [[ -z "$input_file" ]]; then
-        echo "Error: No pcap file found in the zip."
-        exit 1
-    fi
-else
-    dir_name=$(dirname "$input_file")  # Use the directory of the original pcap file
-fi
-
-# Get the base name and define the modified file path
-base_name=$(basename "$input_file" .pcap)
+# Modify destination IP and MAC address using tcprewrite
 modified_file="$dir_name/${base_name}_modified.pcap"
-
-# Modify destination IP and port using tcprewrite
-tcprewrite --infile="$input_file" --outfile="$modified_file" --dstipmap=0.0.0.0/0:"$dest_ip" --portmap=0:"$dest_port"
+tcprewrite --infile="$input_file" --outfile="$modified_file" --dstipmap=0.0.0.0/0:"$dest_ip" --enet-dmac="$new_dest_mac"
 
 # Summary of changes
 echo "Summary of Changes:"
 echo "-------------------"
 echo "Changed all destination IPs to: $dest_ip"
-echo "Changed all destination ports to: $dest_port"
+echo "Changed all destination MACs to: $new_dest_mac"
 echo "Using interface: $interface"
 echo "Modified file saved as: $modified_file"
 echo "-------------------"
 
 # Replay the modified packets using tcpreplay
-tcpreplay $topspeed_flag --intf1="$interface" "$modified_file"
-
-# Clean up temporary files if a zip was used
-if [[ "$1" == *.zip ]]; then
-    rm -rf temp_dir
-fi
+tcpreplay --intf1="$interface" "$modified_file"
 
 echo "Replay completed."
