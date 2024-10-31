@@ -13,10 +13,10 @@ elastiflow_account_id=""
 elastiflow_flow_license_key=""
 ########################################################
 
-flowcoll_version="7.3.2"
+flowcoll_version="7.4.0"
 elasticsearch_version="8.15.3"
 kibana_version="8.15.3"
-flow_dashboards_version="8.2.x"
+flow_dashboards_version="8.14.x"
 flow_dashboards_codex_ecs="codex"
 flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
 elastic_username="elastic"
