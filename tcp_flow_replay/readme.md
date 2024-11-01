@@ -1,15 +1,13 @@
 ## Author
 - [O.J. Wolanyk]
 
-# ElastiFlow Installation Script
-Script to easily replay netflow pcaps to the ip and port of your choice.
-
 What this is:
 ----------------
+A shell script to easily replay packets obtained from others.
 
 What this script does:
 ----------------
-This script accepts a pcap or zipped pcap file, prompts the user for a destination IP address and port, uses tcprewrite to make the changes to the pcap and then replays the pcaps with tcpreplay.
+This script accepts a pcap or zipped pcap file, prompts the user for an destination mac, destination IP address, and destination port, and then applies these values (along with the chosen exporting interface's MAC adress) using tcprewrite. Finally, it replays the modified pcap using tpreplay.
 
 Requirements:
 ----------------
