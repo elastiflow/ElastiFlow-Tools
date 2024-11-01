@@ -44,7 +44,7 @@ fi
 
 # Check for SLL headers and convert to Ethernet if necessary
 base_name=$(basename "$input_file" .pcap)
-temp_file="$dir_name/${base_name}_temp.pcap"
+temp_file="${base_name}_temp.pcap"
 
 echo "Checking for SLL headers and converting to Ethernet if necessary..."
 tcpdump -r "$input_file" -w "$temp_file" -s 0 2>&1 | grep -q 'cooked'
@@ -90,18 +90,24 @@ if [[ "$interface" != "eth0" && " ${interfaces[@]} " =~ " eth0 " ]]; then
     interface="eth0"
 fi
 
+# Get the MAC address of the chosen network interface
+source_mac=$(cat /sys/class/net/$interface/address)
+
+echo "Source MAC of selected interface ($interface) is $source_mac"
+
 # Get the directory name for the input file
 dir_name=$(dirname "$input_file")
 
 # Modify destination IP and MAC address using tcprewrite
-modified_file="$dir_name/${base_name}_modified.pcap"
-tcprewrite --infile="$input_file" --outfile="$modified_file" --dstipmap=0.0.0.0/0:"$dest_ip" --enet-dmac="$new_dest_mac"
+modified_file="${dir_name}/${base_name}_modified.pcap"
+tcprewrite --infile="$input_file" --outfile="$modified_file" --dstipmap=0.0.0.0/0:"$dest_ip" --enet-dmac="$new_dest_mac" --enet-smac="$source_mac"
 
 # Summary of changes
 echo "Summary of Changes:"
 echo "-------------------"
 echo "Changed all destination IPs to: $dest_ip"
-echo "Changed all destination MACs to: $new_dest_mac"
+echo "Changed destination MAC to: $new_dest_mac"
+echo "Set source MAC to interface MAC: $source_mac"
 echo "Using interface: $interface"
 echo "Modified file saved as: $modified_file"
 echo "-------------------"
