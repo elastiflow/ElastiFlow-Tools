@@ -211,7 +211,7 @@ check_elastiflow_flow_open_ports() {
 
 
 check_elastic_ready(){
-  curl_result=$(curl -s -k -u elastic:$ELASTIC_PASSWORD https://localhost:9200)
+  curl_result=$(curl -s -k -u "elastic:$ELASTIC_PASSWORD" https://localhost:9200)
      search_text='"tagline" : "You Know, for Search"'
      if echo "$curl_result" | grep -q "$search_text"; then
        print_message "Elastic is ready. Used authenticated curl." "$GREEN"
@@ -371,7 +371,7 @@ install_dashboards() {
   # Path to the downloaded JSON file
   json_file="/etc/elastiflow_for_elasticsearch/kibana/$elastiflow_product/kibana-$DASHBOARDS_VERSION-$elastiflow_product-$DASHBOARDS_CODEX_ECS.ndjson"
 
-  response=$(curl --silent --show-error --fail --connect-timeout 10 -X POST -u "elastic:${ELASTIC_PASSWORD}" \
+  response=$(curl --silent --show-error --fail --connect-timeout 10 -X POST -u "elastic:$ELASTIC_PASSWORD" \
     "localhost:5601/api/saved_objects/_import?overwrite=true" \
     -H "kbn-xsrf: true" \
     --form file=@"$json_file" \
@@ -564,7 +564,7 @@ printf "\n\n\n*********Disabling swap file if present...\n\n"
 # Function to download and extract ElastiFlow flow .deb
 extract_elastiflow_flow() {
     # Set variables
-    DEB_URL="https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_7.2.2_linux_amd64.deb"
+    DEB_URL="https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_${ELASTIFLOW_FLOW_VERSION}_linux_amd64.deb"
     DEB_FILE="flow-collector_7.2.2_linux_amd64.deb"
     TEMP_DIR="/tmp/elastiflow_flow_deb"
     TARGET_DIR="/etc/elastiflow"
