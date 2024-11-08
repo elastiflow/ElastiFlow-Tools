@@ -7,6 +7,7 @@ services:
     network_mode: 'host'
     volumes:
       - /etc/elastiflow:/etc/elastiflow
+      - /var/log/elastiflow:/var/log/elastiflow
     environment:
       EF_LICENSE_ACCEPTED: 'true'
       EF_ACCOUNT_ID: '${ELASTIFLOW_FLOW_ACCOUNT_ID}'
@@ -24,8 +25,8 @@ services:
 
       #EF_LOGGER_LEVEL: 'info'
       #EF_LOGGER_ENCODING: 'json'
-      #EF_LOGGER_FILE_LOG_ENABLE: 'false'
-      #EF_LOGGER_FILE_LOG_FILENAME: '/var/log/elastiflow/flowcoll/flowcoll.log'
+      EF_LOGGER_FILE_LOG_ENABLE: 'true'
+      EF_LOGGER_FILE_LOG_FILENAME: '/var/log/elastiflow/flowcoll/flowcoll.log'
       #EF_LOGGER_FILE_LOG_MAX_SIZE: 100
       #EF_LOGGER_FILE_LOG_MAX_AGE: ''
       #EF_LOGGER_FILE_LOG_MAX_BACKUPS: 4
