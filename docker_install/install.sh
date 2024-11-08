@@ -497,6 +497,9 @@ deploy_elastiflow_flow() {
   echo "Deploying ElastiFlow Flow Collector..."
   extract_elastiflow_flow
   cd "$INSTALL_DIR"
+  #set up logs directory
+  mkdir /var/log/elastiflow
+  chmod 777 /var/log/elastiflow
   docker compose -f elastiflow_flow_compose.yml up -d
   install_dashboards "flow"
   echo "ElastiFlow Flow Collector has been deployed successfully!"
