@@ -32,6 +32,9 @@ services:
       #EF_LOGGER_FILE_LOG_MAX_BACKUPS: 4
       #EF_LOGGER_FILE_LOG_COMPRESS: 'false'
 
+      # Fixes an issue where download does not complete in time
+      EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_TIMEOUT: 60
+
       EF_FLOW_SERVER_UDP_IP: '0.0.0.0'
       EF_FLOW_SERVER_UDP_PORT: 9995
       #EF_FLOW_SERVER_UDP_READ_BUFFER_MAX_SIZE: 134217728
