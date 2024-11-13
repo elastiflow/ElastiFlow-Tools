@@ -4,7 +4,7 @@ Script to easily install everything needed to PoC ElastiFlow Flowcoll and SNMPCo
 
 What this script does:
 ----------------
-Downloads, installs, Prometheus, Grafana, and ElastiFlow Grafana dashboards (on an existing ElastiFlow server) for monitoring ElastiFlow metrics.
+Downloads and installs Prometheus, Grafana, and ElastiFlow Grafana dashboards (all on an existing ElastiFlow server) for monitoring ElastiFlow metrics.
 
 Requirements:
 ----------------
