@@ -11,7 +11,7 @@ This script uses tshark on a pcap file passed to it to calculate the flows per s
 
 Requirements:
 ----------------
-Ubuntu
+Ubuntu or Redhat distro.
 
 Instructions:
 ----------------
