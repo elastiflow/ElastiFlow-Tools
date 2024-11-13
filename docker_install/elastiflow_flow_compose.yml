@@ -8,6 +8,7 @@ services:
     volumes:
       - /etc/elastiflow:/etc/elastiflow
       - /var/log/elastiflow:/var/log/elastiflow
+      - /var/lib/elastiflow/flowcoll:/var/lib/elastiflow/flowcoll
     environment:
       EF_LICENSE_ACCEPTED: 'true'
       EF_ACCOUNT_ID: '${ELASTIFLOW_FLOW_ACCOUNT_ID}'
