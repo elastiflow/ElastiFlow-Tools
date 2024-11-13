@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 15s        # Default interval for scraping metrics
+  evaluation_interval: 15s    # Default interval for evaluating rules
+
+scrape_configs:
+  # Scrape configuration for Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Example: Scraping an external service (like ElastiFlow Flow Collector)
+  - job_name: elastiflow-metrics-1
+    scrape_interval: 15s
+    metrics_path: /metrics
+    scheme: http
+    static_configs:
+      - targets: ['localhost:8080']
