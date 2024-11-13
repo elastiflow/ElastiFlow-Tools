@@ -8,7 +8,8 @@ Downloads and installs Prometheus, Grafana, and ElastiFlow Grafana dashboards (a
 
 Requirements:
 ----------------
-Existing ElastiFlow server
+ElastiFlow server configured with metrics enabled on port 8080. In `/etc/elastiflow/flowcoll.yml` the key / value pair you need is: `EF_API_PORT: 8080`
+
 Docker (script can install this if it is missing)
 
 Instructions:
