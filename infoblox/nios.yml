@@ -1,0 +1,6 @@
+IPADDRS: "/etc/elastiflow/metadata/ipaddrs.yml"
+GRIDMANAGER: "192.168.1.2"
+WAPIVERSION: "2.12"
+USERNAME: "admin"
+PASSWORD: "infoblox"
+NETWORKVIEW: "default"
