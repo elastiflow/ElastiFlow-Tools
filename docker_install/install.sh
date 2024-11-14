@@ -497,9 +497,16 @@ deploy_elastiflow_flow() {
   echo "Deploying ElastiFlow Flow Collector..."
   extract_elastiflow_flow
   cd "$INSTALL_DIR"
-  #set up logs directory
-  mkdir /var/log/elastiflow
-  chmod 777 /var/log/elastiflow
+  #set up directories
+
+  mkdir -p /var/log/elastiflow
+  chown -R 1000:1000 /var/log/elastiflow
+  chmod -R 755 /var/log/elastiflow
+
+  mkdir -p /var/lib/elastiflow/flowcoll
+  chown -R 1000:1000 /var/lib/elastiflow/flowcoll
+  chmod -R 755 /var/lib/elastiflow/flowcoll
+
   docker compose -f elastiflow_flow_compose.yml up -d
   install_dashboards "flow"
   echo "ElastiFlow Flow Collector has been deployed successfully!"
@@ -590,7 +597,11 @@ extract_elastiflow_flow() {
 
     # Copy /data/etc/elastiflow contents to /etc/elastiflow
     echo "Copying extracted files to $TARGET_DIR..."
+
     mkdir -p "$TARGET_DIR"
+    chown -R 1000:1000 "$TARGET_DIR"
+    chmod -R 755 "$TARGET_DIR"
+    
     cp -r "$TEMP_DIR/etc/elastiflow/." "$TARGET_DIR/"
 
     # Cleanup
