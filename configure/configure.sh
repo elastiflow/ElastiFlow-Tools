@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ElastiFlow PoC Configurator for configuring ElastiFlow Virtual Appliance
-# Version: 2.8.4.2.3
+# Version: 2.8.4.2.4
 # Author: O.J. Wolanyk
 
 # Define color codes
@@ -9,13 +9,13 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-flow_collector_version="7.3.2"
-flow_kibana_dashboards_version="8.2.x"
+flow_collector_version="7.5.0"
+flow_kibana_dashboards_version="8.14.x"
 flow_kibana_dashboards_codex_ecs="codex"
 flow_config_path="/etc/elastiflow/flowcoll.yml"
 
-snmp_collector_version="7.3.2"
-snmp_kibana_dashboards_version="8.2.x"
+snmp_collector_version="7.5.0"
+snmp_kibana_dashboards_version="8.14.x"
 snmp_kibana_dashboards_codex_ecs="codex"
 snmp_config_path="/etc/elastiflow/snmpcoll.yml"
 
@@ -58,8 +58,7 @@ display_system_info() {
 
 display_version() {
   local file="$1"
-  version=$(grep -m 1 '^# Version: ' "$file" | awk '{print $3}')
-  local version
+  local version=$(grep -m 1 '^# Version: ' "$file" | awk '{print $3}')
   if [[ -z "$version" ]]; then
     echo "Failed to detect the version in $file"
   else
@@ -744,8 +743,8 @@ change_elasticsearch_password() {
 check_for_updates() {
   # Dynamically determine the path to the current script
   local current_script=$(realpath "$0")
-  local new_script_url="https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/configure/configure"
-  local tmp_script="/tmp/configure_script_update"
+  local new_script_url="https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/configure/configure.sh"
+  local tmp_script="/tmp/configure_script_update.sh"
 
   echo "Checking for updates..."
   echo "Current script path: $current_script"
@@ -2084,7 +2083,7 @@ while true; do
       ;;
     6)
       echo "Running support pack..."
-      wget -O /user/support https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/support_pack/elastiflow_elasticsearch_opensearch_support_pack && chmod +x /user/support
+      wget -O /user/support https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/support_pack/elastiflow_elasticsearch_opensearch_support_pack.sh && chmod +x /user/support.sh
       if [[ ! -f /user/support ]]; then
         if [[ -f /home/user/support ]]; then
           /home/user/support

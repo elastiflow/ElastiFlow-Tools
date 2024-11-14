@@ -1,9 +1,17 @@
 #!/bin/bash
 
+
+# Create a timestamped log file in the current directory
+LOG_FILE="$PWD/elastiflow_install_$(date +'%Y%m%d_%H%M%S').log"
+
+
+# Redirect all output to the log file
+exec > >(tee -a "$LOG_FILE") 2>&1
+
 # run script in non-interactive mode by default
 export DEBIAN_FRONTEND=noninteractive
 
-# Version: 3.0.3
+# Version: 3.0.3.1
 
 ########################################################
 # If you do not have an ElastiFlow Account ID and ElastiFlow Flow License Key,
@@ -13,7 +21,7 @@ elastiflow_account_id=""
 elastiflow_flow_license_key=""
 ########################################################
 
-flowcoll_version="7.4.0"
+flowcoll_version="7.5.0"
 elasticsearch_version="8.15.3"
 kibana_version="8.15.3"
 flow_dashboards_version="8.14.x"
@@ -79,7 +87,7 @@ Welcome to ElastiFlow Virtual Appliance
 
 =======================================
 
-Log in and type sudo ./configure to get started.
+Log in and type sudo ./configure.sh to get started.
 
 Setup Instructions:  https://sites.google.com/elastiflow.com/elastiflow
 Documentation:       https://docs.elastiflow.com
@@ -291,10 +299,9 @@ display_system_info() {
 
 check_for_updates() {
   # Dynamically determine the path to the installed script
-  installed_script=$(realpath "$0")
-  local installed_script
-  local new_script_url="https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/elasticsearch/install"
-  local tmp_script="/tmp/install"
+  local installed_script=$(realpath "$0")
+  local new_script_url="https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/elasticsearch/install.sh"
+  local tmp_script="/tmp/install.sh"
 
   echo "Checking for updates..."
   echo "installed script path: $installed_script"
@@ -309,9 +316,7 @@ check_for_updates() {
   echo "Downloaded remote script to $tmp_script."
 
   remote_version=$(grep -m 1 '^# Version: ' "$tmp_script" | awk '{print $3}')
-  local remote_version
   installed_version=$(grep -m 1 '^# Version: ' "$installed_script" | awk '{print $3}')
-  local installed_version
 
   echo "Installed version: $installed_version"
   echo "Remote version: $remote_version"
@@ -792,7 +797,6 @@ append_to_bashrc() {
 
 cleanup (){
   installed_script=$(realpath "$0")
-  local installed_script
   #release DHCP address
   dhclient -r
 
@@ -808,7 +812,7 @@ cleanup (){
 
 download_aux_files(){
   download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/configure/configure.sh" "/home/user/configure.sh"
-  download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/support_pack/elastiflow_elasticsearch_opensearch_support_pack" "/home/user/support"
+  download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/support_pack/elastiflow_elasticsearch_opensearch_support_pack.sh" "/home/user/support.sh"
 }
 
 

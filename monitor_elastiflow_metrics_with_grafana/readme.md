@@ -14,5 +14,5 @@ Docker (script can install this if it is missing)
 
 Instructions:
 ----------------
-1) sudo `./install_prof_graf.sh`
+1) Download everything in this folder into the home directory of an existing ElastiFlow server. Then, sudo `./install_prof_graf.sh`
 2) After installation is complete, you can access ElastiFlow metrics dashboard by logging in Grafana at `http://localhost:3000` (admin / admin)
