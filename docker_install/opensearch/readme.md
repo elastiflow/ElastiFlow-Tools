@@ -1,12 +1,12 @@
 
-ElastiFlow NetObserv Flow + Elastic Full Stack Deployment with Docker
+ElastiFlow NetObserv Flow + Opensearch Elastic Full Stack Deployment with Docker
 ================================  
 
 ## Author
-[O.J. Wolanyk]
+[Pat Vogelsang]
 
 ### Purpose:
-To easily install ElasticSearch, Kibana, and ElastiFlow NetObserv Flow with Docker Compose. Tested with Elastic / Kibana 8.15.1 and ElastiFlow NetObserv Flow 7.5.0
+To easily install Opensearch and ElastiFlow NetObserv Flow with Docker Compose. Tested with Openseach 2.18.0 and ElastiFlow NetObserv Flow 7.5.0
 
 ### Prerequisites:
 - Internet connected, clean Ubuntu 22 (or greater) Linux server with admin access
@@ -66,12 +66,12 @@ High performance data platforms like Elastic don't like to swap to disk.
 3) Verify swap is off with `swapon --show`
 
 #### 3) Download Docker Compose files
-Create a new directory on your server and download `elasticsearch_kibana_compose.yml`, `elastiflow_flow_compose.yml` and `.env` from [here](https://github.com/elastiflow/ElastiFlow-Tools/edit/main/docker_install)
+Create a new directory on your server and download `opensearch_compose.yml`, `elastiflow_flow_compose.yml` and `.env` from [here](https://github.com/elastiflow/ElastiFlow-Tools/edit/main/docker_install/opensearch)
 
 Or run the following in a terminal session:
 
 ```
-sudo wget "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/.env" && sudo wget "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elasticsearch_kibana_compose.yml" && sudo wget "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elastiflow_flow_compose.yml" 
+sudo wget "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/opensearch/.env" && sudo wget "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/opensearch/elastiflow_flow_compose.yml" && sudo wget "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/opensearch_compose.yml" 
 ```
 
 #### 4) Download required ElastiFlow NetObserv Flow support files
@@ -108,30 +108,26 @@ Be sure to replace `YOUR_LICENSE_KEY` with your GeoLite2 license key.
 
 From the directory where you downloaded the yml and .env files.
 
-Deploy Elasticsearch + Kibana + ElastiFlow
-
+Deploy Opensearch + ElastiFlow
+```
+sudo docker compose -f opensearch_compose.yml -f elastiflow_flow_compose.yml up -d
   ```
-  sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_flow_compose.yml up -d
-  ```
-
 #### 6) Log in:
 
 After a few minutes, browse to `http://IP_of_your_host:5601`.
 
-Kibana Log in with:
-Username: `elastic` 
-Password: `elastic`
-
+Opensearch Log in with:
+Username: `admin` 
+Password: `1qazXSW@3edc`
 #### 7) Install ElastiFlow NetObserv Flow dashboards:
-##### Kibana
-1) Download this [dashboards file](https://github.com/elastiflow/elastiflow_for_elasticsearch/blob/master/kibana/flow/kibana-8.2.x-flow-codex.ndjson) to your local machine.
+##### Opensearch
+1) Download this [dashboards file](https://github.com/elastiflow/elastiflow_for_opensearch/blob/master/dashboards/flow/dashboards-2.14.x-flow-codex.ndjson) to your local machine.
 
-2) Log in to Kibana.
+2) Log in to Opensearch.
 
-3) Click menu, "Stack Management", then under the heading "Kibana", click "Saved Objects"
+3) Click menu, "Dashboards Management" then click "Saved Objects"
    
-4) Browse for and upload the ndjson file you downloaded. Choose "import" and "overwrite".
-
+4) Browse for and upload the ndjson file you downloaded. Choose "import" and check option to "Check for existing objects" and "Automatically overwrite conflicts".
 #### 8) Send Netflow
 
   ##### Option 1: (Best)
@@ -169,14 +165,15 @@ In Kibana, do a global search (at the top) for the dashboard "ElastiFlow (flow):
 
 #### 10) Update Credentials
 Now that you have ElastiFlow NetObserv Flow up and running, we advise that you change your passwords
-##### Elasticsearch with Kibana
-Change your Elasticsearch and Kibana passwords from `elastic` to something complex as soon as possible. Here's how to do it:
+
+##### Opensearch
+Change your Opensearch password from `1qazXSW@3edc` to something complex as soon as possible. Here's how to do it:
 
 1) Open your `.env` file in a text editor like nano.
-2) Specify a new `ELASTIC_PASSWORD` and `KIBANA_PASSWORD`. Save changes.
-3) Redeploy ElasticSearch, Kibana, ElastiFlow NetObserv Flow:
+2) Specify a new `OPENSEARCH_INITIAL_ADMIN_PASSWORD` . Save changes.
+3) Redeploy Opensearch and ElastiFlow NetObserv Flow:
   ```
-  sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_flow_compose.yml down && sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_flow_compose.yml up -d
+  sudo docker compose -f opensearch_compose.yml -f elastiflow_flow_compose.yml down && sudo docker compose -f opensearch_compose.yml -f elastiflow_flow_compose.yml up -d
   ```
 # You did it! ^^^
 More enrichments and functionality are available with a free [basic license](https://www.elastiflow.com/basic-license). You can also request a [30 day premium license](https://www.elastiflow.com/get-started) which unlocks broader device support, much higher flow rates, and all of the [NetIntel enrichments](https://www.elastiflow.com/blog/posts/elastiflow-launches-netintel-to-boost-enterprise-security-against-internal).
@@ -205,14 +202,14 @@ ElastiFlow NetObserv Flow is able to enrich flow records with many different pie
 
 - Questions?
   [Documentation](https://docs.elastiflow.com) | [Community Forum](https://forum.elastiflow.com) | [Slack](https://elastiflowcommunity.slack.com) 
-- Code in this folder may contain code from [Elastic's Github Repo.](https://github.com/elastic/elasticsearch/tree/8.11/docs/reference/setup/install/docker)
+
 
 # BONUS
 
 You can alternatively complete the whole installation using Elasticsearch and Kibana with the following command:
 
 ```
-sudo bash -c "$(wget -qLO - https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/install.sh)"
+sudo bash -c "$(wget -qLO - https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/opensearch/install.sh)"
 ```
 
 
