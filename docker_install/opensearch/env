@@ -1,0 +1,34 @@
+# Opensearch Variables
+# Password for the 'admin' user (at least 6 characters)
+OPENSEARCH_INITIAL_ADMIN_PASSWORD=1qazXSW@3edc
+OPENSEARCH_VERSION=2.18.0
+
+DASHBOARDS_VERSION=2.14.x
+DASHBOARDS_CODEX_ECS=codex
+
+# ElastiFlow Flow Version
+ELASTIFLOW_FLOW_VERSION=7.5.0
+# Not required to install and use but does unlock additional features
+ELASTIFLOW_FLOW_ACCOUNT_ID=
+ELASTIFLOW_FLOW_KEY=
+
+# ElastiFlow SNMP Version
+ELASTIFLOW_SNMP_VERSION=7.5.0
+# Required to install and use
+ELASTIFLOW_SNMP_ACCOUNT_ID=
+ELASTIFLOW_SNMP_KEY=
+
+# Set to 'basic' or 'trial' to automatically start the 30-day trial
+LICENSE=basic
+#LICENSE=trial
+
+# Port to expose Elasticsearch HTTP API to the host
+ES_PORT=9200
+#ES_PORT=127.0.0.1:9200
+
+# JVM Heap Size
+# Set heap size to about one-third of the system memory, but do not exceed 31g. Assuming 16GB of system memory so set to 5GB
+JVM_HEAP_SIZE=5
+
+# Unattended installation
+FULL_AUTO=1
