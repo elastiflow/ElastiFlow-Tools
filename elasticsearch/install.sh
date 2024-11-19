@@ -21,7 +21,7 @@ elastiflow_account_id=""
 elastiflow_flow_license_key=""
 ########################################################
 
-flowcoll_version="7.5.0"
+flowcoll_version="7.5.1"
 elasticsearch_version="8.15.3"
 kibana_version="8.15.3"
 flow_dashboards_version="8.14.x"
@@ -680,6 +680,7 @@ install_elastiflow() {
   "EF_PROCESSOR_ENRICH_APP_IPPORT_PATH" "EF_PROCESSOR_ENRICH_APP_IPPORT_PATH: '/etc/elastiflow/app/ipport.yml'"
   "EF_PROCESSOR_ENRICH_NETIF_METADATA_ENABLE" "EF_PROCESSOR_ENRICH_NETIF_METADATA_ENABLE: 'true'"
   "EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_TIMEOUT" "EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_TIMEOUT: '60'"
+  "EF_OUTPUT_ELASTICSEARCH_INDEX_TEMPLATE_REPLICAS" "EF_OUTPUT_ELASTICSEARCH_INDEX_TEMPLATE_REPLICAS: 0"
   )
 
 
