@@ -1,6 +1,9 @@
 # ElastiFlow Installation Script
 Script to easily install everything needed to PoC ElastiFlow Flowcoll and SNMPColl
 
+## Author
+[O.J. Wolanyk]
+
 What this is:
 ----------------
 Script to easily install everything needed to PoC ElastiFlow Flowcoll and SNMPColl
