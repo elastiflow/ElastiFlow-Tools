@@ -1,0 +1,9 @@
+{
+  "flows_per_second": 20000,
+  "collector_ip": "10.101.2.171",
+  "collector_port": 6373,
+  "export_to_file": false,
+  "output_file": "netflowv5_records.bin",
+  "source_ip_subnet": "192.168.0.0/24",
+  "destination_ip_subnet": "10.0.0.0/24"
+}
