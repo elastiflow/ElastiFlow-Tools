@@ -1931,7 +1931,7 @@ while true; do
   echo "3. Enable MaxMind enrichment"
   echo "4. Utilities"
   echo "5. Games"
-  echo "6. Run support pack"
+  echo "6. Generate support bundle"
   echo "7. Change Elasticsearch password"
   echo "8. Quit"
   read -p "Enter your choice (1-8): " choice
@@ -2082,17 +2082,10 @@ while true; do
       done
       ;;
     6)
-      echo "Running support pack..."
-      wget -O /user/support https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/support_pack/elastiflow_elasticsearch_opensearch_support_pack.sh && chmod +x /user/support.sh
-      if [[ ! -f /user/support ]]; then
-        if [[ -f /home/user/support ]]; then
-          /home/user/support
-        else
-          print_message "Support pack script not found." "$RED"
-        fi
-      else
-        /user/support
-      fi
+      echo "Generating support bundle..."
+      /usr/share/elastiflow/bin/flowcoll -s
+      echo "Support bundle created"
+      echo "Attach the resulting support bundle archive to an email or support ticket for ElastiFlow to review."
       ;;
     7)
       change_elasticsearch_password
