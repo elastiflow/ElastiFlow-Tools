@@ -1,2 +1,5 @@
+## Author
+[O.J. Wolanyk]
+
 put desktop file in: /usr/share/kio/servicemenus
 put shell script in: /home/user/scripts/
