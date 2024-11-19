@@ -813,7 +813,6 @@ cleanup (){
 
 download_aux_files(){
   download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/configure/configure.sh" "/home/user/configure.sh"
-  download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/support_pack/elastiflow_elasticsearch_opensearch_support_pack.sh" "/home/user/support.sh"
 }
 
 
