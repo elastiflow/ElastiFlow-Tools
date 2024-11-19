@@ -776,6 +776,7 @@ display_dashboard_url() {
   dashboard_url=$(get_dashboard_url "ElastiFlow (flow): Overview")
   printf "*********************************************\n"
   printf "\033[32m\n\nGo to %s (%s / %s)\n\n\033[0m" "$dashboard_url" "$elastic_username" "$elastic_password2"
+  printf "DO NOT CHANGE THIS PASSWORD VIA KIBANA. ONLY CHANGE IT VIA sudo ./configure"
   printf "For further configuration options, run sudo ./configure\n\n"
   printf "*********************************************\n"
 }
@@ -813,7 +814,6 @@ cleanup (){
 
 download_aux_files(){
   download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/configure/configure.sh" "/home/user/configure.sh"
-  download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/support_pack/elastiflow_elasticsearch_opensearch_support_pack.sh" "/home/user/support.sh"
 }
 
 
