@@ -2,6 +2,9 @@ What this is:
 ----------------
 Script to easily install everything needed to monitor ElastiFlow using Prometheus and Grafana.
 
+## Author
+[O.J. Wolanyk]
+
 What this script does:
 ----------------
 Downloads and installs Prometheus, Grafana, and ElastiFlow Grafana dashboards (all on an existing ElastiFlow server) for monitoring ElastiFlow metrics.

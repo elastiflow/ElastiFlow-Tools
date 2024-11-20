@@ -1,9 +1,12 @@
 #!/bin/bash
+# Install docker with ElastiFlow and Elastisearch contaiiners
+#
+
 
 # Define color codes
 GREEN='\033[0;32m'
 RED='\033[0;31m'
-NC='\033[0m' # No Color
+NC='\033[0m' # No
 
 
 # Function to check if the user is root
@@ -113,13 +116,13 @@ check_system_health(){
   printf "\n\n*********************************"
   printf "*********************************\n"
   check_all_containers_up_for_10_seconds
-  check_opensearch_ready
+  check_elastic_ready
   check_kibana_ready
   check_elastiflow_flow_open_ports
   check_elastiflow_readyz
   check_elastiflow_livez
   get_dashboard_status "ElastiFlow (flow): Overview"
-  get_dashboard_status "ElastiFlow (telemetry): Overview"
+#   get_dashboard_status "ElastiFlow (telemetry): Overview"
 }
 
 
@@ -155,7 +158,7 @@ get_dashboard_url() {
   local kibana_url="http://$ip_address:5601"
   local dashboard_title="$1"
   local encoded_title=$(echo "$dashboard_title" | sed 's/ /%20/g' | sed 's/:/%3A/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
-  local response=$(curl -s -u "admin:$OPENSEARCH_INITIAL_ADMIN_PASSWORD" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
+  local response=$(curl -s -u "elastic:$ELASTIC_PASSWORD" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
   local dashboard_id=$(echo "$response" | jq -r '.saved_objects[] | select(.attributes.title=="'"$dashboard_title"'") | .id')
   if [ -z "$dashboard_id" ]; then
     dashboard_url="Dashboard not found"
@@ -209,24 +212,26 @@ check_elastiflow_flow_open_ports() {
   done
 }
 
-check_opensearch_ready(){
-  curl_result=$(curl -s -k -u "admin:$OPENSEARCH_INITIAL_ADMIN_PASSWORD" https://localhost:9200)
+
+check_elastic_ready(){
+  curl_result=$(curl -s -k -u "elastic:$ELASTIC_PASSWORD" https://localhost:9200)
      search_text='"tagline" : "You Know, for Search"'
      if echo "$curl_result" | grep -q "$search_text"; then
-       print_message "Opensearch is ready. Used authenticated curl." "$GREEN"
+       print_message "Elastic is ready. Used authenticated curl." "$GREEN"
      else
-       print_message "Opensearch is not ready." "$RED"
+       print_message "Elastic is not ready." "$RED"
        echo "$curl_result"
      fi
 }
+
 
 check_kibana_ready(){
   response=$(curl -s -X GET "http://localhost:5601/api/status")
     
     if [[ $response == *'"status":{"overall":{"level":"available"}}'* ]]; then
-        print_message "Opensearch dashboard is ready. Used curl." "$GREEN"
+        print_message "Kibana is ready. Used curl." "$GREEN"
     else
-        print_message "Opensearch dashboard is not ready" "$RED"
+        print_message "Kibana is not ready" "$RED"
         echo "$response"
     fi
 }
@@ -287,22 +292,22 @@ ask_deploy_elastiflow_snmp() {
 }
 
 
-ask_deploy_opensearch() {
+ask_deploy_elastic_kibana() {
   if [ "$FULL_AUTO" -eq 1 ]; then
-    echo "FULL_AUTO is set to 1. Skipping prompt and deploying Opensearch."
-    deploy_opensearch
+    echo "FULL_AUTO is set to 1. Skipping prompt and deploying Elastic and Kibana."
+    deploy_elastic_kibana
     return 0
   fi
 
   while true; do
-    read -p "Do you want to deploy Opensearch? (y/n): " answer
+    read -p "Do you want to deploy Elastic and Kibana? (y/n): " answer
     case "$answer" in
       [yY]|[yY][eE][sS]) 
-        deploy_opensearch
+        deploy_elastic_kibana
         break
         ;;
       [nN]|[nN][oO])
-        echo "Exiting without deploying Opensearch."
+        echo "Exiting without deploying Elastic and Kibana."
         return 0  # Exit the function but not the script
         ;;
       *)
@@ -349,6 +354,7 @@ install_prerequisites() {
 load_env_vars(){
 # Load the .env file from the current directory
 if [ -f $INSTALL_DIR/.env ]; then
+#    source /home/user/elastiflow_install/.env
     source $INSTALL_DIR/.env
     printf "Environment variables loaded\n"
 else
@@ -362,14 +368,14 @@ install_dashboards() {
   local elastiflow_product=$1
 
   # Clone the repository
-  git clone https://github.com/elastiflow/elastiflow_for_opensearch.git /etc/elastiflow_for_opensearch/
+  git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
   
   check_kibana_status
 
   # Path to the downloaded JSON file
-  json_file="/etc/elastiflow_for_opensearch/dashboards/$elastiflow_product/dashboards-$DASHBOARDS_VERSION-$elastiflow_product-$DASHBOARDS_CODEX_ECS.ndjson"
+  json_file="/etc/elastiflow_for_elasticsearch/kibana/$elastiflow_product/kibana-$DASHBOARDS_VERSION-$elastiflow_product-$DASHBOARDS_CODEX_ECS.ndjson"
 
-  response=$(curl --silent --show-error --fail --connect-timeout 10 -X POST -u "admin:$OPENSEARCH_INITIAL_ADMIN_PASSWORD" \
+  response=$(curl --silent --show-error --fail --connect-timeout 10 -X POST -u "elastic:$ELASTIC_PASSWORD" \
     "localhost:5601/api/saved_objects/_import?overwrite=true" \
     -H "kbn-xsrf: true" \
     --form file=@"$json_file" \
@@ -385,7 +391,7 @@ install_dashboards() {
     echo "$response"
   fi
 
-  rm -rf "/etc/elastiflow_for_opensearch/"
+  rm -rf "/etc/elastiflow_for_elasticsearch/"
 }
 
 
@@ -399,11 +405,11 @@ download_files() {
   
   # Download files (force overwrite existing files)
   echo "Downloading setup files to $INSTALL_DIR..."
-  curl -L -o "$INSTALL_DIR/.env" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/opensearch/.env"
-  curl -L -o "$INSTALL_DIR/elasticsearch_kibana_compose.yml" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/opensearch/opensearch_compose.yml"
-  curl -L -o "$INSTALL_DIR/elastiflow_flow_compose.yml" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/opensearch/elastiflow_flow_compose.yml"
-  curl -L -o "$INSTALL_DIR/elastiflow_snmp_compose.yml" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/opensearch/elastiflow_snmp_compose.yml"
-  curl -L -o "$INSTALL_DIR/install_docker.sh" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/install_docker.sh"
+  curl -L -o "$INSTALL_DIR/.env" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/.env"
+  curl -L -o "$INSTALL_DIR/elasticsearch_kibana_compose.yml" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elasticsearch_kibana_compose.yml"
+  curl -L -o "$INSTALL_DIR/elastiflow_flow_compose.yml" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elastiflow_flow_compose.yml"
+  curl -L -o "$INSTALL_DIR/elastiflow_snmp_compose.yml" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elastiflow_snmp_compose.yml"
+  curl -L -o "$INSTALL_DIR/install_docker.sh" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/redhat_elasticsearch/install_docker.sh"
 }
 
 
@@ -412,16 +418,16 @@ check_docker() {
   if ! command -v docker &> /dev/null; then
     echo "Docker is not installed. This is required."
     
-  if [ "$FULL_AUTO" -eq 1 ]; then
-    echo "FULL_AUTO is set to 1. Skipping prompt and deploying Docker."
+    if [ "$FULL_AUTO" -eq 1 ]; then
+      echo "FULL_AUTO is set to 1. Skipping prompt and deploying Docker."
       chmod +x "$INSTALL_DIR/install_docker.sh"
       bash "$INSTALL_DIR/install_docker.sh"
-    return 0
-  fi
+      return 0
+    fi
     
     while true; do
       read -p "Do you want to install Docker? (y/n): " choice
-      case "$choice" in
+      case "$choice" in 
         [yY] | [yY][eE][sS] )
           echo "Installing Docker..."
           chmod +x "$INSTALL_DIR/install_docker.sh"
@@ -478,15 +484,15 @@ EOF
 }
 
 
-# Function to deploy Opensearch using Docker Compose
-deploy_opensearch() {
-  echo "Deploying Opensearch..."
+# Function to deploy Elastic and Kibana using Docker Compose
+deploy_elastic_kibana() {
+  echo "Deploying Elastic and Kibana..."
   disable_swap_if_swapfile_in_use
   tune_system
   generate_saved_objects_enc_key
   cd "$INSTALL_DIR"
-  docker compose -f opensearch_compose.yml up -d
-  echo "Opensearch has been deployed successfully!"
+  docker compose -f elasticsearch_kibana_compose.yml up -d
+  echo "Elastic and Kibana have been deployed successfully!"
 }
 
 
@@ -569,17 +575,17 @@ printf "\n\n\n*********Disabling swap file if present...\n\n"
 }
 
 
-# Function to download and extract ElastiFlow flow .deb
+# Function to download and extract ElastiFlow flow 
 extract_elastiflow_flow() {
     # Set variables
-    DEB_URL="https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_${ELASTIFLOW_FLOW_VERSION}_linux_amd64.deb"
-    DEB_FILE="flow-collector_${ELASTIFLOW_FLOW_VERSION}_linux_amd64.deb"
-    TEMP_DIR="/tmp/elastiflow_flow_deb"
+    RPM_URL="https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector-${ELASTIFLOW_FLOW_VERSION}-1.x86_64.rpm"
+    RPM_FILE="flow-collector_${ELASTIFLOW_FLOW_VERSION}-1.x86_64.rpm"
+    TEMP_DIR="/tmp/elastiflow_flow_rpm"
     TARGET_DIR="/etc/elastiflow"
 
     # Download the .deb file
-    echo "Downloading $DEB_URL..."
-    wget -O "$DEB_FILE" "$DEB_URL"
+    echo "Downloading $RPM_URL..."
+    wget -O "$RPM_FILE" "$RPM_URL"
 
     # Check if the temporary directory exists; if not, create it
     if [ ! -d "$TEMP_DIR" ]; then
@@ -590,8 +596,8 @@ extract_elastiflow_flow() {
     fi
 
     # Extract the .deb file contents
-    echo "Extracting $DEB_FILE..."
-    dpkg-deb -x "$DEB_FILE" "$TEMP_DIR"
+    echo "Extracting $RPM_FILE..."
+    rpm2cpio "$RPM_FILE" | cpio -idmv -D "$TEMP_DIR"
 
     # Copy /data/etc/elastiflow contents to /etc/elastiflow
     echo "Copying extracted files to $TARGET_DIR..."
@@ -628,10 +634,10 @@ check_kibana_status() {
         status=$(curl -s "$url" | jq -r '.status.overall.level')
         
         if [ "$status" == "available" ]; then
-            echo "[$(date)] Opensearch Dashboards is ready to be logged in. Status: $status"
+            echo "[$(date)] Kibana is ready to be logged in. Status: $status"
             return 0  # Exit with success
         else
-            echo "[$(date)] Opensearch Dashboards is not ready yet. Status: $status"
+            echo "[$(date)] Kibana is not ready yet. Status: $status"
         fi
         
         # Wait for 1 second before checking again
@@ -641,7 +647,7 @@ check_kibana_status() {
         elapsed_time=$((elapsed_time + interval))
     done
 
-    echo "[$(date)] Opensearch Dashboards not ready within the timeout period"
+    echo "[$(date)] Kibana not ready within the timeout period"
     return 1  # Exit with failure
 }
 
@@ -653,7 +659,7 @@ download_files
 edit_env_file
 load_env_vars
 check_docker
-ask_deploy_opensearch
+ask_deploy_elastic_kibana
 ask_deploy_elastiflow_flow
-ask_deploy_elastiflow_snmp
+# ask_deploy_elastiflow_snmp
 check_system_health
