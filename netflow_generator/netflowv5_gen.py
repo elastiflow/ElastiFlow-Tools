@@ -4,6 +4,7 @@ import struct
 import time
 import json
 import ipaddress
+import multiprocessing
 
 
 def load_config(config_file):
@@ -92,9 +93,8 @@ def generate_netflow_v5_packets(flow_count, src_subnet, dst_subnet):
     return packets
 
 
-def main():
-    config = load_config("config.json")
-    flows_per_second = config["flows_per_second"]
+def worker(config, flows_per_process):
+    """Worker function to generate and send NetFlow packets."""
     collector_ip = config["collector_ip"]
     collector_port = config["collector_port"]
     export_to_file = config["export_to_file"]
@@ -104,26 +104,49 @@ def main():
 
     if export_to_file:
         with open(output_file, "wb") as f:
-            print(f"Writing NetFlow v5 records to {output_file}")
+            print(f"Worker writing NetFlow v5 records to {output_file}")
             while True:
                 start_time = time.time()
-                packets = generate_netflow_v5_packets(flows_per_second, source_ip_subnet, destination_ip_subnet)
+                packets = generate_netflow_v5_packets(flows_per_process, source_ip_subnet, destination_ip_subnet)
                 for packet in packets:
                     f.write(packet)
                 elapsed_time = time.time() - start_time
-                sleep_time = max(0, 1 - elapsed_time)  # Adjust to maintain a steady 1-second interval
+                sleep_time = max(0, 1 - elapsed_time)
                 time.sleep(sleep_time)
     else:
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        print(f"Sending NetFlow v5 records to {collector_ip}:{collector_port}")
+        print(f"Worker sending NetFlow v5 records to {collector_ip}:{collector_port}")
         while True:
             start_time = time.time()
-            packets = generate_netflow_v5_packets(flows_per_second, source_ip_subnet, destination_ip_subnet)
+            packets = generate_netflow_v5_packets(flows_per_process, source_ip_subnet, destination_ip_subnet)
             for packet in packets:
                 sock.sendto(packet, (collector_ip, collector_port))
             elapsed_time = time.time() - start_time
-            sleep_time = max(0, 1 - elapsed_time)  # Adjust to maintain a steady 1-second interval
+            sleep_time = max(0, 1 - elapsed_time)
             time.sleep(sleep_time)
+
+
+def main():
+    config = load_config("config.json")
+    flows_per_second = config["flows_per_second"]
+    max_flows_per_process = 4500
+
+    # Calculate the number of processes needed
+    num_processes = (flows_per_second + max_flows_per_process - 1) // max_flows_per_process
+    flows_per_process = flows_per_second // num_processes
+
+    # Log message
+    print(f"Spawning {num_processes} processes because FPS setting is {flows_per_second}.")
+
+    processes = []
+    for _ in range(num_processes):
+        p = multiprocessing.Process(target=worker, args=(config, flows_per_process))
+        p.start()
+        processes.append(p)
+
+    # Ensure all processes run indefinitely
+    for p in processes:
+        p.join()
 
 
 if __name__ == "__main__":
