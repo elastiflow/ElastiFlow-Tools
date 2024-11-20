@@ -117,7 +117,6 @@ check_system_health(){
   check_kibana_ready
   check_elastiflow_flow_open_ports
   check_elastiflow_readyz
-  check_elastiflow_livez
   get_dashboard_status "ElastiFlow (flow): Overview"
   get_dashboard_status "ElastiFlow (telemetry): Overview"
 }
@@ -166,23 +165,23 @@ get_dashboard_url() {
 
 
  check_elastiflow_readyz(){
-   response=$(curl -s http://localhost:8080/readyz)
-      if echo "$response" | grep -q "200"; then
-        print_message "ElastiFlow Flow Collector is $response" "$GREEN"
+   response=$(curl -s http://localhost:8080/metrics | grep ^app_info | awk -F'env="' '{print $2}' | awk -F'"' '{print $1}')
+      if [ "$response" == "docker" ]; then
+        print_message "ElastiFlow Flow Collector is running" "$GREEN"
       else
-        print_message "ElastiFlow Flow Collector Readyz: $response" "$RED"
+        print_message "ElastiFlow Flow Collector not running properly: $response" "$RED"
       fi
   }
 
 
-check_elastiflow_livez(){
-  response=$(curl -s http://localhost:8080/livez)
-    if echo "$response" | grep -q "200"; then
-      print_message "ElastiFlow Flow Collector is $response" "$GREEN"
-    else
-      print_message "ElastiFlow Flow Collector Livez: $response" "$RED"
-    fi
-}
+# check_elastiflow_livez(){
+#   response=$(curl -s http://localhost:8080/livez)
+#     if echo "$response" | grep -q "200"; then
+#       print_message "ElastiFlow Flow Collector is $response" "$GREEN"
+#     else
+#       print_message "ElastiFlow Flow Collector Livez: $response" "$RED"
+#     fi
+# }
 
 
 check_elastiflow_flow_open_ports() {
@@ -210,9 +209,10 @@ check_elastiflow_flow_open_ports() {
 }
 
 check_opensearch_ready(){
-  curl_result=$(curl -s -k -u "admin:$OPENSEARCH_INITIAL_ADMIN_PASSWORD" https://localhost:9200)
-     search_text='"tagline" : "You Know, for Search"'
-     if echo "$curl_result" | grep -q "$search_text"; then
+  curl_result=$(curl -s -k -u "admin:$OPENSEARCH_INITIAL_ADMIN_PASSWORD" https://localhost:9200 | jq -r '.name')
+  
+    #  search_text='"tagline" : "You Know, for Search"'
+     if [ "$curl_result" == "opensearch" ]; then
        print_message "Opensearch is ready. Used authenticated curl." "$GREEN"
      else
        print_message "Opensearch is not ready." "$RED"
@@ -221,9 +221,9 @@ check_opensearch_ready(){
 }
 
 check_kibana_ready(){
-  response=$(curl -s -X GET "http://localhost:5601/api/status")
+  response=$(curl -s -u "admin:$OPENSEARCH_INITIAL_ADMIN_PASSWORD" -X GET "http://localhost:5601/api/status" | jq -r '.status.overall.state')
     
-    if [[ $response == *'"status":{"overall":{"level":"available"}}'* ]]; then
+    if [ "$response" == "green" ]; then
         print_message "Opensearch dashboard is ready. Used curl." "$GREEN"
     else
         print_message "Opensearch dashboard is not ready" "$RED"
@@ -366,14 +366,13 @@ install_dashboards() {
   
   check_kibana_status
 
-  # Path to the downloaded JSON file
-  json_file="/etc/elastiflow_for_opensearch/dashboards/$elastiflow_product/dashboards-$DASHBOARDS_VERSION-$elastiflow_product-$DASHBOARDS_CODEX_ECS.ndjson"
+  # Path to the downloaded JSON fil
+  json_file="/etc/elastiflow_for_opensearch/dashboards/$elastiflow_product/dashboards-$SNMP_DASHBOARDS_VERSION-$elastiflow_product-$DASHBOARDS_CODEX_ECS.ndjson"
 
-  response=$(curl --silent --show-error --fail --connect-timeout 10 -X POST -u "admin:$OPENSEARCH_INITIAL_ADMIN_PASSWORD" \
+  response=$(curl --silent --show-error --fail --connect-timeout 10 -u "admin:$OPENSEARCH_INITIAL_ADMIN_PASSWORD" -X POST  \
     "localhost:5601/api/saved_objects/_import?overwrite=true" \
-    -H "kbn-xsrf: true" \
-    --form file=@"$json_file" \
-    -H 'kbn-xsrf: true')
+    -H "osd-xsrf: true" \
+    --form file=@"$json_file" )
 
   dashboards_success=$(echo "$response" | jq -r '.success')
 
@@ -400,7 +399,7 @@ download_files() {
   # Download files (force overwrite existing files)
   echo "Downloading setup files to $INSTALL_DIR..."
   curl -L -o "$INSTALL_DIR/.env" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/opensearch/.env"
-  curl -L -o "$INSTALL_DIR/elasticsearch_kibana_compose.yml" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/opensearch/opensearch_compose.yml"
+  curl -L -o "$INSTALL_DIR/opensearch_compose.yml" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/opensearch/opensearch_compose.yml"
   curl -L -o "$INSTALL_DIR/elastiflow_flow_compose.yml" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/opensearch/elastiflow_flow_compose.yml"
   curl -L -o "$INSTALL_DIR/elastiflow_snmp_compose.yml" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/opensearch/elastiflow_snmp_compose.yml"
   curl -L -o "$INSTALL_DIR/install_docker.sh" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/install_docker.sh"
@@ -625,9 +624,9 @@ check_kibana_status() {
 
     while [ $elapsed_time -lt $timeout ]; do
         # Fetch the status and check if it's 'available'
-        status=$(curl -s "$url" | jq -r '.status.overall.level')
+        status=$(curl -uadmin:"$OPENSEARCH_INITIAL_ADMIN_PASSWORD" -s "$url" | jq -r '.status.overall.state')
         
-        if [ "$status" == "available" ]; then
+        if [ "$status" == "green" ]; then
             echo "[$(date)] Opensearch Dashboards is ready to be logged in. Status: $status"
             return 0  # Exit with success
         else
