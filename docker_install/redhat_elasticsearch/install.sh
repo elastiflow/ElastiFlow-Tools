@@ -120,7 +120,6 @@ check_system_health(){
   check_kibana_ready
   check_elastiflow_flow_open_ports
   check_elastiflow_readyz
-  check_elastiflow_livez
   get_dashboard_status "ElastiFlow (flow): Overview"
 #   get_dashboard_status "ElastiFlow (telemetry): Overview"
 }
@@ -168,15 +167,14 @@ get_dashboard_url() {
 }
 
 
- check_elastiflow_readyz(){
-   response=$(curl -s http://localhost:8080/readyz)
-      if echo "$response" | grep -q "200"; then
-        print_message "ElastiFlow Flow Collector is $response" "$GREEN"
-      else
-        print_message "ElastiFlow Flow Collector Readyz: $response" "$RED"
-      fi
-  }
-
+check_elastiflow_readyz(){
+  response=$(curl -s http://localhost:8080/metrics | grep ^app_info | awk -F'env="' '{print $2}' | awk -F'"' '{print $1}')
+    if [ "$response" == "docker" ]; then
+      print_message "ElastiFlow Flow Collector is running" "$GREEN"
+    else
+      print_message "ElastiFlow Flow Collector not running properly: $response" "$RED"
+    fi
+}
 
 check_elastiflow_livez(){
   response=$(curl -s http://localhost:8080/livez)

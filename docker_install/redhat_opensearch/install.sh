@@ -1,9 +1,12 @@
 #!/bin/bash
+# Install docker with ElastiFlow and Elastisearch contaiiners
+#
+
 
 # Define color codes
 GREEN='\033[0;32m'
 RED='\033[0;31m'
-NC='\033[0m' # No Color
+NC='\033[0m' # No
 
 
 # Function to check if the user is root
@@ -108,6 +111,17 @@ edit_env_file() {
   done
 }
 
+check_opensearch_ready(){
+  curl_result=$(curl -s -k -u "admin:$OPENSEARCH_INITIAL_ADMIN_PASSWORD" https://localhost:9200 | jq -r '.name')
+  
+    #  search_text='"tagline" : "You Know, for Search"'
+     if [ "$curl_result" == "opensearch" ]; then
+       print_message "Opensearch is ready. Used authenticated curl." "$GREEN"
+     else
+       print_message "Opensearch is not ready." "$RED"
+       echo "$curl_result"
+     fi
+}
 
 check_system_health(){
   printf "\n\n*********************************"
@@ -118,7 +132,7 @@ check_system_health(){
   check_elastiflow_flow_open_ports
   check_elastiflow_readyz
   get_dashboard_status "ElastiFlow (flow): Overview"
-  get_dashboard_status "ElastiFlow (telemetry): Overview"
+#   get_dashboard_status "ElastiFlow (telemetry): Overview"
 }
 
 
@@ -174,14 +188,14 @@ get_dashboard_url() {
   }
 
 
-# check_elastiflow_livez(){
-#   response=$(curl -s http://localhost:8080/livez)
-#     if echo "$response" | grep -q "200"; then
-#       print_message "ElastiFlow Flow Collector is $response" "$GREEN"
-#     else
-#       print_message "ElastiFlow Flow Collector Livez: $response" "$RED"
-#     fi
-# }
+check_elastiflow_livez(){
+  response=$(curl -s http://localhost:8080/livez)
+    if echo "$response" | grep -q "200"; then
+      print_message "ElastiFlow Flow Collector is $response" "$GREEN"
+    else
+      print_message "ElastiFlow Flow Collector Livez: $response" "$RED"
+    fi
+}
 
 
 check_elastiflow_flow_open_ports() {
@@ -206,18 +220,6 @@ check_elastiflow_flow_open_ports() {
       print_message "ElastiFlow Flow Collector is not ready for flow on $port." "$RED"
     fi
   done
-}
-
-check_opensearch_ready(){
-  curl_result=$(curl -s -k -u "admin:$OPENSEARCH_INITIAL_ADMIN_PASSWORD" https://localhost:9200 | jq -r '.name')
-  
-    #  search_text='"tagline" : "You Know, for Search"'
-     if [ "$curl_result" == "opensearch" ]; then
-       print_message "Opensearch is ready. Used authenticated curl." "$GREEN"
-     else
-       print_message "Opensearch is not ready." "$RED"
-       echo "$curl_result"
-     fi
 }
 
 check_kibana_ready(){
@@ -286,6 +288,16 @@ ask_deploy_elastiflow_snmp() {
   done
 }
 
+# Function to deploy Opensearch using Docker Compose
+deploy_opensearch() {
+  echo "Deploying Opensearch..."
+  disable_swap_if_swapfile_in_use
+  tune_system
+  generate_saved_objects_enc_key
+  cd "$INSTALL_DIR"
+  docker compose -f opensearch_compose.yml up -d
+  echo "Opensearch has been deployed successfully!"
+}
 
 ask_deploy_opensearch() {
   if [ "$FULL_AUTO" -eq 1 ]; then
@@ -311,7 +323,6 @@ ask_deploy_opensearch() {
     esac
   done
 }
-
 
 print_message() {
   local message=$1
@@ -349,6 +360,7 @@ install_prerequisites() {
 load_env_vars(){
 # Load the .env file from the current directory
 if [ -f $INSTALL_DIR/.env ]; then
+#    source /home/user/elastiflow_install/.env
     source $INSTALL_DIR/.env
     printf "Environment variables loaded\n"
 else
@@ -356,6 +368,7 @@ else
     exit 1
 fi
 }
+
 
 
 install_dashboards() {
@@ -388,6 +401,7 @@ install_dashboards() {
 }
 
 
+
 # Function to download the required files (overwriting existing files)
 download_files() {
   SCRIPT_DIR="$(dirname "$(realpath "$0")")"
@@ -402,7 +416,7 @@ download_files() {
   curl -L -o "$INSTALL_DIR/opensearch_compose.yml" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/opensearch/opensearch_compose.yml"
   curl -L -o "$INSTALL_DIR/elastiflow_flow_compose.yml" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/opensearch/elastiflow_flow_compose.yml"
   curl -L -o "$INSTALL_DIR/elastiflow_snmp_compose.yml" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/opensearch/elastiflow_snmp_compose.yml"
-  curl -L -o "$INSTALL_DIR/install_docker.sh" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/install_docker.sh"
+  curl -L -o "$INSTALL_DIR/install_docker.sh" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/redhat_elasticsearch/install_docker.sh"
 }
 
 
@@ -411,16 +425,16 @@ check_docker() {
   if ! command -v docker &> /dev/null; then
     echo "Docker is not installed. This is required."
     
-  if [ "$FULL_AUTO" -eq 1 ]; then
-    echo "FULL_AUTO is set to 1. Skipping prompt and deploying Docker."
+    if [ "$FULL_AUTO" -eq 1 ]; then
+      echo "FULL_AUTO is set to 1. Skipping prompt and deploying Docker."
       chmod +x "$INSTALL_DIR/install_docker.sh"
       bash "$INSTALL_DIR/install_docker.sh"
-    return 0
-  fi
+      return 0
+    fi
     
     while true; do
       read -p "Do you want to install Docker? (y/n): " choice
-      case "$choice" in
+      case "$choice" in 
         [yY] | [yY][eE][sS] )
           echo "Installing Docker..."
           chmod +x "$INSTALL_DIR/install_docker.sh"
@@ -477,15 +491,15 @@ EOF
 }
 
 
-# Function to deploy Opensearch using Docker Compose
-deploy_opensearch() {
-  echo "Deploying Opensearch..."
+# Function to deploy Elastic and Kibana using Docker Compose
+deploy_elastic_kibana() {
+  echo "Deploying Elastic and Kibana..."
   disable_swap_if_swapfile_in_use
   tune_system
   generate_saved_objects_enc_key
   cd "$INSTALL_DIR"
-  docker compose -f opensearch_compose.yml up -d
-  echo "Opensearch has been deployed successfully!"
+  docker compose -f elasticsearch_kibana_compose.yml up -d
+  echo "Elastic and Kibana have been deployed successfully!"
 }
 
 
@@ -568,17 +582,17 @@ printf "\n\n\n*********Disabling swap file if present...\n\n"
 }
 
 
-# Function to download and extract ElastiFlow flow .deb
+# Function to download and extract ElastiFlow flow 
 extract_elastiflow_flow() {
     # Set variables
-    DEB_URL="https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_${ELASTIFLOW_FLOW_VERSION}_linux_amd64.deb"
-    DEB_FILE="flow-collector_${ELASTIFLOW_FLOW_VERSION}_linux_amd64.deb"
-    TEMP_DIR="/tmp/elastiflow_flow_deb"
+    RPM_URL="https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector-${ELASTIFLOW_FLOW_VERSION}-1.x86_64.rpm"
+    RPM_FILE="flow-collector_${ELASTIFLOW_FLOW_VERSION}-1.x86_64.rpm"
+    TEMP_DIR="/tmp/elastiflow_flow_rpm"
     TARGET_DIR="/etc/elastiflow"
 
     # Download the .deb file
-    echo "Downloading $DEB_URL..."
-    wget -O "$DEB_FILE" "$DEB_URL"
+    echo "Downloading $RPM_URL..."
+    wget -O "$RPM_FILE" "$RPM_URL"
 
     # Check if the temporary directory exists; if not, create it
     if [ ! -d "$TEMP_DIR" ]; then
@@ -589,8 +603,8 @@ extract_elastiflow_flow() {
     fi
 
     # Extract the .deb file contents
-    echo "Extracting $DEB_FILE..."
-    dpkg-deb -x "$DEB_FILE" "$TEMP_DIR"
+    echo "Extracting $RPM_FILE..."
+    rpm2cpio "$RPM_FILE" | cpio -idmv -D "$TEMP_DIR"
 
     # Copy /data/etc/elastiflow contents to /etc/elastiflow
     echo "Copying extracted files to $TARGET_DIR..."
@@ -615,11 +629,10 @@ generate_saved_objects_enc_key() {
   echo "XPACK_SAVED_OBJECTS_KEY=${XPACK_SAVED_OBJECTS_KEY}" | tee -a $INSTALL_DIR/.env > /dev/null
 }
 
-
 check_kibana_status() {
     url="http://localhost:5601/api/status"
     timeout=120  # 2 minutes
-    interval=1  # Check every 1 second
+    interval=2  # Check every 1 second
     elapsed_time=0
 
     while [ $elapsed_time -lt $timeout ]; do
@@ -644,7 +657,6 @@ check_kibana_status() {
     return 1  # Exit with failure
 }
 
-
 # Main script execution
 check_root
 install_prerequisites
@@ -654,5 +666,5 @@ load_env_vars
 check_docker
 ask_deploy_opensearch
 ask_deploy_elastiflow_flow
-ask_deploy_elastiflow_snmp
+# ask_deploy_elastiflow_snmp
 check_system_health
