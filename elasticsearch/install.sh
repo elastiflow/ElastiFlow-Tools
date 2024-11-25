@@ -11,7 +11,7 @@ exec > >(tee -a "$LOG_FILE") 2>&1
 # run script in non-interactive mode by default
 export DEBIAN_FRONTEND=noninteractive
 
-# Version: 3.0.3.1
+# Version: 3.0.3.2
 
 ########################################################
 # If you do not have an ElastiFlow Account ID and ElastiFlow Flow License Key,
@@ -137,21 +137,21 @@ print_message() {
 # Function to clean the apt cache
 clean_apt_cache() {
     echo "Cleaning APT cache..."
-    sudo apt-get clean
+    apt-get clean
     echo "APT cache cleaned."
 }
 
 # Function to clean old kernels
 clean_old_kernels() {
     echo "Cleaning old kernels..."
-    sudo apt-get autoremove --purge -y
+    apt-get autoremove --purge -y
     echo "Old kernels cleaned."
 }
 
 # Function to clean orphaned packages
 clean_orphaned_packages() {
     echo "Cleaning orphaned packages..."
-    sudo apt-get autoremove -y
+    apt-get autoremove -y
     echo "Orphaned packages cleaned."
 }
 
@@ -180,7 +180,7 @@ clean_temp_files() {
 # Function to remove unnecessary files
 clean_unnecessary_files() {
     echo "Removing unnecessary files..."
-    sudo apt-get autoclean
+    apt-get autoclean
     echo "Unnecessary files removed."
 }
 
@@ -541,7 +541,7 @@ install_elasticsearch() {
   printf "\n\n\n*********Installing ElasticSearch...\n\n"
   wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | gpg --dearmor -o /usr/share/keyrings/elasticsearch-keyring.gpg || handle_error "Failed to add Elasticsearch GPG key." "${LINENO}"
   echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] https://artifacts.elastic.co/packages/8.x/apt stable main" | tee /etc/apt/sources.list.d/elastic-8.x.list || handle_error "Failed to add Elasticsearch repository." "${LINENO}"
-  elastic_install_log=$(apt-get -q update && apt-get -q install elasticsearch=$elasticsearch_version | stdbuf -oL tee /dev/console) || handle_error "Failed to install Elasticsearch." "${LINENO}"
+  elastic_install_log=$(apt-get -q update && apt-get -q -y install elasticsearch=$elasticsearch_version | stdbuf -oL tee /dev/console) || handle_error "Failed to install Elasticsearch." "${LINENO}"
   elastic_password=$(echo "$elastic_install_log" | awk -F' : ' '/The generated password for the elastic built-in superuser/{print $2}')
   elastic_password=$(echo -n "$elastic_password" | tr -cd '[:print:]')
   #printf "\n\n\nElastic password: $elastic_password\n\n"
@@ -602,12 +602,13 @@ start_elasticsearch() {
       echo -e "\e[32mElastic is up! Used authenticated curl.\e[0m\n\n"
   else
     echo -e "Something's wrong with Elastic...\n\n"
+    exit 1
   fi
 }
 
 install_kibana() {
   echo -e "\n\n\n*********Downloading and installing Kibana...\n\n"
-  apt-get -q update && apt-get -q install kibana=$kibana_version
+  apt-get -q update && apt-get -q -y install kibana=$kibana_version
 }
 
 configure_kibana() {
@@ -625,7 +626,8 @@ configure_kibana() {
   echo -e "\n\n\n*********Enrolling Kibana with Elastic...\n\n"
   /usr/share/kibana/bin/kibana-setup --enrollment-token "$kibana_token"
   echo -e "\n\n\n*********Enabling and starting Kibana service...\n\n"
-  systemctl daemon-reload && systemctl enable kibana.service && systemctl start kibana.service
+  systemctl daemon-reload && systemctl enable kibana.service
+  systemctl start kibana.service || { echo "Failed to start Kibana service."; exit 1; }
   sleep_message "Giving Kibana service time to stabilize" 20
   echo -e "\n\n\n*********Configuring Kibana - set 0.0.0.0 as server.host\n\n"
   replace_text "/etc/kibana/kibana.yml" "#server.host: \"localhost\"" "server.host: \"0.0.0.0\"" "${LINENO}"
@@ -686,13 +688,14 @@ install_elastiflow() {
 
   printf "\n\n\n*********Downloading and installing ElastiFlow Flow Collector...\n\n"
   wget -O flow-collector_"$flowcoll_version"_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_"$flowcoll_version"_linux_amd64.deb
-  apt-get -q install ./flow-collector_"$flowcoll_version"_linux_amd64.deb
+  apt-get -q -y install ./flow-collector_"$flowcoll_version"_linux_amd64.deb
   change_elasticsearch_password
   printf "\n\n\n*********Configuring ElastiFlow Flow Collector...\n\n"
   find_and_replace "$flowcoll_config_path" "${elastiflow_config_strings[@]}"
   replace_text "/etc/systemd/system/flowcoll.service" "TimeoutStopSec=infinity" "TimeoutStopSec=60" "N/A"
   printf "\n\n\n*********Enabling and starting ElastiFlow service...\n\n"
-  systemctl daemon-reload && systemctl enable flowcoll.service && systemctl start flowcoll.service
+  systemctl daemon-reload && systemctl enable flowcoll.service
+  systemctl start flowcoll.service || { echo "Failed to start ElastiFlow service."; exit 1; }
   sleep_message "Giving ElastiFlow service time to stabilize" 10
 }
 
@@ -814,6 +817,42 @@ cleanup (){
 
 download_aux_files(){
   download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/configure/configure.sh" "/home/user/configure.sh"
+}
+
+configure_snapshot_repo() {
+  # Add snapshot path configuration to elasticsearch.yml
+  echo -e "\n# Path to snapshots:\npath.repo: /etc/elasticsearch/snapshots" | sudo tee -a /etc/elasticsearch/elasticsearch.yml
+
+  # Create snapshots directory and set ownership
+  sudo mkdir -p /etc/elasticsearch/snapshots
+  sudo chown -R elasticsearch:elasticsearch /etc/elasticsearch/snapshots
+
+  # Restart Elasticsearch service
+  sudo systemctl restart elasticsearch.service
+  if ! systemctl is-active --quiet elasticsearch.service; then
+    echo "Failed to restart Elasticsearch service. Exiting."
+    exit 1
+  fi
+
+  # Wait for Elasticsearch to be fully up and running
+  sleep 10
+
+  # Create the snapshot repository via Elasticsearch API
+
+  curl -s -u "$elastic_username:$elastic_password2" -X PUT "http://localhost:9200/_snapshot/my_snapshot" \
+    -H "Content-Type: application/json" \
+    -d '{
+          "type": "fs",
+          "settings": {
+            "location": "/etc/elasticsearch/snapshots",
+            "compress": true
+          }
+        }' || {
+    echo "Failed to create the snapshot repository."
+    exit 1
+  }
+
+  echo "Snapshot repository configured successfully."
 }
 
 
