@@ -15,10 +15,11 @@ To easily install ElasticSearch, Kibana, and ElastiFlow NetObserv Flow with Dock
   
 - Good copying and pasting skills
 
-- Docker. If you do not have Docker, you can install it with the following one liner:
+- Docker. If you do not have Docker, you can use the convenience script:
   ```
-  sudo bash -c "$(wget -qLO - https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/install_docker.sh)"
+  curl -fsSL https://get.docker.com | sudo sh
   ```
+
 
 ### Instructions:
 
@@ -40,7 +41,8 @@ You could instead use the following one liner to do everything:
   echo -e "\n# Memory mapping limits for Elasticsearch\nvm.max_map_count=262144\n# Network settings for high performance\nnet.core.netdev_max_backlog=4096\nnet.core.rmem_default=262144\nnet.core.rmem_max=67108864\nnet.ipv4.udp_rmem_min=131072\nnet.ipv4.udp_mem=2097152 4194304 8388608" | sudo tee -a /etc/sysctl.conf > /dev/null && sudo sysctl -p
   ```
 
-##### Explanation of parameters:
+<details>
+<summary>Explanation of parameters:</summary>
 
 `vm.max_map_count=262144`: Sets the max memory map areas per process, important for Elasticsearch to handle memory-mapped files. Default is often lower, so 262144 is needed for smooth operation.
 
@@ -53,6 +55,7 @@ You could instead use the following one liner to do everything:
 `net.ipv4.udp_rmem_min=131072`: Sets the minimum UDP socket receive buffer (131072 bytes), ensuring adequate space for UDP traffic without dropping packets.
 
 `net.ipv4.udp_mem=2097152 4194304 8388608`: Defines UDP memory limits (in pages). 2 GB slows socket allocation, 4 GB starts dropping packets, and 8 GB is the max allowed. Helps manage high UDP traffic.
+</details>
 
 #### 2) Disable swapping
 
@@ -203,10 +206,9 @@ ElastiFlow NetObserv Flow is able to enrich flow records with many different pie
 
 # BONUS
 
-You can alternatively complete the whole installation with the following command:
+You can alternatively complete the whole installation with the following convenience script:
 
 ```
 sudo bash -c "$(wget -qLO - https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/install.sh)"
 ```
-
 
