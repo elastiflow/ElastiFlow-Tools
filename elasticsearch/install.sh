@@ -11,7 +11,7 @@ exec > >(tee -a "$LOG_FILE") 2>&1
 # run script in non-interactive mode by default
 export DEBIAN_FRONTEND=noninteractive
 
-# Version: 3.0.3.1
+# Version: 3.0.3.2
 
 ########################################################
 # If you do not have an ElastiFlow Account ID and ElastiFlow Flow License Key,
@@ -43,7 +43,7 @@ NC='\033[0m' # No Color
 
 # Function to check for and install updates
 install_os_updates() {
-  printf "\n\n\n*********Checking for and installing OS updates...\n\n"
+  print_message "Checking for and installing OS updates..." "$GREEN"
 
   # Update package list
   apt-get -qq update
@@ -58,7 +58,7 @@ install_os_updates() {
   apt-get -qq -y autoremove
   apt-get -qq -y autoclean
 
-  printf "\n\n\n*********Updates installed successfully.\n\n"
+  print_message "Updates installed successfully." "$GREEN"
 }
 
 
@@ -87,7 +87,7 @@ Welcome to ElastiFlow Virtual Appliance
 
 =======================================
 
-Log in and type sudo ./configure.sh to get started.
+Log in and type ./configure.sh to get started.
 
 Setup Instructions:  https://sites.google.com/elastiflow.com/elastiflow
 Documentation:       https://docs.elastiflow.com
@@ -109,7 +109,7 @@ EOF
   fi
 
   # Restart the SSH service to apply the changes
-  sudo systemctl restart ssh.service
+  systemctl restart ssh.service
 }
 
 
@@ -136,57 +136,44 @@ print_message() {
 
 # Function to clean the apt cache
 clean_apt_cache() {
-    echo "Cleaning APT cache..."
-    sudo apt-get clean
-    echo "APT cache cleaned."
+    apt-get clean
 }
 
 # Function to clean old kernels
 clean_old_kernels() {
-    echo "Cleaning old kernels..."
-    sudo apt-get autoremove --purge -y
-    echo "Old kernels cleaned."
+    apt-get autoremove --purge -y
 }
 
 # Function to clean orphaned packages
 clean_orphaned_packages() {
-    echo "Cleaning orphaned packages..."
-    sudo apt-get autoremove -y
-    echo "Orphaned packages cleaned."
+    apt-get autoremove -y
 }
 
 # Function to clean thumbnail cache
 clean_thumbnail_cache() {
-    echo "Cleaning thumbnail cache..."
     rm -rf ~/.cache/thumbnails/*
-    echo "Thumbnail cache cleaned."
 }
 
 # Function to clean log files
 clean_log_files() {
-    echo "Cleaning log files..."
-    sudo find /var/log -type f -name "*.log" -delete
-    echo "Log files cleaned."
+    find /var/log -type f -name "*.log" -delete
 }
 
 # Function to clean temporary files
 clean_temp_files() {
-    echo "Cleaning temporary files..."
-    sudo rm -rf /tmp/*
-    sudo rm -rf /var/tmp/*
-    echo "Temporary files cleaned."
+    rm -rf /tmp/*
+    rm -rf /var/tmp/*
 }
 
 # Function to remove unnecessary files
 clean_unnecessary_files() {
-    echo "Removing unnecessary files..."
-    sudo apt-get autoclean
-    echo "Unnecessary files removed."
+    apt-get autoclean
+    rm -rf /etc/elastiflow_for_elasticsearch
 }
 
 # Function to clean system junk files
 clean_system_junk() {
-    echo "Cleaning system junk files..."
+    echo "Cleaning up..."
     clean_apt_cache
     clean_old_kernels
     clean_orphaned_packages
@@ -194,14 +181,14 @@ clean_system_junk() {
     clean_log_files
     clean_temp_files
     clean_unnecessary_files
-    echo "System junk files cleaned."
+    echo "Cleaned up."
 }
 
 
 # Function to check and disable swap if any swap file is in use
 disable_swap_if_swapfile_in_use() {
 
-printf "\n\n\n*********Disabling swap file is present...\n\n"
+print_message "Disabling swap file if present..." "$GREEN"
 
     # Check if swap is on
     swap_status=$(swapon --show)
@@ -217,7 +204,7 @@ printf "\n\n\n*********Disabling swap file is present...\n\n"
 
             # Turn off swap
             echo "Turning off swap..."
-            sudo swapoff -a
+            swapoff -a
 
             # Check if swapoff was successful
             if [ $? -eq 0 ]; then
@@ -225,7 +212,7 @@ printf "\n\n\n*********Disabling swap file is present...\n\n"
 
                 # Delete the detected swap file
                 echo "Deleting $swapfile..."
-                sudo rm -f "$swapfile"
+                rm -f "$swapfile"
 
                 if [ $? -eq 0 ]; then
                     echo "$swapfile has been deleted."
@@ -243,7 +230,41 @@ printf "\n\n\n*********Disabling swap file is present...\n\n"
     fi
 }
 
+configure_snapshot_repo() {
+  # Add snapshot path configuration to elasticsearch.yml
+  echo -e "\n# Path to snapshots:\npath.repo: /etc/elasticsearch/snapshots" | sudo tee -a /etc/elasticsearch/elasticsearch.yml
 
+  # Create snapshots directory and set ownership
+  sudo mkdir -p /etc/elasticsearch/snapshots
+  sudo chown -R elasticsearch:elasticsearch /etc/elasticsearch/snapshots
+
+  # Restart Elasticsearch service
+  sudo systemctl restart elasticsearch.service
+  if ! systemctl is-active --quiet elasticsearch.service; then
+    echo "Failed to restart Elasticsearch service. Exiting."
+    exit 1
+  fi
+
+  # Wait for Elasticsearch to be fully up and running
+  sleep 10
+
+  # Create the snapshot repository via Elasticsearch API
+
+  curl -s -u "$elastic_username:$elastic_password2" -X PUT "http://localhost:9200/_snapshot/my_snapshot" \
+    -H "Content-Type: application/json" \
+    -d '{
+          "type": "fs",
+          "settings": {
+            "location": "/etc/elasticsearch/snapshots",
+            "compress": true
+          }
+        }' || {
+    echo "Failed to create the snapshot repository."
+    exit 1
+  }
+
+  echo "Snapshot repository configured successfully."
+}
 
 comment_and_replace_line() {
   local FILE=$1
@@ -253,15 +274,15 @@ comment_and_replace_line() {
 
   if grep -Eq "^[#]*$FIND_ESCAPED" "$FILE"; then
     sed -i.bak "/^[#]*$FIND_ESCAPED/c\\$REPLACE" "$FILE"
-    print_message "Replaced '$FIND' with '$REPLACE'." "$GREEN"
+    print_message "Replaced '$FIND' with '$REPLACE'."
   else
     if grep -q "^#ElastiFlow PoC Configurator" "$FILE"; then
       sed -i.bak "/^#ElastiFlow PoC Configurator/a $REPLACE" "$FILE"
-      print_message "Added '$REPLACE' under '#ElastiFlow PoC Configurator'." "$GREEN"
+      print_message "Added '$REPLACE' under '#ElastiFlow PoC Configurator'."
     else
       echo -e "\n#ElastiFlow PoC Configurator" | tee -a "$FILE" > /dev/null
       sed -i.bak "/^#ElastiFlow PoC Configurator/a $REPLACE" "$FILE"
-      print_message "Added heading and '$REPLACE'." "$GREEN"
+      print_message "Added heading and '$REPLACE'."
     fi
   fi
 }
@@ -297,13 +318,13 @@ display_system_info() {
   echo "Total number of cores: $total_cores"
 }
 
-check_for_updates() {
+check_for_script_updates() {
   # Dynamically determine the path to the installed script
   local installed_script=$(realpath "$0")
   local new_script_url="https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/elasticsearch/install.sh"
   local tmp_script="/tmp/install.sh"
+  print_message "Checking for installation script updates..." "$GREEN"
 
-  echo "Checking for updates..."
   echo "installed script path: $installed_script"
 
   wget -q -O "$tmp_script" "$new_script_url"
@@ -390,7 +411,7 @@ download_file() {
     chmod +x "$target_path"
     echo "Downloaded and made $target_path executable."
   else
-    echo -e "Failed to download $target_path.\n\n"
+    echo -e "Failed to download $target_path.\n"
   fi
 }
 
@@ -401,7 +422,7 @@ get_dashboard_url() {
   local dashboard_title="$1"
   local encoded_title=$(echo "$dashboard_title" | sed 's/ /%20/g' | sed 's/:/%3A/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
   local response=$(curl -s -u "$elastic_username:$elastic_password2" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
-  dashboard_id=$(echo "$response" | jq -r '.saved_objects[] | select(.attributes.title=="'"$dashboard_title"'") | .id') 
+  dashboard_id=$(echo "$response" | jq -r '.saved_objects[] | select(.attributes.title=="'"$dashboard_title"'") | .id')
   if [ -z "$dashboard_id" ]; then
     echo "Dashboard not found"
   else
@@ -442,23 +463,33 @@ replace_text() {
 }
 
 check_for_root() {
-  printf "\n\n\n*********Checking for root...\n\n"
+  print_message "Checking for root..." "$GREEN"
 
   if [ "$(id -u)" -ne 0 ]; then
     echo "This script must be run as root" 1>&2
     exit 1
+
+    else
+      echo "Running as root." 1>&2
+
   fi
+
 }
 
 check_compatibility() {
 
-  printf "\n\n\n*********Checking for compatibility...\n\n"
+  print_message "Checking for compatibility..." "$GREEN"
 
   . /etc/os-release
   ID_LOWER=$(echo "$ID" | tr '[:upper:]' '[:lower:]')
   if [[ "$ID_LOWER" != "ubuntu" ]]; then
     echo "This script only supports Ubuntu" 1>&2
     exit 1
+
+    else
+      echo "System is compatible." 1>&2
+
+
   fi
   osversion="ubuntu"
 }
@@ -466,7 +497,7 @@ check_compatibility() {
 sleep_message() {
   local message=$1
   local duration=$2
-  printf "\n\n\n********* %s...\n" "$message"
+  printf " %s...\n" "$message"
 
   while [ "$duration" -gt 0 ]; do
     printf "\rTime remaining: %02d seconds" "$duration"
@@ -474,25 +505,21 @@ sleep_message() {
     ((duration--))
   done
 
-  printf "\n\n"
+  printf "\n"
 }
 
 print_startup_message() {
-  printf "*********\n"
-  printf "*********\n"
-  printf "*********Setting up ElastiFlow environment...*********\n"
-  printf "*********\n"
-  printf "*********\n"
+  print_message "*********Setting up ElastiFlow environment...*********" "$GREEN"
 }
 
 install_prerequisites() {
-  printf "\n\n\n*********Installing prerequisites...\n\n"
+  print_message "Installing prerequisites..." "$GREEN"
 
   echo "Updating package list..."
   apt-get -qq update > /dev/null 2>&1
 
   # List of packages to be installed
-  packages=(jq net-tools git bc gpg default-jre curl wget unzip apt-transport-https isc-dhcp-client libpcap-dev)
+  packages=(jq net-tools git bc gpg default-jre curl wget apt-transport-https isc-dhcp-client libpcap-dev)
 
   # Loop through the list and install each package
   for package in "${packages[@]}"; do
@@ -508,7 +535,7 @@ install_prerequisites() {
 
 
 tune_system() {
-  printf "\n\n\n*********System tuning starting...\n\n"
+  print_message "System tuning starting..." "$GREEN"
   kernel_tuning=$(cat <<EOF
 #####ElastiFlow tuning parameters######
 #For light to moderate ingest rates (less than 75000 flows per second: https://docs.elastiflow.com/docs/flowcoll/requirements/
@@ -534,21 +561,24 @@ EOF
   echo -e "[Service]\nLimitNOFILE=131072\nLimitNPROC=8192\nLimitMEMLOCK=infinity\nLimitFSIZE=infinity\nLimitAS=infinity" | \
   tee /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf > /dev/null
   echo "System limits set"
-  printf "\n\n\n*********System tuning done...\n\n"
+  print_message "System tuning done..." "$GREEN"
 }
 
 install_elasticsearch() {
-  printf "\n\n\n*********Installing ElasticSearch...\n\n"
+  print_message "Installing ElasticSearch...\n" "$GREEN"
   wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | gpg --dearmor -o /usr/share/keyrings/elasticsearch-keyring.gpg || handle_error "Failed to add Elasticsearch GPG key." "${LINENO}"
   echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] https://artifacts.elastic.co/packages/8.x/apt stable main" | tee /etc/apt/sources.list.d/elastic-8.x.list || handle_error "Failed to add Elasticsearch repository." "${LINENO}"
-  elastic_install_log=$(apt-get -q update && apt-get -q install elasticsearch=$elasticsearch_version | stdbuf -oL tee /dev/console) || handle_error "Failed to install Elasticsearch." "${LINENO}"
+  #elastic_install_log=$(apt-get -q update && apt-get -q install elasticsearch=$elasticsearch_version | stdbuf -oL tee /dev/console) || handle_error "Failed to install Elasticsearch." "${LINENO}"
+  elastic_install_log=$(apt-get -q update && apt-get -q -y install elasticsearch | stdbuf -oL tee /dev/console) || handle_error "Failed to install Elasticsearch." "${LINENO}"
   elastic_password=$(echo "$elastic_install_log" | awk -F' : ' '/The generated password for the elastic built-in superuser/{print $2}')
   elastic_password=$(echo -n "$elastic_password" | tr -cd '[:print:]')
-  #printf "\n\n\nElastic password: $elastic_password\n\n"
+  #printf "Elastic password: $elastic_password\n"
+  print_message "Configuring ElasticSearch...\n" "$GREEN"
+  configure_elasticsearch
 }
 
 configure_jvm_memory() {
-  printf "\n\n\n*********Configuring JVM memory usage...\n\n"
+  print_message "Configuring JVM memory usage..." "$GREEN"
   total_mem_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
   one_third_mem_gb=$(echo "$total_mem_kb / 1024 / 1024 / 3" | bc -l)
   rounded_mem_gb=$(printf "%.0f" "$one_third_mem_gb")
@@ -565,8 +595,8 @@ configure_jvm_memory() {
 
 # Function to prompt the user and update JVM options
 update_jvm_options() {
-    # Ask the user if they would like to specify new JVM memory limits. This is so you can run this script on a 8 gig machine for instance, but then configure jvm for 32 gigs or some other amount.
-    read -p "Would you like to specify new JVM memory limits? (yes/no or y/n): " user_choice
+    # Ask the user if they would like to specify new JVM memory limits. This is so you can run this script on a 8 gig machine for instance, but then configure JVM for 32 gigs or some other amount.
+    read -p "Would you like to specify new JVM memory limits? If you don't know what this means, answer 'no'. (yes/no or y/n): " user_choice
 
     # Convert the user's input to lowercase for easier comparison
     user_choice=$(echo "$user_choice" | tr '[:upper:]' '[:lower:]')
@@ -586,32 +616,34 @@ update_jvm_options() {
 
 
 start_elasticsearch() {
-  printf "\n\n\n*********Enabling and starting ElasticSearch service...\n\n"
+  print_message "Enabling and starting ElasticSearch service..." "$GREEN"
   systemctl daemon-reload && systemctl enable elasticsearch.service && systemctl start elasticsearch.service
   sleep_message "Giving ElasticSearch service time to stabilize" 10
-  printf "\n\n\n*********Checking if Elastic service is up...\n\n"
+  print_message "Checking if Elastic service is running..." "$GREEN"
   if systemctl is-active --quiet elasticsearch.service; then
-    printf "\n\n\n\e[32mElasticsearch service is up\e[0m\n\n"
+    printf "Elasticsearch service is running.\n"
   else
-    echo "Elasticsearch is not running."
+    echo "Elasticsearch is not running.\n"
   fi
-  printf "\n\n\n*********Checking if Elastic server is up...\n\n"
+  print_message "Checking if Elastic server is up..." "$GREEN"
   curl_result=$(curl -s -k -u $elastic_username:"$elastic_password" https://localhost:9200)
   search_text='cluster_name" : "elasticsearch'
   if echo "$curl_result" | grep -q "$search_text"; then
-      echo -e "\e[32mElastic is up! Used authenticated curl.\e[0m\n\n"
+      echo -e "Elastic is up! Used authenticated curl.\n"
   else
-    echo -e "Something's wrong with Elastic...\n\n"
+    echo -e "Something's wrong with Elastic...\n"
   fi
 }
 
 install_kibana() {
-  echo -e "\n\n\n*********Downloading and installing Kibana...\n\n"
-  apt-get -q update && apt-get -q install kibana=$kibana_version
+  echo -e "Downloading and installing Kibana...\n"
+  #apt-get -q update && apt-get -q install kibana=$kibana_version
+  apt-get -q update && apt-get -q -y install kibana
+
 }
 
 configure_kibana() {
-  echo -e "\n\n\n*********Generating Kibana saved objects encryption key...\n\n"
+  echo -e "Generating Kibana saved objects encryption key...\n"
   output=$(/usr/share/kibana/bin/kibana-encryption-keys generate -q)
   key_line=$(echo "$output" | grep '^xpack.encryptedSavedObjects.encryptionKey')
   if [[ -n "$key_line" ]]; then
@@ -619,20 +651,26 @@ configure_kibana() {
   else
       echo "No encryption key line found."
   fi
-  echo -e "\n\n\n*********Generating Kibana enrollment token...\n\n"
+
+  echo -e "Generating Kibana enrollment token...\n"
   kibana_token=$(/usr/share/elasticsearch/bin/elasticsearch-create-enrollment-token -s kibana)
-  echo -e "\n\n\nKibana enrollment token is:\n\n$kibana_token\n\n"
-  echo -e "\n\n\n*********Enrolling Kibana with Elastic...\n\n"
+  echo -e "Kibana enrollment token is:\n$kibana_token\n"
+  echo -e "Enrolling Kibana with Elastic...\n"
   /usr/share/kibana/bin/kibana-setup --enrollment-token "$kibana_token"
-  echo -e "\n\n\n*********Enabling and starting Kibana service...\n\n"
+  echo -e "Enabling and starting Kibana service...\n"
   systemctl daemon-reload && systemctl enable kibana.service && systemctl start kibana.service
   sleep_message "Giving Kibana service time to stabilize" 20
-  echo -e "\n\n\n*********Configuring Kibana - set 0.0.0.0 as server.host\n\n"
+  echo -e "Configuring Kibana - set 0.0.0.0 as server.host\n"
   replace_text "/etc/kibana/kibana.yml" "#server.host: \"localhost\"" "server.host: \"0.0.0.0\"" "${LINENO}"
-  echo -e "\n\n\n*********Configuring Kibana - set elasticsearch.hosts to localhost instead of interface IP...\n\n"
+  echo -e "Configuring Kibana - set elasticsearch.hosts to localhost instead of interface IP...\n"
   replace_text "/etc/kibana/kibana.yml" "elasticsearch.hosts: \['https:\/\/[^']*'\]" "elasticsearch.hosts: \['https:\/\/localhost:9200'\]" "${LINENO}"
   replace_text "/etc/kibana/kibana.yml" '#server.publicBaseUrl: ""' 'server.publicBaseUrl: "http://kibana.example.com:5601"' "${LINENO}"
-  echo -e "\n\n\n*********Configuring Kibana - enabling PNG and PDF report generation...\n\n"
+
+  echo -e "Disabling Kibana / Elastic telemetry\n"
+  echo "telemetry.optIn: false" >> /etc/kibana/kibana.yml
+  echo "telemetry.enabled: false" >> /etc/kibana/kibana.yml
+
+  echo -e "Configuring Kibana - enabling PNG and PDF report generation...\n"
   echo -e '\nxpack.reporting.capture.browser.chromium.disableSandbox: true\nxpack.reporting.queue.timeout: 120000\nxpack.reporting.capture.timeouts:\n  openUrl: 30000\n  renderComplete: 30000\n  waitForElements: 30000' >> /etc/kibana/kibana.yml
   systemctl daemon-reload
   systemctl restart kibana.service
@@ -641,7 +679,7 @@ configure_kibana() {
 }
 
 change_elasticsearch_password() {
-  printf "\n\n\n*********Changing Elastic password to \"elastic\"...\n\n"
+  print_message "Changing Elastic password to \"elastic\"...\n"
   curl -k -X POST -u "$elastic_username:$elastic_password" "https://localhost:9200/_security/user/elastic/_password" -H 'Content-Type: application/json' -d"
   {
     \"password\": \"$elastic_password2\"
@@ -683,53 +721,64 @@ install_elastiflow() {
   "EF_OUTPUT_ELASTICSEARCH_INDEX_TEMPLATE_REPLICAS" "EF_OUTPUT_ELASTICSEARCH_INDEX_TEMPLATE_REPLICAS: 0"
   )
 
+  print_message "\nDownloading and installing ElastiFlow Flow Collector..." "$GREEN"
+  #wget -O flow-collector_"$flowcoll_version"_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_"$flowcoll_version"_linux_amd64.deb
+  #apt-get -q install ./flow-collector_"$flowcoll_version"_linux_amd64.deb
+  #change_elasticsearch_password
 
-  printf "\n\n\n*********Downloading and installing ElastiFlow Flow Collector...\n\n"
-  wget -O flow-collector_"$flowcoll_version"_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_"$flowcoll_version"_linux_amd64.deb
-  apt-get -q install ./flow-collector_"$flowcoll_version"_linux_amd64.deb
-  change_elasticsearch_password
-  printf "\n\n\n*********Configuring ElastiFlow Flow Collector...\n\n"
+  install_latest_elastiflow_flow_collector
+
+  print_message "Configuring ElastiFlow Flow Collector..." "$GREEN"
   find_and_replace "$flowcoll_config_path" "${elastiflow_config_strings[@]}"
   replace_text "/etc/systemd/system/flowcoll.service" "TimeoutStopSec=infinity" "TimeoutStopSec=60" "N/A"
-  printf "\n\n\n*********Enabling and starting ElastiFlow service...\n\n"
+  print_message "Enabling and starting ElastiFlow service..." "$GREEN"
   systemctl daemon-reload && systemctl enable flowcoll.service && systemctl start flowcoll.service
   sleep_message "Giving ElastiFlow service time to stabilize" 10
 }
 
 install_dashboards() {
-  printf "\n\n\n*********Downloading and installing ElastiFlow flow dashboards\n\n"
+  print_message "Downloading and installing ElastiFlow flow dashboards" "$GREEN"
   git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
 
   response=$(curl --connect-timeout 10 -X POST -u $elastic_username:$elastic_password "localhost:5601/api/saved_objects/_import?overwrite=true" -H "kbn-xsrf: true" --form file=@/etc/elastiflow_for_elasticsearch/kibana/flow/kibana-$flow_dashboards_version-flow-$flow_dashboards_codex_ecs.ndjson -H 'kbn-xsrf: true')
 
   if [ $? -ne 0 ]; then
     printf "Error: %s\n" "$response"
-    printf "Flow dashboards not installed successfully\n\n"
+    printf "Flow dashboards not installed successfully\n"
   else
     dashboards_success=$(echo "$response" | jq -r '.success')
     if [ "$dashboards_success" == "true" ]; then
-        printf "Flow dashboards installed successfully.\n\n"
+        printf "Flow dashboards installed successfully.\n"
     else
-        printf "Flow dashboards not installed successfully\n\n"
+        printf "Flow dashboards not installed successfully\n"
     fi
   fi
 }
 
+configure_elasticsearch() {
+
+  config_strings=(
+  "indices.query.bool.max_clause_count" "indices.query.bool.max_clause_count: 8192"
+  "search.max_buckets" "search.max_buckets: 250000"
+  )
+
+  find_and_replace "/etc/elasticsearch/elasticsearch.yml" "${config_strings[@]}"
+}
 
 check_service_status() {
   local SERVICE_NAME=$1
   if systemctl is-active --quiet "$SERVICE_NAME"; then
-    echo -e "\e[32m$SERVICE_NAME is up ✓\e[0m"
+    print_message "$SERVICE_NAME is up" "$GREEN"
   else
-    echo -e "\e[31m$SERVICE_NAME is not up X\e[0m"
+    print_message "$SERVICE_NAME is not up" "$RED"
   fi
 }
 
 resize_part_to_max() {
     # Display the partition size before resizing
+    print_message "Resizing partition to max." "$GREEN"
     echo "Partition size before resizing:"
     lsblk -o NAME,SIZE | grep 'ubuntu-lv'
-
     # Extend the logical volume to use all free space
     lvextend -l +100%FREE /dev/ubuntu-vg/ubuntu-lv
 
@@ -747,27 +796,27 @@ check_all_services() {
 
 check_dashboards_status() {
   if [ "$dashboards_success" == "true" ]; then
-       echo -e "\e[32mDashboards are installed ✓\e[0m"
+       print_message "Dashboards are installed ✓" "$GREEN"
   else
-       echo -e "\e[31mDashboards are not installed X\e[0m"
+       print_message "Dashboards are not installed X" "$RED"
   fi
 }
 
 display_info() {
-  echo -e "*********************************************\n"
+  print_message "Installation summary" "$GREEN"
 
   version=$(/usr/share/elastiflow/bin/flowcoll -version)
-  echo -e "Installed ElastiFlow Flow version: $version\n"
+  echo -e "Installed ElastiFlow Flow version: $version"
   version=$flow_dashboards_version
-  echo -e "Installed ElastiFlow Flow Dashboards version: $flow_dashboards_codex_ecs $version\n"
+  echo -e "Installed ElastiFlow Flow Dashboards version: $flow_dashboards_codex_ecs $version"
   version=$(/usr/share/kibana/bin/kibana --version --allow-root | jq -r '.config.serviceVersion.value' 2>/dev/null)
   echo -e "Installed Kibana version: $version\n"
   version=$(/usr/share/elasticsearch/bin/elasticsearch --version | grep -oP 'Version: \K[\d.]+')
-  echo -e "Installed Elasticsearch version: $version\n"
+  echo -e "Installed Elasticsearch version: $version"
   version=$(java -version 2>&1)
-  echo -e "Installed Java version: $version\n"
+  echo -e "Installed Java version: $version"
   version=$(lsb_release -d | awk -F'\t' '{print $2}')
-  echo -e "Operating System: $version\n"
+  echo -e "Operating System: $version"
   display_system_info
 
 }
@@ -775,14 +824,14 @@ display_info() {
 display_dashboard_url() {
   dashboard_url=$(get_dashboard_url "ElastiFlow (flow): Overview")
   printf "*********************************************\n"
-  printf "\033[32m\n\nGo to %s (%s / %s)\n\n\033[0m" "$dashboard_url" "$elastic_username" "$elastic_password2"
-  printf "DO NOT CHANGE THIS PASSWORD VIA KIBANA. ONLY CHANGE IT VIA sudo ./configure"
-  printf "For further configuration options, run sudo ./configure\n\n"
+  printf "\033[32m\nGo to %s (%s / %s)\n\033[0m" "$dashboard_url" "$elastic_username" "$elastic_password2"
+  printf "DO NOT CHANGE THIS PASSWORD VIA KIBANA. ONLY CHANGE IT VIA ./configure\n"
+  printf "For further configuration options, run ./configure\n"
   printf "*********************************************\n"
 }
 
 remove_update_service(){
-  printf "\n\n\n*********Removing Ubuntu update service...\n\n"
+  print_message "Removing Ubuntu update service...\n"
   apt-get remove -y unattended-upgrades
 }
 
@@ -816,11 +865,261 @@ download_aux_files(){
   download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/configure/configure.sh" "/home/user/configure.sh"
 }
 
+set_kibana_homepage() {
+  local dashboard_id
+  local kibana_url="http://$ip_address:5601"
+  local dashboard_title="$1"
+  local encoded_title=$(echo "$dashboard_title" | sed 's/ /%20/g' | sed 's/:/%3A/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
+
+  print_message "Setting homepage to ElastiFlow dashboard..." "$GREEN"
+
+  # Fetch the dashboard ID
+  local find_response=$(curl -s -u "$elastic_username:$elastic_password2" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
+  dashboard_id=$(echo "$find_response" | jq -r '.saved_objects[] | select(.attributes.title=="'"$dashboard_title"'") | .id')
+
+  if [ -z "$dashboard_id" ]; then
+    echo "Dashboard ID $dashboard_id not found. Cannot set homepage.\n"
+  else
+    local payload="{\"changes\":{\"defaultRoute\":\"/app/dashboards#/view/${dashboard_id}\"}}"
+
+    # Update the default route
+    local update_response=$(curl -s -o /dev/null -w "%{http_code}" -u "$elastic_username:$elastic_password2" \
+      -X POST "$kibana_url/api/kibana/settings" \
+      -H "kbn-xsrf: true" \
+      -H "Content-Type: application/json" \
+      -d "$payload")
+
+    if [[ "$update_response" -ne 200 ]]; then
+      echo "Failed to set home as \"$dashboard_title\".\n"
+      else
+        echo "Home page successfully set to \"$dashboard_title\""
+        echo "--> $kibana_url/app/kibana#/dashboard/$dashboard_id"
+      fi
+  fi
+}
+
+
+check_existing_installations() {
+  # Products to check
+  declare -A products=(
+    ["Elasticsearch"]="elasticsearch"
+    ["Kibana"]="kibana"
+    ["OpenSearch"]="opensearch"
+    ["OpenSearch Dashboards"]="opensearch-dashboards"
+    ["ElastiFlow"]="elastiflow"
+  )
+
+  print_message "Checking for existing installations of ElasticSearch, Kibana, OpenSearch, OpenSearch Dashboards, or ElastiFlow..." "$GREEN"
+
+  # Loop through each product and check if it exists
+  for product in "${!products[@]}"; do
+    # Check for running service
+    if systemctl list-units --type=service --state=running | grep -iq "${products[$product]}"; then
+      echo "Error: $product is already installed and running."
+      echo "Please uninstall or stop the $product service before proceeding."
+      exit 1
+    fi
+
+    # Check for installed binaries
+    if command -v "${products[$product]}" &> /dev/null; then
+      echo "Error: $product binary detected in the PATH."
+      echo "Please uninstall $product before proceeding."
+      exit 1
+    fi
+  done
+
+  echo "No conflicting installations found. Proceeding..."
+}
+
+install_latest_elastiflow_flow_collector() {
+    local DOC_URL="https://docs.elastiflow.com/docs/flowcoll/install_linux"
+
+    echo "Scraping $DOC_URL for download details..."
+
+    # Function to validate a URL
+    validate_url() {
+        if curl --output /dev/null --silent --head --fail "$1"; then
+            echo "$1"
+        else
+            echo ""
+        fi
+    }
+
+    # Scrape and validate the first valid URL for the .deb file
+    local DEB_URL=$(curl -sL $DOC_URL | grep -oP 'https://[^\"]+flow-collector_[0-9]+\.[0-9]+\.[0-9]+_linux_amd64\.deb' | head -n 1)
+    DEB_URL=$(validate_url "$DEB_URL")
+
+    # Scrape and validate the first valid URL for the .sha256 checksum file
+    local SHA256_URL=$(curl -sL $DOC_URL | grep -oP 'https://[^\"]+flow-collector_[0-9]+\.[0-9]+\.[0-9]+_linux_amd64\.deb\.sha256' | head -n 1)
+    SHA256_URL=$(validate_url "$SHA256_URL")
+
+    # Scrape and validate the first valid URL for the GPG signature file (.deb.sig)
+    local GPG_SIG_URL=$(curl -sL $DOC_URL | grep -oP 'https://[^\"]+flow-collector_[0-9]+\.[0-9]+\.[0-9]+_linux_amd64\.deb\.sig' | head -n 1)
+    GPG_SIG_URL=$(validate_url "$GPG_SIG_URL")
+
+    # Scrape for the GPG key ID
+    local GPG_KEY_ID=$(curl -sL $DOC_URL | grep -oP 'class="token plain">echo &quot;\K[A-F0-9]{40}' | head -n 1)
+
+    # Scrape and validate the URL for the public key (.pgp)
+    local GPG_PUBKEY_URL=$(curl -sL $DOC_URL | grep -oP 'https://[^\"]+elastiflow\.pgp' | head -n 1)
+    GPG_PUBKEY_URL=$(validate_url "$GPG_PUBKEY_URL")
+
+    # Check if the DEB_URL was found and is valid
+    if [ -z "$DEB_URL" ]; then
+        echo "Error: Could not find a valid .deb file URL in $DOC_URL."
+        exit 1
+    fi
+
+    echo "Found DEB URL: $DEB_URL"
+    echo "Found SHA256 URL: $SHA256_URL"
+    echo "Found GPG Signature URL: $GPG_SIG_URL"
+    echo "Found GPG Key ID: $GPG_KEY_ID"
+    echo "Found GPG public key URL: $GPG_PUBKEY_URL"
+
+
+    # Extract the filename from the URL
+    local FILENAME=$(basename "$DEB_URL")
+
+    # Extract the version number from the filename
+    local REMOTE_VERSION=$(echo "$FILENAME" | grep -oP 'flow-collector_\K[0-9]+\.[0-9]+\.[0-9]+')
+
+    # Check the currently installed version of ElastiFlow
+    local CURRENT_VERSION=$(/usr/share/elastiflow/bin/flowcoll -version 2>/dev/null || echo "None")
+
+    echo "Current installed version: ${CURRENT_VERSION}"
+    echo "Remote version: $REMOTE_VERSION"
+
+    # Download all files to /tmp
+    local DOWNLOAD_DIR="/tmp"
+    # Extract the filename from the URL and combine it with the download directory path
+    local DEB_FILE="$DOWNLOAD_DIR/$FILENAME"
+    echo "DEB file will be downloaded to: $DEB_FILE"
+
+    # Download the .deb file
+    wget -O "$DEB_FILE" "$DEB_URL" || {
+        echo "Error: Failed to download .deb file."
+        exit 1
+    }
+
+    # Attempt to download the checksum file
+    if [ -n "$SHA256_URL" ]; then
+        wget -O "$DOWNLOAD_DIR/$(basename $SHA256_URL)" "$SHA256_URL" || {
+            echo "Warning: Failed to download checksum file."
+            read -p "Do you want to continue without checksum verification? [y/N]: " CONFIRM
+            if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+                echo "Installation aborted by user."
+                exit 1
+            fi
+            SHA256_URL=""
+        }
+    fi
+
+    # Attempt to download the GPG signature file
+    if [ -n "$GPG_SIG_URL" ]; then
+        wget -O "$DOWNLOAD_DIR/$(basename $GPG_SIG_URL)" "$GPG_SIG_URL" || {
+            echo "Warning: Failed to download GPG signature file."
+            read -p "Do you want to continue without GPG signature verification? [y/N]: " CONFIRM
+            if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+                echo "Installation aborted by user."
+                exit 1
+            fi
+            GPG_SIG_URL=""
+        }
+    fi
+
+
+# Attempt to download the GPG public key file
+if [ -n "$GPG_PUBKEY_URL" ]; then
+    GPG_PUBKEY_FILE="$DOWNLOAD_DIR/$(basename $GPG_PUBKEY_URL)"
+    wget -O "$GPG_PUBKEY_FILE" "$GPG_PUBKEY_URL" || {
+        echo "Warning: Failed to download GPG public key file."
+        read -p "Do you want to continue without the GPG public key? [y/N]: " CONFIRM
+        if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+            echo "Installation aborted by user."
+            exit 1
+        fi
+        GPG_PUBKEY_URL=""
+    }
+fi
+
+# Import GPG public key
+if [ -n "$GPG_PUBKEY_FILE" ] && [ -f "$GPG_PUBKEY_FILE" ]; then
+    echo "Importing GPG public key..."
+    gpg --import "$GPG_PUBKEY_FILE" || {
+        echo "Warning: Failed to import GPG public key."
+        read -p "Do you want to continue without importing the GPG public key? [y/N]: " CONFIRM
+        if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+            echo "Installation aborted by user."
+            exit 1
+        fi
+    }
+else
+    echo "No GPG public key file found. Skipping GPG key import."
+fi
+
+    # Import and trust the GPG key
+    if [ -n "$GPG_KEY_ID" ]; then
+        echo "Importing and trusting the GPG key..."
+        echo "$GPG_KEY_ID:6:" | gpg --import-ownertrust || {
+            echo "Warning: Failed to import GPG key."
+            read -p "Do you want to continue without GPG key import? [y/N]: " CONFIRM
+            if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+                echo "Installation aborted by user."
+                exit 1
+            fi
+        }
+
+    else
+        echo "No GPG key ID found. Skipping GPG key import."
+    fi
+
+    # Verify the checksum if the checksum file was downloaded
+    if [ -n "$SHA256_URL" ]; then
+        echo "Verifying checksum..."
+        local ACTUAL_CHECKSUM=$(sha256sum $DEB_FILE | awk '{print $1}')
+        local EXPECTED_CHECKSUM=$(cat "$DOWNLOAD_DIR/$(basename $SHA256_URL)" | awk '{print $1}')
+        if [ "$ACTUAL_CHECKSUM" != "$EXPECTED_CHECKSUM" ]; then
+            echo "Error: Checksum verification failed."
+            rm -f $DEB_FILE "$DOWNLOAD_DIR/$(basename $SHA256_URL)"
+            exit 1
+        else
+            echo "Checksum verification passed."
+        fi
+    else
+        echo "Skipping checksum verification."
+    fi
+
+    # Verify the GPG signature if the signature file was downloaded
+    if [ -n "$GPG_SIG_URL" ]; then
+        echo "Verifying GPG signature..."
+        gpg --verify "$DOWNLOAD_DIR/$(basename $GPG_SIG_URL)" $DEB_FILE || {
+            echo "Warning: GPG verification failed. Continuing without GPG verification."
+        }
+        echo "GPG verification passed."
+    else
+        echo "No GPG signature file found. Skipping GPG verification."
+    fi
+
+    # Install the .deb package using apt
+    echo "Installing the downloaded .deb file using apt-get..."
+    apt-get -qq install -y $DEB_FILE || {
+        echo "Error: Failed to install $DEB_FILE."
+        exit 1
+    }
+
+    # Clean up the downloaded files
+    echo "Cleaning up..."
+    rm -f $DEB_FILE "$DOWNLOAD_DIR/$(basename $SHA256_URL)" "$DOWNLOAD_DIR/$(basename $GPG_SIG_URL)"
+
+    echo "ElastiFlow Installation completed successfully."
+}
+
 
 main() {
-  check_for_updates
+  check_for_script_updates
   print_startup_message
   check_for_root
+  check_existing_installations
   check_compatibility
   disable_predictable_network_names
   install_os_updates
@@ -836,6 +1135,7 @@ main() {
   sleep_message "Giving dpkg time to clean up" 10
   install_kibana
   configure_kibana
+  change_elasticsearch_password
   install_elastiflow
   install_dashboards
   download_aux_files
@@ -845,8 +1145,12 @@ main() {
   display_info
   display_dashboard_url
   create_banner
+  set_kibana_homepage "ElastiFlow (flow): Overview"
   update_jvm_options
+  print_message "**************************" "$GREEN"
+  print_message "All done" "$GREEN"
+  print_message "**************************" "$GREEN"
   cleanup
-}
+  }
 
 main
