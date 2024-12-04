@@ -87,7 +87,7 @@ Welcome to ElastiFlow Virtual Appliance
 
 =======================================
 
-Log in and type ./configure.sh to get started.
+Log in and type sudo ./configure.sh to get started.
 
 Setup Instructions:  https://sites.google.com/elastiflow.com/elastiflow
 Documentation:       https://docs.elastiflow.com
@@ -825,7 +825,7 @@ display_dashboard_url() {
   dashboard_url=$(get_dashboard_url "ElastiFlow (flow): Overview")
   printf "*********************************************\n"
   printf "\033[32m\nGo to %s (%s / %s)\n\033[0m" "$dashboard_url" "$elastic_username" "$elastic_password2"
-  printf "DO NOT CHANGE THIS PASSWORD VIA KIBANA. ONLY CHANGE IT VIA ./configure\n"
+  printf "DO NOT CHANGE THIS PASSWORD VIA KIBANA. ONLY CHANGE IT VIA sudo ./configure\n"
   printf "For further configuration options, run ./configure\n"
   printf "*********************************************\n"
 }
@@ -861,9 +861,11 @@ cleanup (){
 
 }
 
-download_aux_files(){
-  download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/configure/configure.sh" "/home/user/configure.sh"
+download_aux_files() {
+  local current_dir="$(pwd)"
+  download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/configure/configure.sh" "$current_dir/configure.sh"
 }
+
 
 set_kibana_homepage() {
   local dashboard_id
