@@ -62,6 +62,118 @@ install_os_updates() {
 }
 
 
+sanitize_system() {
+  # Define services, directories, and keywords
+  SERVICES=("flowcoll" "elasticsearch" "kibana" "opensearch" "opensearch-dashboards" "snmpcoll")
+  DIRECTORIES=(
+    "/etc/flowcoll" "/etc/elastiflow" "/etc/elasticsearch" "/etc/kibana" "/etc/opensearch" "/etc/opensearch-dashboards" "/etc/snmpcoll"
+    "/var/lib/flowcoll" "/var/lib/elastiflow" "/var/lib/elasticsearch" "/var/lib/kibana" "/var/lib/opensearch" "/var/lib/opensearch-dashboards" "/var/lib/snmpcoll"
+    "/usr/share/flowcoll" "/usr/share/elastiflow" "/usr/share/elasticsearch" "/usr/share/kibana" "/usr/share/opensearch" "/usr/share/opensearch-dashboards" "/usr/share/snmpcoll"
+    "/var/log/flowcoll" "/var/log/elastiflow" "/var/log/elasticsearch" "/var/log/kibana" "/var/log/opensearch" "/var/log/opensearch-dashboards" "/var/log/snmpcoll"
+  )
+  KEYWORDS=("kibana" "elasticsearch" "flowcoll" "elastiflow" "opensearch" "opensearch-dashboards" "snmpcoll")
+  PORTS=(8080 5601 9200 2055 4739 6343 9995)
+
+  # Stop services
+  for SERVICE in "${SERVICES[@]}"; do
+    if systemctl list-units --type=service --all | grep -q "$SERVICE.service"; then
+      echo "Stopping service: $SERVICE"
+      systemctl stop "$SERVICE"
+      systemctl disable "$SERVICE"
+      echo "Service $SERVICE stopped and disabled."
+    else
+      echo "Service $SERVICE not found. Skipping..."
+    fi
+  done
+
+  # Kill processes using specific ports and disable offending services
+  for PORT in "${PORTS[@]}"; do
+    echo "Stopping processes using port: $PORT"
+    PROCESSES=$(lsof -i :$PORT | awk 'NR>1 {print $2}')
+    if [ -n "$PROCESSES" ]; then
+      echo "$PROCESSES" | xargs -r kill -9
+      echo "Processes using port $PORT stopped."
+      for PID in $PROCESSES; do
+        SERVICE_NAME=$(ps -p $PID -o comm=)
+        if systemctl list-units --type=service --all | grep -q "$SERVICE_NAME.service"; then
+          echo "Disabling service: $SERVICE_NAME"
+          systemctl disable "$SERVICE_NAME"
+          echo "Service $SERVICE_NAME disabled."
+        fi
+      done
+    else
+      echo "No processes found on port $PORT."
+    fi
+  done
+
+  # Purge packages
+  for SERVICE in "${SERVICES[@]}"; do
+    if dpkg -l | grep -q "$SERVICE"; then
+      echo "Purging package: $SERVICE"
+      apt purge --yes "$SERVICE"
+      echo "Package $SERVICE purged."
+    else
+      echo "Package $SERVICE not found. Skipping..."
+    fi
+  done
+
+  # Purge JRE
+  if dpkg -l | grep -q "openjdk"; then
+    echo "Purging JRE packages"
+    apt purge --yes "openjdk*"
+    echo "JRE packages purged."
+  else
+    echo "JRE packages not found. Skipping..."
+  fi
+
+  # Delete specific directories
+  for DIR in "${DIRECTORIES[@]}"; do
+    if [ -d "$DIR" ]; then
+      echo "Deleting directory: $DIR"
+      rm -rf "$DIR"
+      echo "Directory $DIR deleted."
+    else
+      echo "Directory $DIR not found. Skipping..."
+    fi
+  done
+
+  # Delete directories and files matching keywords
+  for KEYWORD in "${KEYWORDS[@]}"; do
+    echo "Deleting directories containing: $KEYWORD"
+    find / -type d -name "*${KEYWORD}*" -exec rm -rf {} \; 2>/dev/null
+    echo "Directories containing $KEYWORD deleted."
+
+    echo "Deleting files containing: $KEYWORD"
+    find / -type f -name "*${KEYWORD}*" -exec rm -f {} \; 2>/dev/null
+    echo "Files containing $KEYWORD deleted."
+  done
+
+  # Clean up unused dependencies
+  echo "Cleaning up unused dependencies..."
+  apt autoremove --yes
+
+  # Summary
+  for SERVICE in "${SERVICES[@]}"; do
+    echo "Checked service: $SERVICE - stopped, disabled, and purged if present."
+  done
+
+  for DIR in "${DIRECTORIES[@]}"; do
+    echo "Checked directory: $DIR - deleted if present."
+  done
+
+  for KEYWORD in "${KEYWORDS[@]}"; do
+    echo "Checked for directories and files containing: $KEYWORD - deleted if present."
+  done
+
+  for PORT in "${PORTS[@]}"; do
+    echo "Checked and stopped processes using port: $PORT"
+  done
+
+  echo "Unused dependencies removed. Cleanup complete."
+}
+
+
+
 create_banner() {
   # Backup the existing /etc/issue file
   cp /etc/issue /etc/issue.bak
