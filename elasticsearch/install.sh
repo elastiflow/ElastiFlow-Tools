@@ -1036,8 +1036,8 @@ check_existing_installations() {
     if systemctl list-units --type=service --state=running | grep -iq "${products[$product]}"; then
       echo "Error: $product is already installed and running."
       echo "Please uninstall or stop the $product service before proceeding."
-      read -p "Do you want to sanitize the system? This will delete files, folders, applications, and services related to these products. Type 'yes' to confirm: " confirm
-      if [[ "$confirm" == "yes" ]]; then
+      read -p "Do you want to sanitize the system? This will delete files, folders, applications, and services related to these products. Type 'yes' or 'y' to confirm: " confirm
+      if [[ "$confirm" =~ ^(yes|y)$ ]]; then
         sanitize_system
         exec "$0" "$@"
       else
@@ -1050,8 +1050,8 @@ check_existing_installations() {
     if command -v "${products[$product]}" &> /dev/null; then
       echo "Error: $product binary detected in the PATH."
       echo "Please uninstall $product before proceeding."
-      read -p "Do you want to sanitize the system? This will delete files, folders, applications, and services related to these products. Type 'yes' to confirm: " confirm
-      if [[ "$confirm" == "yes" ]]; then
+      read -p "Do you want to sanitize the system? This will delete files, folders, applications, and services related to these products. Type 'yes' or 'y' to confirm: " confirm
+      if [[ "$confirm" =~ ^(yes|y)$ ]]; then
         sanitize_system
         exec "$0" "$@"
       else
@@ -1067,8 +1067,8 @@ check_existing_installations() {
     if lsof -iTCP:$port -sTCP:LISTEN &> /dev/null || lsof -iUDP:$port &> /dev/null; then
       echo "Error: Port $port is already in use."
       echo "Please free up this port before proceeding."
-      read -p "Do you want to sanitize the system? This will delete files, folders, applications, and services related to these ports. Type 'yes' to confirm: " confirm
-      if [[ "$confirm" == "yes" ]]; then
+      read -p "Do you want to sanitize the system? This will delete files, folders, applications, and services related to these ports. Type 'yes' or 'y' to confirm: " confirm
+      if [[ "$confirm" =~ ^(yes|y)$ ]]; then
         sanitize_system
         exec "$0" "$@"
       else
