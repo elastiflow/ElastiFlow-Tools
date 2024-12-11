@@ -1021,9 +1021,14 @@ check_existing_installations() {
     ["OpenSearch"]="opensearch"
     ["OpenSearch Dashboards"]="opensearch-dashboards"
     ["ElastiFlow"]="elastiflow"
+    ["Flowcoll"]="flowcoll"
+    ["Snmpcoll"]="snmpcoll"
   )
 
-  print_message "Checking for existing installations of ElasticSearch, Kibana, OpenSearch, OpenSearch Dashboards, or ElastiFlow..." "$GREEN"
+  # Ports to check
+  ports=(8080 5601 9200 2055 4739 6343 9995)
+
+  print_message "Checking for existing installations of ElasticSearch, Kibana, OpenSearch, OpenSearch Dashboards, ElastiFlow, Flowcoll, or Snmpcoll..." "$GREEN"
 
   # Loop through each product and check if it exists
   for product in "${!products[@]}"; do
@@ -1031,19 +1036,51 @@ check_existing_installations() {
     if systemctl list-units --type=service --state=running | grep -iq "${products[$product]}"; then
       echo "Error: $product is already installed and running."
       echo "Please uninstall or stop the $product service before proceeding."
-      exit 1
+      read -p "Do you want to sanitize the system? This will delete files, folders, applications, and services related to these products. Type 'yes' to confirm: " confirm
+      if [[ "$confirm" == "yes" ]]; then
+        sanitize_system
+        exec "$0" "$@"
+      else
+        echo "Sanitization cancelled. Exiting..."
+        exit 1
+      fi
     fi
 
     # Check for installed binaries
     if command -v "${products[$product]}" &> /dev/null; then
       echo "Error: $product binary detected in the PATH."
       echo "Please uninstall $product before proceeding."
-      exit 1
+      read -p "Do you want to sanitize the system? This will delete files, folders, applications, and services related to these products. Type 'yes' to confirm: " confirm
+      if [[ "$confirm" == "yes" ]]; then
+        sanitize_system
+        exec "$0" "$@"
+      else
+        echo "Sanitization cancelled. Exiting..."
+        exit 1
+      fi
     fi
   done
 
-  echo "No conflicting installations found. Proceeding..."
+  # Check for open ports
+  print_message "Checking if required ports are in use..." "$GREEN"
+  for port in "${ports[@]}"; do
+    if lsof -iTCP:$port -sTCP:LISTEN &> /dev/null || lsof -iUDP:$port &> /dev/null; then
+      echo "Error: Port $port is already in use."
+      echo "Please free up this port before proceeding."
+      read -p "Do you want to sanitize the system? This will delete files, folders, applications, and services related to these ports. Type 'yes' to confirm: " confirm
+      if [[ "$confirm" == "yes" ]]; then
+        sanitize_system
+        exec "$0" "$@"
+      else
+        echo "Sanitization cancelled. Exiting..."
+        exit 1
+      fi
+    fi
+  done
+
+  echo "No conflicting installations or port usage found. Proceeding..."
 }
+
 
 install_latest_elastiflow_flow_collector() {
     local DOC_URL="https://docs.elastiflow.com/docs/flowcoll/install_linux"
