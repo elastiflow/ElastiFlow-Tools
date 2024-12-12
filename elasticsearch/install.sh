@@ -11,7 +11,7 @@ exec > >(tee -a "$LOG_FILE") 2>&1
 # run script in non-interactive mode by default
 export DEBIAN_FRONTEND=noninteractive
 
-# Version: 3.0.3.2
+# Version: 3.0.3.3
 
 ########################################################
 # If you do not have an ElastiFlow Account ID and ElastiFlow Flow License Key,
@@ -60,6 +60,118 @@ install_os_updates() {
 
   print_message "Updates installed successfully." "$GREEN"
 }
+
+
+sanitize_system() {
+  # Define services, directories, and keywords
+  SERVICES=("flowcoll" "elasticsearch" "kibana" "opensearch" "opensearch-dashboards" "snmpcoll")
+  DIRECTORIES=(
+    "/etc/flowcoll" "/etc/elastiflow" "/etc/elasticsearch" "/etc/kibana" "/etc/opensearch" "/etc/opensearch-dashboards" "/etc/snmpcoll"
+    "/var/lib/flowcoll" "/var/lib/elastiflow" "/var/lib/elasticsearch" "/var/lib/kibana" "/var/lib/opensearch" "/var/lib/opensearch-dashboards" "/var/lib/snmpcoll"
+    "/usr/share/flowcoll" "/usr/share/elastiflow" "/usr/share/elasticsearch" "/usr/share/kibana" "/usr/share/opensearch" "/usr/share/opensearch-dashboards" "/usr/share/snmpcoll"
+    "/var/log/flowcoll" "/var/log/elastiflow" "/var/log/elasticsearch" "/var/log/kibana" "/var/log/opensearch" "/var/log/opensearch-dashboards" "/var/log/snmpcoll"
+  )
+  KEYWORDS=("kibana" "elasticsearch" "flowcoll" "elastiflow" "opensearch" "opensearch-dashboards" "snmpcoll")
+  PORTS=(8080 5601 9200 2055 4739 6343 9995)
+
+  # Stop services
+  for SERVICE in "${SERVICES[@]}"; do
+    if systemctl list-units --type=service --all | grep -q "$SERVICE.service"; then
+      echo "Stopping service: $SERVICE"
+      systemctl stop "$SERVICE"
+      systemctl disable "$SERVICE"
+      echo "Service $SERVICE stopped and disabled."
+    else
+      echo "Service $SERVICE not found. Skipping..."
+    fi
+  done
+
+  # Kill processes using specific ports and disable offending services
+  for PORT in "${PORTS[@]}"; do
+    echo "Stopping processes using port: $PORT"
+    PROCESSES=$(lsof -i :$PORT | awk 'NR>1 {print $2}')
+    if [ -n "$PROCESSES" ]; then
+      echo "$PROCESSES" | xargs -r kill -9
+      echo "Processes using port $PORT stopped."
+      for PID in $PROCESSES; do
+        SERVICE_NAME=$(ps -p $PID -o comm=)
+        if systemctl list-units --type=service --all | grep -q "$SERVICE_NAME.service"; then
+          echo "Disabling service: $SERVICE_NAME"
+          systemctl disable "$SERVICE_NAME"
+          echo "Service $SERVICE_NAME disabled."
+        fi
+      done
+    else
+      echo "No processes found on port $PORT."
+    fi
+  done
+
+  # Purge packages
+  for SERVICE in "${SERVICES[@]}"; do
+    if dpkg -l | grep -q "$SERVICE"; then
+      echo "Purging package: $SERVICE"
+      apt purge --yes "$SERVICE"
+      echo "Package $SERVICE purged."
+    else
+      echo "Package $SERVICE not found. Skipping..."
+    fi
+  done
+
+  # Purge JRE
+  if dpkg -l | grep -q "openjdk"; then
+    echo "Purging JRE packages"
+    apt purge --yes "openjdk*"
+    echo "JRE packages purged."
+  else
+    echo "JRE packages not found. Skipping..."
+  fi
+
+  # Delete specific directories
+  for DIR in "${DIRECTORIES[@]}"; do
+    if [ -d "$DIR" ]; then
+      echo "Deleting directory: $DIR"
+      rm -rf "$DIR"
+      echo "Directory $DIR deleted."
+    else
+      echo "Directory $DIR not found. Skipping..."
+    fi
+  done
+
+  # Delete directories and files matching keywords
+  for KEYWORD in "${KEYWORDS[@]}"; do
+    echo "Deleting directories containing: $KEYWORD"
+    find / -type d -name "*${KEYWORD}*" -exec rm -rf {} \; 2>/dev/null
+    echo "Directories containing $KEYWORD deleted."
+
+    echo "Deleting files containing: $KEYWORD"
+    find / -type f -name "*${KEYWORD}*" -exec rm -f {} \; 2>/dev/null
+    echo "Files containing $KEYWORD deleted."
+  done
+
+  # Clean up unused dependencies
+  echo "Cleaning up unused dependencies..."
+  apt autoremove --yes
+
+  # Summary
+  for SERVICE in "${SERVICES[@]}"; do
+    echo "Checked service: $SERVICE - stopped, disabled, and purged if present."
+  done
+
+  for DIR in "${DIRECTORIES[@]}"; do
+    echo "Checked directory: $DIR - deleted if present."
+  done
+
+  for KEYWORD in "${KEYWORDS[@]}"; do
+    echo "Checked for directories and files containing: $KEYWORD - deleted if present."
+  done
+
+  for PORT in "${PORTS[@]}"; do
+    echo "Checked and stopped processes using port: $PORT"
+  done
+
+  echo "Unused dependencies removed. Cleanup complete."
+}
+
 
 
 create_banner() {
@@ -909,9 +1021,14 @@ check_existing_installations() {
     ["OpenSearch"]="opensearch"
     ["OpenSearch Dashboards"]="opensearch-dashboards"
     ["ElastiFlow"]="elastiflow"
+    ["Flowcoll"]="flowcoll"
+    ["Snmpcoll"]="snmpcoll"
   )
 
-  print_message "Checking for existing installations of ElasticSearch, Kibana, OpenSearch, OpenSearch Dashboards, or ElastiFlow..." "$GREEN"
+  # Ports to check
+  ports=(8080 5601 9200 2055 4739 6343 9995)
+
+  print_message "Checking for existing installations of ElasticSearch, Kibana, OpenSearch, OpenSearch Dashboards, ElastiFlow, Flowcoll, or Snmpcoll..." "$GREEN"
 
   # Loop through each product and check if it exists
   for product in "${!products[@]}"; do
@@ -919,19 +1036,51 @@ check_existing_installations() {
     if systemctl list-units --type=service --state=running | grep -iq "${products[$product]}"; then
       echo "Error: $product is already installed and running."
       echo "Please uninstall or stop the $product service before proceeding."
-      exit 1
+      read -p "Do you want to sanitize the system? This will delete files, folders, applications, and services related to these products. Type 'yes' or 'y' to confirm: " confirm
+      if [[ "$confirm" =~ ^(yes|y)$ ]]; then
+        sanitize_system
+        exec "$0" "$@"
+      else
+        echo "Sanitization cancelled. Exiting..."
+        exit 1
+      fi
     fi
 
     # Check for installed binaries
     if command -v "${products[$product]}" &> /dev/null; then
       echo "Error: $product binary detected in the PATH."
       echo "Please uninstall $product before proceeding."
-      exit 1
+      read -p "Do you want to sanitize the system? This will delete files, folders, applications, and services related to these products. Type 'yes' or 'y' to confirm: " confirm
+      if [[ "$confirm" =~ ^(yes|y)$ ]]; then
+        sanitize_system
+        exec "$0" "$@"
+      else
+        echo "Sanitization cancelled. Exiting..."
+        exit 1
+      fi
     fi
   done
 
-  echo "No conflicting installations found. Proceeding..."
+  # Check for open ports
+  print_message "Checking if required ports are in use..." "$GREEN"
+  for port in "${ports[@]}"; do
+    if lsof -iTCP:$port -sTCP:LISTEN &> /dev/null || lsof -iUDP:$port &> /dev/null; then
+      echo "Error: Port $port is already in use."
+      echo "Please free up this port before proceeding."
+      read -p "Do you want to sanitize the system? This will delete files, folders, applications, and services related to these ports. Type 'yes' or 'y' to confirm: " confirm
+      if [[ "$confirm" =~ ^(yes|y)$ ]]; then
+        sanitize_system
+        exec "$0" "$@"
+      else
+        echo "Sanitization cancelled. Exiting..."
+        exit 1
+      fi
+    fi
+  done
+
+  echo "No conflicting installations or port usage found. Proceeding..."
 }
+
 
 install_latest_elastiflow_flow_collector() {
     local DOC_URL="https://docs.elastiflow.com/docs/flowcoll/install_linux"
