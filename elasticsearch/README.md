@@ -6,7 +6,7 @@ Script to easily install everything needed to PoC ElastiFlow Flowcoll and SNMPCo
 
 What this is:
 ----------------
-Script to easily install everything needed to PoC ElastiFlow Flowcoll and SNMPColl
+Script to easily install everything needed to PoC (or run in a small deployment) ElastiFlow Unified Flow Collector and ElastiFlow Unified SNMP Collector
 
 What this script does:
 ----------------
