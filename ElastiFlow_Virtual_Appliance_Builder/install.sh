@@ -22,8 +22,10 @@ elastiflow_flow_license_key=""
 ########################################################
 
 flowcoll_version="7.5.1"
-elasticsearch_version="8.15.3"
-kibana_version="8.15.3"
+
+#note: Elastic 8.16.1 is the last version to have free TSDS
+elasticsearch_version="8.16.1"
+kibana_version="8.16.1"
 flow_dashboards_version="8.14.x"
 flow_dashboards_codex_ecs="codex"
 flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
@@ -680,8 +682,8 @@ install_elasticsearch() {
   print_message "Installing ElasticSearch...\n" "$GREEN"
   wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | gpg --dearmor -o /usr/share/keyrings/elasticsearch-keyring.gpg || handle_error "Failed to add Elasticsearch GPG key." "${LINENO}"
   echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] https://artifacts.elastic.co/packages/8.x/apt stable main" | tee /etc/apt/sources.list.d/elastic-8.x.list || handle_error "Failed to add Elasticsearch repository." "${LINENO}"
-  #elastic_install_log=$(apt-get -q update && apt-get -q install elasticsearch=$elasticsearch_version | stdbuf -oL tee /dev/console) || handle_error "Failed to install Elasticsearch." "${LINENO}"
-  elastic_install_log=$(apt-get -q update && apt-get -q -y install elasticsearch | stdbuf -oL tee /dev/console) || handle_error "Failed to install Elasticsearch." "${LINENO}"
+  elastic_install_log=$(apt-get -q update && apt-get -q install elasticsearch=$elasticsearch_version | stdbuf -oL tee /dev/console) || handle_error "Failed to install Elasticsearch." "${LINENO}"
+  #elastic_install_log=$(apt-get -q update && apt-get -q -y install elasticsearch | stdbuf -oL tee /dev/console) || handle_error "Failed to install Elasticsearch." "${LINENO}"
   elastic_password=$(echo "$elastic_install_log" | awk -F' : ' '/The generated password for the elastic built-in superuser/{print $2}')
   elastic_password=$(echo -n "$elastic_password" | tr -cd '[:print:]')
   #printf "Elastic password: $elastic_password\n"
@@ -749,8 +751,8 @@ start_elasticsearch() {
 
 install_kibana() {
   echo -e "Downloading and installing Kibana...\n"
-  #apt-get -q update && apt-get -q install kibana=$kibana_version
-  apt-get -q update && apt-get -q -y install kibana
+  apt-get -q update && apt-get -q install kibana=$kibana_version
+  #apt-get -q update && apt-get -q -y install kibana
 
 }
 
