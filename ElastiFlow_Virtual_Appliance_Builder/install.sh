@@ -21,7 +21,7 @@ elastiflow_account_id=""
 elastiflow_flow_license_key=""
 ########################################################
 
-flowcoll_version="7.5.1"
+flowcoll_version="7.5.3"
 
 #note: Elastic 8.16.1 is the last version to have free TSDS
 elasticsearch_version="8.16.1"
@@ -346,14 +346,14 @@ print_message "Disabling swap file if present..." "$GREEN"
 
 configure_snapshot_repo() {
   # Add snapshot path configuration to elasticsearch.yml
-  echo -e "\n# Path to snapshots:\npath.repo: /etc/elasticsearch/snapshots" | sudo tee -a /etc/elasticsearch/elasticsearch.yml
+  echo -e "\n# Path to snapshots:\npath.repo: /etc/elasticsearch/snapshots" | tee -a /etc/elasticsearch/elasticsearch.yml
 
   # Create snapshots directory and set ownership
-  sudo mkdir -p /etc/elasticsearch/snapshots
-  sudo chown -R elasticsearch:elasticsearch /etc/elasticsearch/snapshots
+  mkdir -p /etc/elasticsearch/snapshots
+  chown -R elasticsearch:elasticsearch /etc/elasticsearch/snapshots
 
   # Restart Elasticsearch service
-  sudo systemctl restart elasticsearch.service
+  systemctl restart elasticsearch.service
   if ! systemctl is-active --quiet elasticsearch.service; then
     echo "Failed to restart Elasticsearch service. Exiting."
     exit 1
@@ -940,7 +940,7 @@ display_dashboard_url() {
   printf "*********************************************\n"
   printf "\033[32m\nGo to %s (%s / %s)\n\033[0m" "$dashboard_url" "$elastic_username" "$elastic_password2"
   printf "DO NOT CHANGE THIS PASSWORD VIA KIBANA. ONLY CHANGE IT VIA sudo ./configure\n"
-  printf "For further configuration options, run ./configure\n"
+  printf "For further configuration options, run sudo ./configure\n"
   printf "*********************************************\n"
 }
 
