@@ -453,19 +453,19 @@ check_for_script_updates() {
   remote_version=$(grep -m 1 '^# Version: ' "$tmp_script" | awk '{print $3}')
   installed_version=$(grep -m 1 '^# Version: ' "$installed_script" | awk '{print $3}')
 
-  echo "Installed version: $installed_version"
-  echo "Remote version: $remote_version"
+  echo "Installed script version: $installed_version"
+  echo "Remote script version: $remote_version"
 
   if [[ -z "$installed_version" ]]; then
-    print_message "Failed to detect the installed version." "$RED"
+    print_message "Failed to detect the installed script version." "$RED"
     return
   fi
 
   if [[ "$remote_version" > "$installed_version" ]]; then
-    print_message "Remote version $remote_version available." "$GREEN"
+    print_message "Script remote version $remote_version available." "$GREEN"
 
     while true; do
-      echo -n "Do you want to update to the Remote version? (y/n) [y]: "
+      echo -n "Do you want to update to the Remote version of the script? (y/n) [y]: "
       for i in {10..1}; do
         echo -n "$i "
         sleep 1
@@ -483,16 +483,16 @@ check_for_script_updates() {
     done
 
     if [[ $update_choice == "y" ]]; then
-      print_message "Updating to version $remote_version..." "$GREEN"
+      print_message "Updating script to version $remote_version..." "$GREEN"
       cp "$tmp_script" "$installed_script"
       chmod +x "$installed_script"
-      print_message "Update successful. Restarting script..." "$GREEN"
+      print_message "Script update successful. Restarting script..." "$GREEN"
       exec "$installed_script"
     else
-      print_message "Update skipped." "$RED"
+      print_message "Script update skipped." "$RED"
     fi
   else
-    print_message "No updates available." "$GREEN"
+    print_message "No script updates available." "$GREEN"
   fi
 
   echo "Cleaning up temporary script."
