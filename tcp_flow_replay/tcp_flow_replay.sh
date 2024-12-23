@@ -1,15 +1,38 @@
 #!/bin/bash
 
-# Function to install tcpreplay, tcprewrite, and tcpdump on Ubuntu
+# Function to check if script is running as root
+check_root() {
+    if [[ $EUID -ne 0 ]]; then
+        echo -e "\033[1;33mWarning: This script is not running as root.\033[0m"
+        echo "Certain operations might require root permissions."
+        read -p "Do you want to restart this script as root? (y/n): " choice
+
+        if [[ "$choice" =~ ^[Yy]$ ]]; then
+            echo "Restarting script with root privileges..."
+            exec sudo bash "$0" "$@"
+        else
+            echo "Proceeding without root permissions..."
+        fi
+    fi
+}
+
+# Function to detect and install required tools for Ubuntu and RedHat-based systems
 install_tools() {
     echo "tcpreplay, tcprewrite, and tcpdump are not installed. Would you like to install them? (y/n)"
-    read -p "Install tools? (default: y): " install_choice
-    install_choice=${install_choice:-y}
+    read -p "Install tools? (y/n): " install_choice
 
     if [[ "$install_choice" =~ ^[Yy]$ ]]; then
         echo "Installing tcpreplay, tcprewrite, and tcpdump..."
-        sudo apt-get update
-        sudo apt-get install -y tcpreplay tcpdump
+        if [[ -f /etc/redhat-release ]]; then
+            sudo yum install -y epel-release
+            sudo yum install -y tcpreplay tcpdump
+        elif [[ -f /etc/os-release && $(grep -w 'ID=ubuntu' /etc/os-release) ]]; then
+            sudo apt-get update
+            sudo apt-get install -y tcpreplay tcpdump
+        else
+            echo "Unsupported distribution. Install the tools manually."
+            exit 1
+        fi
         echo "Installation complete."
     else
         echo "Installation aborted. Exiting."
@@ -17,15 +40,12 @@ install_tools() {
     fi
 }
 
+# Run root check
+check_root "$@"
+
 # Check for tcprewrite, tcpreplay, and tcpdump
 if ! command -v tcprewrite &> /dev/null || ! command -v tcpreplay &> /dev/null || ! command -v tcpdump &> /dev/null; then
-    # Check if the OS is Ubuntu
-    if [[ -f /etc/os-release && $(grep -w 'ID=ubuntu' /etc/os-release) ]]; then
-        install_tools
-    else
-        echo "Error: tcprewrite, tcpreplay, and/or tcpdump are not installed. Please install them to proceed."
-        exit 1
-    fi
+    install_tools
 fi
 
 # Get the input file (pcap or zip)
@@ -64,8 +84,11 @@ if [[ -z "$new_dest_mac" ]]; then
 fi
 
 # Prompt for destination IP
-read -p "Enter destination IP (default: 192.168.2.80): " dest_ip
-dest_ip=${dest_ip:-192.168.2.80}
+read -p "Enter destination IP: " dest_ip
+if [[ -z "$dest_ip" ]]; then
+    echo "No destination IP provided, exiting."
+    exit 1
+fi
 
 # List available network interfaces and prompt for one
 echo "Available network interfaces:"
@@ -75,19 +98,12 @@ for i in "${!interfaces[@]}"; do
     echo "$i: ${interfaces[$i]}"
 done
 
-read -p "Enter the number corresponding to the network interface to use for replay (default: 0 for ${interfaces[0]}): " interface_index
-interface_index=${interface_index:-0}
-
-# Set default to eth0 if input is out of range or no selection is made
+read -p "Enter the number corresponding to the network interface to use for replay: " interface_index
 if [[ -z "${interfaces[$interface_index]}" ]]; then
-    interface="eth0"
+    echo "Invalid selection, exiting."
+    exit 1
 else
     interface="${interfaces[$interface_index]}"
-fi
-
-# Ensure eth0 is used if it exists and was not specified
-if [[ "$interface" != "eth0" && " ${interfaces[@]} " =~ " eth0 " ]]; then
-    interface="eth0"
 fi
 
 # Get the MAC address of the chosen network interface
@@ -112,7 +128,68 @@ echo "Using interface: $interface"
 echo "Modified file saved as: $modified_file"
 echo "-------------------"
 
-# Replay the modified packets using tcpreplay
-tcpreplay --intf1="$interface" "$modified_file"
+# Function to prompt for replay options
+prompt_replay_options() {
+    echo "Replay Options:"
+    echo "1. Replay at packets per second (PPS) rate"
+    echo "2. Replay at top speed"
+    echo "3. Replay as is (default timing)"
+    echo "4. Quit"
+    read -p "Choose an option (1/2/3/4): " replay_option
 
-echo "Replay completed."
+    if [[ $replay_option -eq 4 ]]; then
+        echo "Exiting script."
+        exit 0
+    fi
+
+    if [[ $replay_option -eq 1 ]]; then
+        read -p "Enter packets per second (PPS): " pps_rate
+        if [[ -z "$pps_rate" ]]; then
+            echo "No PPS rate provided. Exiting."
+            exit 1
+        fi
+    fi
+}
+
+# Function to replay packets
+do_replay() {
+    case $replay_option in
+        1)
+            echo "Replaying with command: tcpreplay --intf1="$interface" --pps="$pps_rate" "$modified_file""
+            tcpreplay --intf1="$interface" --pps="$pps_rate" "$modified_file"
+            ;;
+        2)
+            echo "Replaying with command: tcpreplay --intf1="$interface" --topspeed "$modified_file""
+            tcpreplay --intf1="$interface" --topspeed "$modified_file"
+            ;;
+        3)
+            echo "Replaying with command: tcpreplay --intf1="$interface" "$modified_file""
+            echo "Replaying with default timing..."
+            tcpreplay --intf1="$interface" "$modified_file"
+            ;;
+    esac
+    echo "Replay completed."
+}
+
+# Initial replay prompt
+prompt_replay_options
+
+while true; do
+    do_replay
+    echo "Options:"
+    echo "1. Replay again with new speed options"
+    echo "2. Quit"
+    read -p "Choose an option (1/2): " replay_again
+    if [[ "$replay_again" == "2" ]]; then
+        echo "Exiting replay."
+        break
+    elif [[ "$replay_again" == "1" ]]; then
+        prompt_replay_options
+    else
+        echo "Invalid option, exiting."
+        break
+    fi
+    echo "Restarting replay..."
+done
+
+echo "Script execution finished."
