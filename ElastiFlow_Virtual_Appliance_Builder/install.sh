@@ -11,7 +11,7 @@ exec > >(tee -a "$LOG_FILE") 2>&1
 # run script in non-interactive mode by default
 export DEBIAN_FRONTEND=noninteractive
 
-# Version: 3.0.3.3
+# Version: 3.0.3.4
 
 ########################################################
 # If you do not have an ElastiFlow Account ID and ElastiFlow Flow License Key,
@@ -21,9 +21,11 @@ elastiflow_account_id=""
 elastiflow_flow_license_key=""
 ########################################################
 
-flowcoll_version="7.5.1"
-elasticsearch_version="8.15.3"
-kibana_version="8.15.3"
+flowcoll_version="7.5.3"
+
+#note: Elastic 8.16.1 is the last version to have free TSDS
+elasticsearch_version="8.16.1"
+kibana_version="8.16.1"
 flow_dashboards_version="8.14.x"
 flow_dashboards_codex_ecs="codex"
 flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
@@ -344,14 +346,14 @@ print_message "Disabling swap file if present..." "$GREEN"
 
 configure_snapshot_repo() {
   # Add snapshot path configuration to elasticsearch.yml
-  echo -e "\n# Path to snapshots:\npath.repo: /etc/elasticsearch/snapshots" | sudo tee -a /etc/elasticsearch/elasticsearch.yml
+  echo -e "\n# Path to snapshots:\npath.repo: /etc/elasticsearch/snapshots" | tee -a /etc/elasticsearch/elasticsearch.yml
 
   # Create snapshots directory and set ownership
-  sudo mkdir -p /etc/elasticsearch/snapshots
-  sudo chown -R elasticsearch:elasticsearch /etc/elasticsearch/snapshots
+  mkdir -p /etc/elasticsearch/snapshots
+  chown -R elasticsearch:elasticsearch /etc/elasticsearch/snapshots
 
   # Restart Elasticsearch service
-  sudo systemctl restart elasticsearch.service
+  systemctl restart elasticsearch.service
   if ! systemctl is-active --quiet elasticsearch.service; then
     echo "Failed to restart Elasticsearch service. Exiting."
     exit 1
@@ -451,19 +453,19 @@ check_for_script_updates() {
   remote_version=$(grep -m 1 '^# Version: ' "$tmp_script" | awk '{print $3}')
   installed_version=$(grep -m 1 '^# Version: ' "$installed_script" | awk '{print $3}')
 
-  echo "Installed version: $installed_version"
-  echo "Remote version: $remote_version"
+  echo "Installed script version: $installed_version"
+  echo "Remote script version: $remote_version"
 
   if [[ -z "$installed_version" ]]; then
-    print_message "Failed to detect the installed version." "$RED"
+    print_message "Failed to detect the installed script version." "$RED"
     return
   fi
 
   if [[ "$remote_version" > "$installed_version" ]]; then
-    print_message "Remote version $remote_version available." "$GREEN"
+    print_message "Script remote version $remote_version available." "$GREEN"
 
     while true; do
-      echo -n "Do you want to update to the Remote version? (y/n) [y]: "
+      echo -n "Do you want to update to the Remote version of the script? (y/n) [y]: "
       for i in {10..1}; do
         echo -n "$i "
         sleep 1
@@ -481,16 +483,16 @@ check_for_script_updates() {
     done
 
     if [[ $update_choice == "y" ]]; then
-      print_message "Updating to version $remote_version..." "$GREEN"
+      print_message "Updating script to version $remote_version..." "$GREEN"
       cp "$tmp_script" "$installed_script"
       chmod +x "$installed_script"
-      print_message "Update successful. Restarting script..." "$GREEN"
+      print_message "Script update successful. Restarting script..." "$GREEN"
       exec "$installed_script"
     else
-      print_message "Update skipped." "$RED"
+      print_message "Script update skipped." "$RED"
     fi
   else
-    print_message "No updates available." "$GREEN"
+    print_message "No script updates available." "$GREEN"
   fi
 
   echo "Cleaning up temporary script."
@@ -680,8 +682,8 @@ install_elasticsearch() {
   print_message "Installing ElasticSearch...\n" "$GREEN"
   wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | gpg --dearmor -o /usr/share/keyrings/elasticsearch-keyring.gpg || handle_error "Failed to add Elasticsearch GPG key." "${LINENO}"
   echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] https://artifacts.elastic.co/packages/8.x/apt stable main" | tee /etc/apt/sources.list.d/elastic-8.x.list || handle_error "Failed to add Elasticsearch repository." "${LINENO}"
-  #elastic_install_log=$(apt-get -q update && apt-get -q install elasticsearch=$elasticsearch_version | stdbuf -oL tee /dev/console) || handle_error "Failed to install Elasticsearch." "${LINENO}"
-  elastic_install_log=$(apt-get -q update && apt-get -q -y install elasticsearch | stdbuf -oL tee /dev/console) || handle_error "Failed to install Elasticsearch." "${LINENO}"
+  elastic_install_log=$(apt-get -q update && apt-get -q install elasticsearch=$elasticsearch_version | stdbuf -oL tee /dev/console) || handle_error "Failed to install Elasticsearch." "${LINENO}"
+  #elastic_install_log=$(apt-get -q update && apt-get -q -y install elasticsearch | stdbuf -oL tee /dev/console) || handle_error "Failed to install Elasticsearch." "${LINENO}"
   elastic_password=$(echo "$elastic_install_log" | awk -F' : ' '/The generated password for the elastic built-in superuser/{print $2}')
   elastic_password=$(echo -n "$elastic_password" | tr -cd '[:print:]')
   #printf "Elastic password: $elastic_password\n"
@@ -749,8 +751,8 @@ start_elasticsearch() {
 
 install_kibana() {
   echo -e "Downloading and installing Kibana...\n"
-  #apt-get -q update && apt-get -q install kibana=$kibana_version
-  apt-get -q update && apt-get -q -y install kibana
+  apt-get -q update && apt-get -q install kibana=$kibana_version
+  #apt-get -q update && apt-get -q -y install kibana
 
 }
 
@@ -938,7 +940,7 @@ display_dashboard_url() {
   printf "*********************************************\n"
   printf "\033[32m\nGo to %s (%s / %s)\n\033[0m" "$dashboard_url" "$elastic_username" "$elastic_password2"
   printf "DO NOT CHANGE THIS PASSWORD VIA KIBANA. ONLY CHANGE IT VIA sudo ./configure\n"
-  printf "For further configuration options, run ./configure\n"
+  printf "For further configuration options, run sudo ./configure\n"
   printf "*********************************************\n"
 }
 
