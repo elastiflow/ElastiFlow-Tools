@@ -11,11 +11,11 @@ exec > >(tee -a "$LOG_FILE") 2>&1
 # run script in non-interactive mode by default
 export DEBIAN_FRONTEND=noninteractive
 
-# Version: 3.0.3.4
+# Version: 3.0.3.5
 
 ########################################################
 # If you do not have an ElastiFlow Account ID and ElastiFlow Flow License Key,
-# please go here: https://elastiflow.com/get-started
+# please go here: https://elnastiflow.com/get-started
 # Paste these values on the corresponding line, between the quotes
 elastiflow_account_id=""
 elastiflow_flow_license_key=""
@@ -65,14 +65,11 @@ install_os_updates() {
 
 
 sanitize_system() {
+
+print_message "Finding and cleaning previous / competing installations..." "$GREEN"
+
   # Define services, directories, and keywords
   SERVICES=("flowcoll" "elasticsearch" "kibana" "opensearch" "opensearch-dashboards" "snmpcoll")
-  DIRECTORIES=(
-    "/etc/flowcoll" "/etc/elastiflow" "/etc/elasticsearch" "/etc/kibana" "/etc/opensearch" "/etc/opensearch-dashboards" "/etc/snmpcoll"
-    "/var/lib/flowcoll" "/var/lib/elastiflow" "/var/lib/elasticsearch" "/var/lib/kibana" "/var/lib/opensearch" "/var/lib/opensearch-dashboards" "/var/lib/snmpcoll"
-    "/usr/share/flowcoll" "/usr/share/elastiflow" "/usr/share/elasticsearch" "/usr/share/kibana" "/usr/share/opensearch" "/usr/share/opensearch-dashboards" "/usr/share/snmpcoll"
-    "/var/log/flowcoll" "/var/log/elastiflow" "/var/log/elasticsearch" "/var/log/kibana" "/var/log/opensearch" "/var/log/opensearch-dashboards" "/var/log/snmpcoll"
-  )
   KEYWORDS=("kibana" "elasticsearch" "flowcoll" "elastiflow" "opensearch" "opensearch-dashboards" "snmpcoll")
   PORTS=(8080 5601 9200 2055 4739 6343 9995)
 
@@ -128,17 +125,6 @@ sanitize_system() {
     echo "JRE packages not found. Skipping..."
   fi
 
-  # Delete specific directories
-  for DIR in "${DIRECTORIES[@]}"; do
-    if [ -d "$DIR" ]; then
-      echo "Deleting directory: $DIR"
-      rm -rf "$DIR"
-      echo "Directory $DIR deleted."
-    else
-      echo "Directory $DIR not found. Skipping..."
-    fi
-  done
-
   # Delete directories and files matching keywords
   for KEYWORD in "${KEYWORDS[@]}"; do
     echo "Deleting directories containing: $KEYWORD"
@@ -157,10 +143,6 @@ sanitize_system() {
   # Summary
   for SERVICE in "${SERVICES[@]}"; do
     echo "Checked service: $SERVICE - stopped, disabled, and purged if present."
-  done
-
-  for DIR in "${DIRECTORIES[@]}"; do
-    echo "Checked directory: $DIR - deleted if present."
   done
 
   for KEYWORD in "${KEYWORDS[@]}"; do
@@ -433,9 +415,9 @@ display_system_info() {
 }
 
 confirm_and_proceed() {
-    echo "This script converts Ubuntu server installations to an ElastiFlow Virtual Appliance."
-    echo "Please ensure that you are only running this script on a clean, freshly installed instance of Ubuntu Server 22+ that is going to only be used for ElastiFlow."
-    echo "This script could be destructive to the contents or configuration of your server. Proceed? (yes/no or y/n):"
+    printf "This script converts Ubuntu server installations to an ElastiFlow Virtual Appliance. \nPrevious installations, remnants, and information related to the following will be purged from this system: \n\n-Opensearch \n-Opensearch dashboards \n-Kibana \n-Elasticsearch \n-ElastiFlow Unified Flow Collector \n-ElastiFlow Unified SNMP Collector \n-Other related products\n\n"
+    printf "Please ensure that you are only running this script on a clean, freshly installed instance of Ubuntu Server 22+ that is going to only be used for ElastiFlow.\n"
+    printf "This script could be destructive to the contents or configuration of your server. \n\nProceed? (yes/no or y/n):"
 
     read -r response
     case "$response" in
@@ -1036,76 +1018,6 @@ set_kibana_homepage() {
   fi
 }
 
-
-check_existing_installations() {
-  # Products to check
-  declare -A products=(
-    ["Elasticsearch"]="elasticsearch"
-    ["Kibana"]="kibana"
-    ["OpenSearch"]="opensearch"
-    ["OpenSearch Dashboards"]="opensearch-dashboards"
-    ["ElastiFlow"]="elastiflow"
-    ["Flowcoll"]="flowcoll"
-    ["Snmpcoll"]="snmpcoll"
-  )
-
-  # Ports to check
-  ports=(8080 5601 9200 2055 4739 6343 9995)
-
-  print_message "Checking for existing installations of ElasticSearch, Kibana, OpenSearch, OpenSearch Dashboards, ElastiFlow, Flowcoll, or Snmpcoll..." "$GREEN"
-
-  # Loop through each product and check if it exists
-  for product in "${!products[@]}"; do
-    # Check for running service
-    if systemctl list-units --type=service --state=running | grep -iq "${products[$product]}"; then
-      echo "Error: $product is already installed and running."
-      echo "Please uninstall or stop the $product service before proceeding."
-      read -p "Do you want to sanitize the system? This will delete files, folders, applications, and services related to these products. Type 'yes' or 'y' to confirm: " confirm
-      if [[ "$confirm" =~ ^(yes|y)$ ]]; then
-        sanitize_system
-        exec "$0" "$@"
-      else
-        echo "Sanitization cancelled. Exiting..."
-        exit 1
-      fi
-    fi
-
-    # Check for installed binaries
-    if command -v "${products[$product]}" &> /dev/null; then
-      echo "Error: $product binary detected in the PATH."
-      echo "Please uninstall $product before proceeding."
-      read -p "Do you want to sanitize the system? This will delete files, folders, applications, and services related to these products. Type 'yes' or 'y' to confirm: " confirm
-      if [[ "$confirm" =~ ^(yes|y)$ ]]; then
-        sanitize_system
-        exec "$0" "$@"
-      else
-        echo "Sanitization cancelled. Exiting..."
-        exit 1
-      fi
-    fi
-  done
-
-  # Check for open ports
-  print_message "Checking if required ports are in use..." "$GREEN"
-  for port in "${ports[@]}"; do
-    if lsof -iTCP:$port -sTCP:LISTEN &> /dev/null || lsof -iUDP:$port &> /dev/null; then
-      echo "Error: Port $port is already in use."
-      echo "Please free up this port before proceeding."
-      read -p "Do you want to sanitize the system? This will delete files, folders, applications, and services related to these ports. Type 'yes' or 'y' to confirm: " confirm
-      if [[ "$confirm" =~ ^(yes|y)$ ]]; then
-        sanitize_system
-        exec "$0" "$@"
-      else
-        echo "Sanitization cancelled. Exiting..."
-        exit 1
-      fi
-    fi
-  done
-
-  echo "No conflicting installations or port usage found. Proceeding..."
-}
-
-
 install_latest_elastiflow_flow_collector() {
     local DOC_URL="https://docs.elastiflow.com/docs/flowcoll/install_linux"
 
@@ -1295,7 +1207,8 @@ main() {
   confirm_and_proceed
   print_startup_message
   check_for_root
-  check_existing_installations
+  sanitize_system
+  #check_existing_installations
   check_compatibility
   disable_predictable_network_names
   install_os_updates
