@@ -432,6 +432,28 @@ display_system_info() {
   echo "Total number of cores: $total_cores"
 }
 
+confirm_and_proceed() {
+    echo "This script converts Ubuntu server installations to an ElastiFlow Virtual Appliance."
+    echo "Please ensure that you are only running this script on a clean, freshly installed instance of Ubuntu Server 22+ that is going to only be used for ElastiFlow."
+    echo "This script could be destructive to the contents or configuration of your server. Proceed? (yes/no or y/n):"
+
+    read -r response
+    case "$response" in
+        [yY][eE][sS]|[yY])
+            echo "Proceeding with the script..."
+            ;;
+        [nN][oO]|[nN])
+            echo "Exiting..."
+            exit 1
+            ;;
+        *)
+            echo "Invalid input. Please enter 'yes' or 'no'."
+            confirm_and_proceed  # Re-prompt for valid input
+            ;;
+    esac
+}
+
+
 check_for_script_updates() {
   # Dynamically determine the path to the installed script
   local installed_script=$(realpath "$0")
@@ -1270,6 +1292,7 @@ fi
 
 main() {
   check_for_script_updates
+  confirm_and_proceed
   print_startup_message
   check_for_root
   check_existing_installations
