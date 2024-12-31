@@ -21,7 +21,7 @@ Instructions:
 1) Please review prerequisites [here](https://docs.google.com/document/d/18XOxnAdxAW5bcqRRGEEKayJf_ViwYRAG/edit#heading=h.e87xs5ntz4yk). Since you are installing everything from scratch (as opposed to importing a virtual appliance) some instructions will not apply).
 2) When ready, run the following command in a terminal shell
 ```
-sudo bash -c "$(wget -qLO - https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/elasticsearch/install.sh)"
+sudo bash -c "$(wget -qLO - https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/ElastiFlow_Virtual_Appliance_Builder/install.sh)"
 ```
 3) After installation is complete, please follow the guide [here](https://docs.google.com/document/d/18XOxnAdxAW5bcqRRGEEKayJf_ViwYRAG/edit?usp=sharing&ouid=106934919212917365947&rtpof=true&sd=true).
 
