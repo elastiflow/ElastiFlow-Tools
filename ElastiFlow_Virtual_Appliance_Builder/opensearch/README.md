@@ -34,3 +34,4 @@ sudo chmod +x install_elastiflow_opensearch.sh
 sudo ./install_elastiflow_opensearch.sh
 ```
 3) When completed, access OpenSearch Dashboards at http://your_server_ip:5601, (admin / (password witll be on screen))
+
