@@ -70,7 +70,7 @@ print_message "Finding and cleaning previous / competing installations..." "$GRE
 
   # Define services, directories, and keywords
   SERVICES=("flowcoll" "elasticsearch" "kibana" "opensearch" "opensearch-dashboards" "snmpcoll")
-  KEYWORDS=("kibana" "elasticsearch" "flowcoll" "elastiflow" "opensearch" "opensearch-dashboards" "snmpcoll")
+  KEYWORDS=("kibana" "elasticsearch" "flowcoll" "elastiflow" "opensearch" "opensearch-dashboards" "snmpcoll" "elastic.co")
   PORTS=(8080 5601 9200 2055 4739 6343 9995)
 
   # Stop services
