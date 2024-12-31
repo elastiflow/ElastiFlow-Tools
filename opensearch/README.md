@@ -1,5 +1,5 @@
 ## Author
-- [O.J. Wolanyk]
+- [O.J. Wolanyk] [Pat Vogelsang]
 
 # ElastiFlow_PoC_Installer for OpenSearch
 Script to easily install ElastiFlow for OpenSearch with all dependencies
@@ -27,7 +27,10 @@ One Ubuntu Server
 
 Instructions:
 ----------------
-1) Copy install.sh to your home directory
-2) Chmod +x install.sh
-3) Run sudo ./install.sh
-4) When completed, access OpenSearch Dashboards at http://your_server_ip:5601, (admin / password displayed on screen). Change to "Tenant One"
+1) Copy install_elastiflow_opensearch.sh to your home directory
+2) Run the follwing commands
+```
+sudo chmod +x install_elastiflow_opensearch.sh
+sudo ./install_elastiflow_opensearch.sh
+```
+3) When completed, access OpenSearch Dashboards at http://your_server_ip:5601, (admin / (password witll be on screen))
