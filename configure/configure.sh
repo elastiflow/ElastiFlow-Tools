@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ElastiFlow PoC Configurator for configuring ElastiFlow Virtual Appliance
-# Version: 2.8.4.2.4
+# Version: 2.8.4.3.0
 # Author: O.J. Wolanyk
 
 # Define color codes
@@ -12,17 +12,51 @@ NC='\033[0m' # No Color
 flow_collector_version="7.5.0"
 flow_kibana_dashboards_version="8.14.x"
 flow_kibana_dashboards_codex_ecs="codex"
+osd_flow_dashboards_version="2.14.x"
 flow_config_path="/etc/elastiflow/flowcoll.yml"
 
 snmp_collector_version="7.5.0"
 snmp_kibana_dashboards_version="8.14.x"
 snmp_kibana_dashboards_codex_ecs="codex"
+osd_snmp_dashboards_version="2.14.x"
 snmp_config_path="/etc/elastiflow/snmpcoll.yml"
+
+
 
 elastic_username="elastic"
 ip_address=""
 dashboard_url=""
 
+SEARCH_ENGINE='Elastic'
+
+
+check_service() {
+    local service_name=$1
+    systemctl is-active --quiet "$service_name"
+    if [[ $? -eq 0 ]]; then
+        echo "$service_name is running."
+        return 0
+    else
+        return 1
+    fi
+}
+
+which_search_engine(){
+  # Check for Elasticsearch
+  check_service "elasticsearch"
+  es_running=$?
+
+  # Check for OpenSearch
+  check_service "opensearch"
+  os_running=$?
+
+  if [[ $es_running -eq 0 ]]; then
+      SEARCH_ENGINE='Elastic'
+  elif [[ $os_running -eq 0 ]]; then
+      SEARCH_ENGINE='Opensearch'
+  fi
+  
+}
 
 display_system_info() {
   # Main partition size in GB
@@ -219,6 +253,78 @@ reset_elastic_password() {
   echo "Password for user 'elastic' has been reset successfully."
 }
 
+reset_opensearch_password(){
+  while true; do
+    echo "Password must be strong. Min 12 characters with at least 1 number, lowercase, uppercase and special character"
+    read -sp "Enter new password for Opensearch user 'admin': " new_admin_password
+    echo
+    check_password $new_admin_password
+    if [[ $? -eq 0 ]]; then
+      break
+
+    fi
+  done
+
+  password_hash=$(bash /usr/share/opensearch/plugins/opensearch-security/tools/hash.sh -p $new_admin_password | grep -o '\$.*')
+  echo $password_hash
+  escaped_hash=$( echo "$password_hash" | sed -e 's/\\/\\\\/g' -e 's/\$/\\$/g' -e 's/"/\\"/g' -e 's/`/\\`/g' -e 's/\//\\\//g')
+  echo $escaped_hash
+  sed -i "/^admin:/,/^[^ ]/s/^\(\s*hash:\).*/\1 \"$escaped_hash\"/" "/etc/opensearch/opensearch-security/internal_users.yml"
+
+  bash /usr/share/opensearch/plugins/opensearch-security/tools/securityadmin.sh -f /etc/opensearch/opensearch-security/internal_users.yml -cacert  /etc/opensearch/root-ca.pem   -cert /etc/opensearch/kirk.pem   -key /etc/opensearch/kirk-key.pem
+
+  # Update password for Opensearch Dashboards
+  ord_config_strings=("opensearch.password:" "opensearch.password: '$new_admin_password'")
+  find_and_replace "/etc/opensearch-dashboards/opensearch_dashboards.yml" "${ord_config_strings[@]}"
+  
+
+  # Update password in Elastiflow
+  elastiflow_config_strings=("EF_OUTPUT_OPENSEARCH_PASSWORD" "EF_OUTPUT_OPENSEARCH_PASSWORD: '$new_admin_password'")
+
+  find_and_replace "$flow_config_path" "${elastiflow_config_strings[@]}"
+
+  # Restart all services
+  reload_and_restart_services "flowcoll.service" "opensearch-dashboards.service"
+
+}
+
+check_password() {
+    local password="$1"
+
+    # Check if password is at least 12 characters long
+    if [[ ${#password} -lt 12 ]]; then
+        echo "Password must be at least 12 characters long."
+        return 1
+    fi
+
+    # Check for at least one uppercase letter
+    if ! [[ "$password" =~ [A-Z] ]]; then
+        echo "Password must contain at least one uppercase letter."
+        return 1
+    fi
+
+    # Check for at least one lowercase letter
+    if ! [[ "$password" =~ [a-z] ]]; then
+        echo "Password must contain at least one lowercase letter."
+        return 1
+    fi
+
+    # Check for at least one number
+    if ! [[ "$password" =~ [0-9] ]]; then
+        echo "Password must contain at least one number."
+        return 1
+    fi
+
+    # Check for at least one special character
+    if ! [[ "$password" =~ [\@\#\$\%\^\&\*\_\+\!\~\=\<\>] ]]; then
+        echo "Password must contain at least one special character."
+        return 1
+    fi
+
+    # If all checks pass
+    echo "Password is strong."
+    return 0
+}
 
 verify_ef_flow_configured_pw_for_elastic(){
   # Extract the Elasticsearch password from the configuration file
@@ -593,34 +699,34 @@ update_snmp_collector() {
     fi
 
 
-# Attempt to download the GPG public key file
-if [ -n "$GPG_PUBKEY_URL" ]; then
-    GPG_PUBKEY_FILE="$DOWNLOAD_DIR/$(basename $GPG_PUBKEY_URL)"
-    wget -O "$GPG_PUBKEY_FILE" "$GPG_PUBKEY_URL" || {
-        echo "Warning: Failed to download GPG public key file."
-        read -p "Do you want to continue without the GPG public key? [y/N]: " CONFIRM
-        if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
-            echo "Installation aborted by user."
-            exit 1
-        fi
-        GPG_PUBKEY_URL=""
-    }
-fi
+  # Attempt to download the GPG public key file
+  if [ -n "$GPG_PUBKEY_URL" ]; then
+      GPG_PUBKEY_FILE="$DOWNLOAD_DIR/$(basename $GPG_PUBKEY_URL)"
+      wget -O "$GPG_PUBKEY_FILE" "$GPG_PUBKEY_URL" || {
+          echo "Warning: Failed to download GPG public key file."
+          read -p "Do you want to continue without the GPG public key? [y/N]: " CONFIRM
+          if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+              echo "Installation aborted by user."
+              exit 1
+          fi
+          GPG_PUBKEY_URL=""
+      }
+  fi
 
-# Import GPG public key
-if [ -n "$GPG_PUBKEY_FILE" ] && [ -f "$GPG_PUBKEY_FILE" ]; then
-    echo "Importing GPG public key..."
-    gpg --import "$GPG_PUBKEY_FILE" || {
-        echo "Warning: Failed to import GPG public key."
-        read -p "Do you want to continue without importing the GPG public key? [y/N]: " CONFIRM
-        if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
-            echo "Installation aborted by user."
-            exit 1
-        fi
-    }
-else
-    echo "No GPG public key file found. Skipping GPG key import."
-fi
+  # Import GPG public key
+  if [ -n "$GPG_PUBKEY_FILE" ] && [ -f "$GPG_PUBKEY_FILE" ]; then
+      echo "Importing GPG public key..."
+      gpg --import "$GPG_PUBKEY_FILE" || {
+          echo "Warning: Failed to import GPG public key."
+          read -p "Do you want to continue without importing the GPG public key? [y/N]: " CONFIRM
+          if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+              echo "Installation aborted by user."
+              exit 1
+          fi
+      }
+  else
+      echo "No GPG public key file found. Skipping GPG key import."
+  fi
 
     # Import and trust the GPG key
     if [ -n "$GPG_KEY_ID" ]; then
@@ -1922,18 +2028,19 @@ show_maxmind() {
 }
 
 check_for_updates
-
+which_search_engine
 while true; do
   show_intro
   echo "Choose an option:"
   echo "1. Configure static IP address"
   echo "2. Configure fully featured trial"
   echo "3. Enable MaxMind enrichment"
-  echo "4. Utilities"
-  echo "5. Games"
-  echo "6. Generate support bundle"
-  echo "7. Change Elasticsearch password"
-  echo "8. Quit"
+  echo "4. ElastiFlow Utilities"
+  echo "5. Elasticsearch Utilities"
+  echo "6. Opensearch Utilities"
+  echo "7. Generate support bundle"
+  echo "8. Change Elasticsearch password"
+  echo "9. Quit"
   read -p "Enter your choice (1-8): " choice
   clear
   case $choice in
@@ -1951,7 +2058,6 @@ while true; do
         echo "Utilities:"
         echo "1. Capture packets"
         echo "2. Daemon reload and restart flowcoll.service"
-        echo "3. Daemon reload and restart flowcoll.service, elasticsearch.service, and kibana.service"
         echo "4. Edit flowcoll.yml using nano"
         echo "5. Enable FPS monitor"
         echo "6. Generate sample flow"
@@ -1961,11 +2067,8 @@ while true; do
         echo "10. Restore flowcoll.yml from Internet"
         echo "11. Restore flowcoll.yml from latest backup"
         echo "12. Revert network interface changes"
-        echo "13. Watch elasticsearch.service log"
         echo "14. Watch flowcoll.service log"
-        echo "15. Watch kibana.service log"
         echo "16. Install SNMP Collector"
-        echo "17. Reset Elasticsearch password"
         echo "18. Update ElastiFlow Flow Collector"
         echo "19. Update ElastiFlow SNMP Collector"
         echo "20. Back"
@@ -1977,9 +2080,6 @@ while true; do
             ;;
           2)
             reload_and_restart_services "flowcoll.service"
-            ;;
-          3)
-            reload_and_restart_services "elasticsearch.service" "kibana.service" "flowcoll.service"
             ;;
           4)
             backup_existing_flowcoll
@@ -2031,20 +2131,11 @@ while true; do
           12)
             revert_network_changes
             ;;
-          13)
-            journalctl -u elasticsearch.service -f
-            ;;
           14)
             journalctl -u flowcoll.service -f
             ;;
-          15)
-            journalctl -u kibana.service -f
-            ;;
           16)
             install_snmp_collector
-            ;;
-          17)
-            reset_elastic_password
             ;;
           18)
             update_flow_collector
@@ -2056,41 +2147,93 @@ while true; do
             break
             ;;
           *)
-            print_message "Invalid choice. Please enter a number between 1 and 19." "$RED"
+            print_message "Invalid choice. Please enter a number between 1 and 20." "$RED"
             ;;
         esac
       done
       ;;
     5)
-      while true; do
-        echo "Games:"
-        echo "1. Play Battleship"
-        echo "2. Back"
-        read -p "Enter your choice (1-2): " game_choice
-        clear
-        case $game_choice in
-          1)
-            play_battleship
-            ;;
-          2)
-            break
-            ;;
-          *)
-            print_message "Invalid choice. Please enter 1 or 2." "$RED"
-            ;;
-        esac
-      done
+      if [[ $SEARCH_ENGINE == "Elastic" ]]; then
+        while true; do
+          echo "Easticsearch Utilities"
+          echo "1. Daemon reload and restart flowcoll.service, elasticsearch.service, and kibana.service"
+          echo "2. Watch elasticsearch.service log"
+          echo "3. Watch kibana.service log"
+          echo "4. Reset Elasticsearch passworrd"
+          echo "5. Back"
+          read -p "Enter your choice (1-5): " game_choice
+          clear
+          case $game_choice in
+            1)
+              reload_and_restart_services "elasticsearch.service" "kibana.service" "flowcoll.service"
+              ;;
+            2)
+              journalctl -u elasticsearch.service -f
+              ;;
+            3)
+              journalctl -u kibana.service -f
+              ;;
+            4)
+              reset_elastic_password
+              ;;
+            5)
+              break
+              ;;
+            *)
+              print_message "Invalid choice. Please enter 1-4." "$RED"
+              ;;
+          esac
+        done
+      else
+        echo "Elasticsearch is not running...."
+      fi
       ;;
     6)
+      if [[ $SEARCH_ENGINE == "Opensearch" ]]; then
+        while true; do
+          echo "Opensearch Utilities"
+          echo "1. Daemon reload and restart flowcoll.service, opensearch.service, and opensearch-dashboards.service"
+          echo "2. Watch opensearch.service log"
+          echo "3. Watch opensearch-dashboards.service log"
+          echo "4. Reset Opensearch password"
+          echo "5. Back"
+          read -p "Enter your choice (1-5): " game_choice
+          clear
+          case $game_choice in
+            1)
+              reload_and_restart_services "opensearch.service" "opensearch-dashboards.service" "flowcoll.service"
+              ;;
+            2)
+              journalctl -u opensearch.service -f
+              ;;
+            3)
+              journalctl -u opensearch-dashboards.service -f
+              ;;
+            4)
+              reset_opensearch_password
+              ;;
+            5)
+              break
+              ;;
+            *)
+              print_message "Invalid choice. Please enter 1-4." "$RED"
+              ;;
+          esac
+        done
+      else
+        echo "Opensearch is not running...."
+      fi
+      ;;
+    7)
       echo "Generating support bundle..."
       /usr/share/elastiflow/bin/flowcoll -s
       echo "Support bundle created"
       echo "Attach the resulting support bundle archive to an email or support ticket for ElastiFlow to review."
       ;;
-    7)
+    8)
       change_elasticsearch_password
       ;;
-    8)
+    9)
       echo "Quitting..."
       exit 0
       ;;
