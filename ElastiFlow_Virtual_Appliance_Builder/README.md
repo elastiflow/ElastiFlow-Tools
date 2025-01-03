@@ -10,7 +10,7 @@ Script to easily install everything needed to PoC (or run in a small deployment)
 
 What this script does:
 ----------------
-Downloads, installs, and configures Elasticsearch, Kibana, ElastiFlow Unified Flow Collector, and ElastiFlow flow dashboards
+Downloads, installs, and configures (Elasticsearch, Kibana) or (Opensearch, Opensearch Dashboards), ElastiFlow Unified Flow Collector, and ElastiFlow flow dashboards
 
 Requirements:
 ----------------
@@ -35,14 +35,18 @@ flowcoll_version="7.5.3"
 
 #note: Elastic 8.16.1 is the last version to have free TSDS
 elasticsearch_version="8.16.1"
+opensearch_version=2.18.0
 
 kibana_version="8.16.1"
 
 flow_dashboards_version="8.14.x"
 flow_dashboards_codex_ecs="codex"
+osd_flow_dashboards_version="2.14.x"
 flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
 elastic_username="elastic"
 elastic_password2="elastic"
+opensearch_username="admin"
+opensearch_password2="yourStrongPassword123!"
 
 # vm specs 64 gigs ram, 16 vcpus, 2 TB disk, license for up to 64k FPS, fpus 4 - so there's a 16k FPS limit, 1 week retention
 fpus="4"
