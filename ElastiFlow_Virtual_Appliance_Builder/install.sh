@@ -11,7 +11,7 @@ exec > >(tee -a "$LOG_FILE") 2>&1
 # run script in non-interactive mode by default
 export DEBIAN_FRONTEND=noninteractive
 
-# Version: 3.0.3.5
+# Version: 3.0.4.0
 
 ########################################################
 # If you do not have an ElastiFlow Account ID and ElastiFlow Flow License Key,
@@ -31,6 +31,12 @@ flow_dashboards_codex_ecs="codex"
 flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
 elastic_username="elastic"
 elastic_password2="elastic"
+opensearch_version=2.18.0
+opensearch_username="admin"
+opensearch_password2="yourStrongPassword123!"
+OPENSEARCH_INITIAL_ADMIN_PASSWORD="yourStrongPassword123!"
+osd_flow_dashboards_version="2.14.x"
+SEARCH_ENGINE='Elastic'
 # vm specs 64 gigs ram, 16 vcpus, 2 TB disk, license for up to 64k FPS, fpus 4 - so there's a 16k FPS limit, 1 week retention
 fpus="4"
 ########################################################
@@ -63,6 +69,48 @@ install_os_updates() {
   print_message "Updates installed successfully." "$GREEN"
 }
 
+select_search_engine(){
+  #!/bin/bash
+  # Define the options
+  options=(
+      "Elasticsearch"
+      "Opensearch"
+      "Exit install script"
+  )
+  # Function to display options
+  display_options() {
+      echo "Select the search engine for ElastiFlow to use:"
+      for i in "${!options[@]}"; do
+          echo "$((i + 1)). ${options[i]}"
+      done
+  }
+  # Prompt the user for input
+  while true; do
+      display_options
+      read -rp "Enter the number corresponding to your choice: " choice
+      # Validate the input
+      if [[ "$choice" =~ ^[0-9]+$ ]] && ((choice >= 1 && choice <= ${#options[@]})); then
+          echo "You selected: ${options[choice - 1]}"
+          break
+      else
+          echo "Invalid choice. Please enter a number between 1 and ${#options[@]}."
+      fi
+  done
+  # Perform actions based on the user's choice
+  case "$choice" in
+      1)
+          SEARCH_ENGINE='Elastic'
+          ;;
+      2)
+          SEARCH_ENGINE='Opensearch'
+          ;;
+      3)
+          echo "Exiting..."
+          exit 0
+          ;;
+  esac
+}
+
 
 sanitize_system() {
 
@@ -70,7 +118,7 @@ print_message "Finding and cleaning previous / competing installations..." "$GRE
 
   # Define services, directories, and keywords
   SERVICES=("flowcoll" "elasticsearch" "kibana" "opensearch" "opensearch-dashboards" "snmpcoll")
-  KEYWORDS=("kibana" "elasticsearch" "flowcoll" "elastiflow" "opensearch" "opensearch-dashboards" "snmpcoll" "elastic.co")
+  KEYWORDS=("kibana" "elasticsearch" "flowcoll" "elastiflow" "opensearch" "opensearch-dashboards" "snmpcoll" "elastic.co" "elastic")
   PORTS=(8080 5601 9200 2055 4739 6343 9995)
 
   # Stop services
@@ -539,12 +587,26 @@ get_dashboard_url() {
   local kibana_url="http://$ip_address:5601"
   local dashboard_title="$1"
   local encoded_title=$(echo "$dashboard_title" | sed 's/ /%20/g' | sed 's/:/%3A/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
-  local response=$(curl -s -u "$elastic_username:$elastic_password2" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
+  case "$SEARCH_ENGINE" in 
+    "Elastic")
+      local response=$(curl -s -u "$elastic_username:$elastic_password2" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
+      ;;
+    "Opensearch")
+      local response=$(curl -s -u "$opensearch_username:$opensearch_password2" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'osd-xsrf: true')
+      ;;
+  esac
   dashboard_id=$(echo "$response" | jq -r '.saved_objects[] | select(.attributes.title=="'"$dashboard_title"'") | .id')
   if [ -z "$dashboard_id" ]; then
     echo "Dashboard not found"
   else
-    echo "$kibana_url/app/kibana#/dashboard/$dashboard_id"
+    case "$SEARCH_ENGINE" in 
+    "Elastic")
+      echo "$kibana_url/app/kibana#/dashboard/$dashboard_id"
+      ;;
+    "Opensearch")
+      echo "$kibana_url/app/dashboard#/view/$dashboard_id"
+      ;;
+    esac
   fi
 }
 
@@ -553,7 +615,7 @@ find_and_replace() {
   shift
   local PAIRS=("$@")
   if [ ! -f "$FILE" ]; then
-    print_message "File not found!" "$RED"
+    print_message "File $FILE not found!" "$RED"
     exit 1
   fi
   for ((i = 0; i < ${#PAIRS[@]}; i+=2)); do
@@ -806,38 +868,78 @@ change_elasticsearch_password() {
 }
 
 install_elastiflow() {
-  elastiflow_config_strings=(
-  "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: 'true'"
-  "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: '${elastiflow_account_id}'"
-  "EF_FLOW_LICENSE_KEY" "EF_FLOW_LICENSE_KEY: '${elastiflow_flow_license_key}'"
-  "EF_FLOW_LICENSED_UNITS" "EF_FLOW_LICENSED_UNITS: $fpus"
-  "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: 'true'"
-  "EF_OUTPUT_ELASTICSEARCH_ADDRESSES" "EF_OUTPUT_ELASTICSEARCH_ADDRESSES: '127.0.0.1:9200'"
-  "EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE: 'false'"
-  "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: '${elastic_password2}'"
-  "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: 'true'"
-  "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION" "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: 'true'"
-  "EF_FLOW_SERVER_UDP_IP" "EF_FLOW_SERVER_UDP_IP: '0.0.0.0'"
-  "EF_FLOW_SERVER_UDP_READ_BUFFER_MAX_SIZE" "EF_FLOW_SERVER_UDP_READ_BUFFER_MAX_SIZE: '33554432'"
-  "EF_PROCESSOR_DECODE_IPFIX_ENABLE" "EF_PROCESSOR_DECODE_IPFIX_ENABLE: 'true'"
-  "EF_LOGGER_FILE_LOG_ENABLE" "EF_LOGGER_FILE_LOG_ENABLE: 'true'"
-  "EF_LOGGER_FILE_LOG_FILENAME" "EF_LOGGER_FILE_LOG_FILENAME: '/var/log/elastiflow/flowcoll/flowcoll.log'"
-  "EF_OUTPUT_ELASTICSEARCH_TSDS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TSDS_ENABLE: 'true'"
-  "EF_PROCESSOR_ENRICH_IPADDR_METADATA_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_METADATA_ENABLE: 'true'"
-  "EF_PROCESSOR_ENRICH_IPADDR_METADATA_USERDEF_PATH" "EF_PROCESSOR_ENRICH_IPADDR_METADATA_USERDEF_PATH: '/etc/elastiflow/metadata/ipaddrs.yml'"
-  "EF_PROCESSOR_ENRICH_NETIF_METADATA_ENABLE" "EF_PROCESSOR_ENRICH_NETIF_METADATA_ENABLE: 'true'"
-  "EF_PROCESSOR_ENRICH_NETIF_METADATA_USERDEF_PATH" "EF_PROCESSOR_ENRICH_NETIF_METADATA_USERDEF_PATH: '/etc/elastiflow/metadata/netifs.yml'"
-  "EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE: 'true'"
-  "EF_PROCESSOR_ENRICH_IPADDR_DNS_USERDEF_PATH" "EF_PROCESSOR_ENRICH_IPADDR_DNS_USERDEF_PATH: '/etc/elastiflow/hostname/user_defined.yml'"
-  "EF_PROCESSOR_ENRICH_IPADDR_DNS_INCLEXCL_PATH" "EF_PROCESSOR_ENRICH_IPADDR_DNS_INCLEXCL_PATH: '/etc/elastiflow/hostname/incl_excl.yml'"
-  "EF_PROCESSOR_ENRICH_APP_ID_ENABLE" "EF_PROCESSOR_ENRICH_APP_ID_ENABLE: 'true'"
-  "EF_PROCESSOR_ENRICH_APP_ID_PATH" "EF_PROCESSOR_ENRICH_APP_ID_PATH: '/etc/elastiflow/app/appid.yml'"
-  "EF_PROCESSOR_ENRICH_APP_IPPORT_ENABLE" "EF_PROCESSOR_ENRICH_APP_IPPORT_ENABLE: 'true'"
-  "EF_PROCESSOR_ENRICH_APP_IPPORT_PATH" "EF_PROCESSOR_ENRICH_APP_IPPORT_PATH: '/etc/elastiflow/app/ipport.yml'"
-  "EF_PROCESSOR_ENRICH_NETIF_METADATA_ENABLE" "EF_PROCESSOR_ENRICH_NETIF_METADATA_ENABLE: 'true'"
-  "EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_TIMEOUT" "EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_TIMEOUT: '60'"
-  "EF_OUTPUT_ELASTICSEARCH_INDEX_TEMPLATE_REPLICAS" "EF_OUTPUT_ELASTICSEARCH_INDEX_TEMPLATE_REPLICAS: 0"
-  )
+  case "$SEARCH_ENGINE" in 
+    "Elastic")
+      elastiflow_config_strings=(
+      "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: 'true'"
+      "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: '${elastiflow_account_id}'"
+      "EF_FLOW_LICENSE_KEY" "EF_FLOW_LICENSE_KEY: '${elastiflow_flow_license_key}'"
+      "EF_FLOW_LICENSED_UNITS" "EF_FLOW_LICENSED_UNITS: $fpus"
+      "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: 'true'"
+      "EF_OUTPUT_ELASTICSEARCH_ADDRESSES" "EF_OUTPUT_ELASTICSEARCH_ADDRESSES: '127.0.0.1:9200'"
+      "EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE: 'false'"
+      "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: '${elastic_password2}'"
+      "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: 'true'"
+      "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION" "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: 'true'"
+      "EF_FLOW_SERVER_UDP_IP" "EF_FLOW_SERVER_UDP_IP: '0.0.0.0'"
+      "EF_FLOW_SERVER_UDP_READ_BUFFER_MAX_SIZE" "EF_FLOW_SERVER_UDP_READ_BUFFER_MAX_SIZE: '33554432'"
+      "EF_PROCESSOR_DECODE_IPFIX_ENABLE" "EF_PROCESSOR_DECODE_IPFIX_ENABLE: 'true'"
+      "EF_LOGGER_FILE_LOG_ENABLE" "EF_LOGGER_FILE_LOG_ENABLE: 'true'"
+      "EF_LOGGER_FILE_LOG_FILENAME" "EF_LOGGER_FILE_LOG_FILENAME: '/var/log/elastiflow/flowcoll/flowcoll.log'"
+      "EF_OUTPUT_ELASTICSEARCH_TSDS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TSDS_ENABLE: 'true'"
+      "EF_PROCESSOR_ENRICH_IPADDR_METADATA_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_METADATA_ENABLE: 'true'"
+      "EF_PROCESSOR_ENRICH_IPADDR_METADATA_USERDEF_PATH" "EF_PROCESSOR_ENRICH_IPADDR_METADATA_USERDEF_PATH: '/etc/elastiflow/metadata/ipaddrs.yml'"
+      "EF_PROCESSOR_ENRICH_NETIF_METADATA_ENABLE" "EF_PROCESSOR_ENRICH_NETIF_METADATA_ENABLE: 'true'"
+      "EF_PROCESSOR_ENRICH_NETIF_METADATA_USERDEF_PATH" "EF_PROCESSOR_ENRICH_NETIF_METADATA_USERDEF_PATH: '/etc/elastiflow/metadata/netifs.yml'"
+      "EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE: 'true'"
+      "EF_PROCESSOR_ENRICH_IPADDR_DNS_USERDEF_PATH" "EF_PROCESSOR_ENRICH_IPADDR_DNS_USERDEF_PATH: '/etc/elastiflow/hostname/user_defined.yml'"
+      "EF_PROCESSOR_ENRICH_IPADDR_DNS_INCLEXCL_PATH" "EF_PROCESSOR_ENRICH_IPADDR_DNS_INCLEXCL_PATH: '/etc/elastiflow/hostname/incl_excl.yml'"
+      "EF_PROCESSOR_ENRICH_APP_ID_ENABLE" "EF_PROCESSOR_ENRICH_APP_ID_ENABLE: 'true'"
+      "EF_PROCESSOR_ENRICH_APP_ID_PATH" "EF_PROCESSOR_ENRICH_APP_ID_PATH: '/etc/elastiflow/app/appid.yml'"
+      "EF_PROCESSOR_ENRICH_APP_IPPORT_ENABLE" "EF_PROCESSOR_ENRICH_APP_IPPORT_ENABLE: 'true'"
+      "EF_PROCESSOR_ENRICH_APP_IPPORT_PATH" "EF_PROCESSOR_ENRICH_APP_IPPORT_PATH: '/etc/elastiflow/app/ipport.yml'"
+      "EF_PROCESSOR_ENRICH_NETIF_METADATA_ENABLE" "EF_PROCESSOR_ENRICH_NETIF_METADATA_ENABLE: 'true'"
+      "EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_TIMEOUT" "EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_TIMEOUT: '60'"
+      "EF_OUTPUT_ELASTICSEARCH_INDEX_TEMPLATE_REPLICAS" "EF_OUTPUT_ELASTICSEARCH_INDEX_TEMPLATE_REPLICAS: 0"
+      )
+      ;;
+    "Opensearch")
+      elastiflow_config_strings=(
+      "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: 'true'"
+      "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: '${elastiflow_account_id}'"
+      "EF_FLOW_LICENSE_KEY" "EF_FLOW_LICENSE_KEY: '${elastiflow_flow_license_key}'"
+      "EF_FLOW_LICENSED_UNITS" "EF_FLOW_LICENSED_UNITS: $fpus"
+      "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: 'false'"
+      "EF_OUTPUT_OPENSEARCH_ENABLE" "EF_OUTPUT_OPENSEARCH_ENABLE: 'true'"
+      "EF_OUTPUT_OPENSEARCH_ADDRESSES" "EF_OUTPUT_OPENSEARCH_ADDRESSES: '127.0.0.1:9200'"
+      "EF_OUTPUT_OPENSEARCH_ECS_ENABLE" "EF_OUTPUT_OPENSEARCH_ECS_ENABLE: 'false'"
+      "EF_OUTPUT_OPENSEARCH_USERNAME" "EF_OUTPUT_OPENSEARCH_USERNAME: 'admin'"
+      "EF_OUTPUT_OPENSEARCH_PASSWORD" "EF_OUTPUT_OPENSEARCH_PASSWORD: '${opensearch_password2}'"
+      "EF_OUTPUT_OPENSEARCH_TLS_ENABLE" "EF_OUTPUT_OPENSEARCH_TLS_ENABLE: 'true'"
+      "EF_OUTPUT_OPENSEARCH_TLS_SKIP_VERIFICATION" "EF_OUTPUT_OPENSEARCH_TLS_SKIP_VERIFICATION: 'true'"
+      "EF_FLOW_SERVER_UDP_IP" "EF_FLOW_SERVER_UDP_IP: '0.0.0.0'"
+      "EF_FLOW_SERVER_UDP_READ_BUFFER_MAX_SIZE" "EF_FLOW_SERVER_UDP_READ_BUFFER_MAX_SIZE: '33554432'"
+      "EF_PROCESSOR_DECODE_IPFIX_ENABLE" "EF_PROCESSOR_DECODE_IPFIX_ENABLE: 'true'"
+      "EF_LOGGER_FILE_LOG_ENABLE" "EF_LOGGER_FILE_LOG_ENABLE: 'true'"
+      "EF_LOGGER_FILE_LOG_FILENAME" "EF_LOGGER_FILE_LOG_FILENAME: '/var/log/elastiflow/flowcoll/flowcoll.log'"
+      "EF_OUTPUT_ELASTICSEARCH_TSDS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TSDS_ENABLE: 'true'"
+      "EF_PROCESSOR_ENRICH_IPADDR_METADATA_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_METADATA_ENABLE: 'true'"
+      "EF_PROCESSOR_ENRICH_IPADDR_METADATA_USERDEF_PATH" "EF_PROCESSOR_ENRICH_IPADDR_METADATA_USERDEF_PATH: '/etc/elastiflow/metadata/ipaddrs.yml'"
+      "EF_PROCESSOR_ENRICH_NETIF_METADATA_ENABLE" "EF_PROCESSOR_ENRICH_NETIF_METADATA_ENABLE: 'true'"
+      "EF_PROCESSOR_ENRICH_NETIF_METADATA_USERDEF_PATH" "EF_PROCESSOR_ENRICH_NETIF_METADATA_USERDEF_PATH: '/etc/elastiflow/metadata/netifs.yml'"
+      "EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE: 'true'"
+      "EF_PROCESSOR_ENRICH_IPADDR_DNS_USERDEF_PATH" "EF_PROCESSOR_ENRICH_IPADDR_DNS_USERDEF_PATH: '/etc/elastiflow/hostname/user_defined.yml'"
+      "EF_PROCESSOR_ENRICH_IPADDR_DNS_INCLEXCL_PATH" "EF_PROCESSOR_ENRICH_IPADDR_DNS_INCLEXCL_PATH: '/etc/elastiflow/hostname/incl_excl.yml'"
+      "EF_PROCESSOR_ENRICH_APP_ID_ENABLE" "EF_PROCESSOR_ENRICH_APP_ID_ENABLE: 'true'"
+      "EF_PROCESSOR_ENRICH_APP_ID_PATH" "EF_PROCESSOR_ENRICH_APP_ID_PATH: '/etc/elastiflow/app/appid.yml'"
+      "EF_PROCESSOR_ENRICH_APP_IPPORT_ENABLE" "EF_PROCESSOR_ENRICH_APP_IPPORT_ENABLE: 'true'"
+      "EF_PROCESSOR_ENRICH_APP_IPPORT_PATH" "EF_PROCESSOR_ENRICH_APP_IPPORT_PATH: '/etc/elastiflow/app/ipport.yml'"
+      "EF_PROCESSOR_ENRICH_NETIF_METADATA_ENABLE" "EF_PROCESSOR_ENRICH_NETIF_METADATA_ENABLE: 'true'"
+      "EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_TIMEOUT" "EF_PROCESSOR_ENRICH_IPADDR_NETINTEL_TIMEOUT: '60'"
+      "EF_OUTPUT_ELASTICSEARCH_INDEX_TEMPLATE_REPLICAS" "EF_OUTPUT_ELASTICSEARCH_INDEX_TEMPLATE_REPLICAS: 0"
+      )
+      ;;
+    esac
 
   print_message "\nDownloading and installing ElastiFlow Flow Collector..." "$GREEN"
   #wget -O flow-collector_"$flowcoll_version"_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_"$flowcoll_version"_linux_amd64.deb
@@ -854,11 +956,30 @@ install_elastiflow() {
   sleep_message "Giving ElastiFlow service time to stabilize" 10
 }
 
-install_dashboards() {
+install_kibana_dashboards() {
   print_message "Downloading and installing ElastiFlow flow dashboards" "$GREEN"
   git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
 
   response=$(curl --connect-timeout 10 -X POST -u $elastic_username:$elastic_password "localhost:5601/api/saved_objects/_import?overwrite=true" -H "kbn-xsrf: true" --form file=@/etc/elastiflow_for_elasticsearch/kibana/flow/kibana-$flow_dashboards_version-flow-$flow_dashboards_codex_ecs.ndjson -H 'kbn-xsrf: true')
+
+  if [ $? -ne 0 ]; then
+    printf "Error: %s\n" "$response"
+    printf "Flow dashboards not installed successfully\n"
+  else
+    dashboards_success=$(echo "$response" | jq -r '.success')
+    if [ "$dashboards_success" == "true" ]; then
+        printf "Flow dashboards installed successfully.\n"
+    else
+        printf "Flow dashboards not installed successfully\n"
+    fi
+  fi
+}
+
+install_osd_dashboards() {
+  print_message "Downloading and installing ElastiFlow flow dashboards" "$GREEN"
+  git clone https://github.com/elastiflow/elastiflow_for_opensearch.git /etc/elastiflow_for_opensearch/
+
+  response=$(curl --connect-timeout 10 -X POST -u $opensearch_username:$opensearch_password2 "localhost:5601/api/saved_objects/_import?overwrite=true" -H "osd-xsrf: true" --form file=@/etc/elastiflow_for_opensearch/dashboards/flow/dashboards-$osd_flow_dashboards_version-flow-$flow_dashboards_codex_ecs.ndjson -H 'osd-xsrf: true')
 
   if [ $? -ne 0 ]; then
     printf "Error: %s\n" "$response"
@@ -906,7 +1027,14 @@ resize_part_to_max() {
 
 
 check_all_services() {
-  SERVICES=("elasticsearch.service" "kibana.service" "flowcoll.service")
+  case "$SEARCH_ENGINE" in 
+    "Elastic")
+      SERVICES=("elasticsearch.service" "kibana.service" "flowcoll.service")
+      ;;
+    "Opensearch")
+      SERVICES=("opensearch.service" "opensearch-dashboards.service" "flowcoll.service")
+      ;;
+  esac
   for SERVICE_NAME in "${SERVICES[@]}"; do
       check_service_status "$SERVICE_NAME"
   done
@@ -927,10 +1055,21 @@ display_info() {
   echo -e "Installed ElastiFlow Flow version: $version"
   version=$flow_dashboards_version
   echo -e "Installed ElastiFlow Flow Dashboards version: $flow_dashboards_codex_ecs $version"
-  version=$(/usr/share/kibana/bin/kibana --version --allow-root | jq -r '.config.serviceVersion.value' 2>/dev/null)
-  echo -e "Installed Kibana version: $version\n"
-  version=$(/usr/share/elasticsearch/bin/elasticsearch --version | grep -oP 'Version: \K[\d.]+')
-  echo -e "Installed Elasticsearch version: $version"
+  case "$SEARCH_ENGINE" in 
+    "Elastic")
+      version=$(/usr/share/kibana/bin/kibana --version --allow-root | jq -r '.config.serviceVersion.value' 2>/dev/null)
+      echo -e "Installed Kibana version: $version\n"
+      version=$(/usr/share/elasticsearch/bin/elasticsearch --version | grep -oP 'Version: \K[\d.]+')
+      echo -e "Installed Elasticsearch version: $version"
+      ;;
+    "Opensearch")
+      version=$(grep -oP 'version: \K[\d.]+' /usr/share/opensearch-dashboards/manifest.yml )
+      echo -e "Installed Opensearch Dashboards version: $version\n"
+      version=$(/usr/share/opensearch/bin/opensearch --version | grep -oP 'Version: \K[\d.]+')
+      echo -e "Installed Opensearch version: $version"
+      ;;
+  esac
+
   version=$(java -version 2>&1)
   echo -e "Installed Java version: $version"
   version=$(lsb_release -d | awk -F'\t' '{print $2}')
@@ -941,13 +1080,23 @@ display_info() {
 
 display_dashboard_url() {
   dashboard_url=$(get_dashboard_url "ElastiFlow (flow): Overview")
-  printf "*********************************************\n"
-  printf "\033[32m\nGo to %s (%s / %s)\n\033[0m" "$dashboard_url" "$elastic_username" "$elastic_password2"
-  printf "DO NOT CHANGE THIS PASSWORD VIA KIBANA. ONLY CHANGE IT VIA sudo ./configure\n"
-  printf "For further configuration options, run sudo ./configure\n"
-  printf "*********************************************\n"
+  case "$SEARCH_ENGINE" in 
+    "Elastic")
+      printf "*********************************************\n"
+      printf "\033[32m\nGo to %s (%s / %s)\n\033[0m" "$dashboard_url" "$elastic_username" "$elastic_password2"
+      printf "DO NOT CHANGE THIS PASSWORD VIA KIBANA. ONLY CHANGE IT VIA sudo ./configure\n"
+      printf "For further configuration options, run sudo ./configure\n"
+      printf "*********************************************\n"
+      ;;
+    "Opensearch")
+      printf "*********************************************\n"
+      printf "\033[32m\nGo to %s (%s / %s)\n\033[0m" "$dashboard_url" "$opensearch_username" "$opensearch_password2"
+      printf "DO NOT CHANGE THIS PASSWORD VIA OPENSEACRH DASHBOARDS. ONLY CHANGE IT VIA sudo ./configure\n"
+      printf "For further configuration options, run sudo ./configure\n"
+      printf "*********************************************\n"
+      ;;
+  esac
 }
-
 remove_update_service(){
   print_message "Removing Ubuntu update service...\n"
   apt-get remove -y unattended-upgrades
@@ -1201,14 +1350,127 @@ fi
     echo "ElastiFlow Installation completed successfully."
 }
 
+pick_search_engine() {
+  options=(
+      "Elasticsearch + Kibana"
+      "Opensearch + Opensearch Dashboards"
+      "Exit Install script"
+  )
+
+  # Function to display options
+  display_options() {
+      echo "Please select which search engine to imstall:"
+      for i in "${!options[@]}"; do
+          echo "$((i + 1)). ${options[i]}"
+      done
+  }
+
+  # Prompt the user for input
+  while true; do
+      display_options
+      read -rp "Enter the number corresponding to your choice: " choice
+
+      # Validate the input
+      if [[ "$choice" =~ ^[0-9]+$ ]] && ((choice >= 1 && choice <= ${#options[@]})); then
+          echo "You selected: ${options[choice - 1]}"
+          break
+      else
+          echo "Invalid choice. Please enter a number between 1 and ${#options[@]}."
+      fi
+  done
+
+  # Perform actions based on the user's choice
+  case "$choice" in
+      1)
+          echo "Starting the process..."
+          ;;
+      2)
+          echo "Checking the status..."
+          ;;
+      3)
+          echo "Exiting..."
+          exit 0
+          ;;
+  esac
+}
+
+install_opensearch() {
+  print_message "Installing Opensearch...\n" "$GREEN"
+  curl -o- https://artifacts.opensearch.org/publickeys/opensearch.pgp | sudo gpg --dearmor --batch --yes -o /usr/share/keyrings/opensearch-keyring || handle_error "Failed to add Opensearch GPG key." "${LINENO}"
+  echo "deb [signed-by=/usr/share/keyrings/opensearch-keyring] https://artifacts.opensearch.org/releases/bundle/opensearch/2.x/apt stable main" | sudo tee /etc/apt/sources.list.d/opensearch-2.x.list || handle_error "Failed to add Opensearch repository." "${LINENO}"
+  opensearch_install_log=$(apt-get -q update &&  env OPENSEARCH_INITIAL_ADMIN_PASSWORD=$opensearch_password2 apt-get install opensearch=$opensearch_version | stdbuf -oL tee /dev/console) || handle_error "Failed to install Opensearch." "${LINENO}"
+  print_message "Configuring Opensearch...\n" "$GREEN"
+  configure_opensearch
+}
+
+start_opensearch() {
+  print_message "Enabling and starting Opensearch service..." "$GREEN"
+  systemctl daemon-reload && systemctl enable opensearch.service && systemctl start opensearch.service
+  sleep_message "Giving Opensearch service time to stabilize" 10
+  print_message "Checking if Opensearch service is running..." "$GREEN"
+  if systemctl is-active --quiet opensearch.service; then
+    printf "Opensearch service is running.\n"
+  else
+    echo "Opensearch is not running.\n"
+  fi
+  print_message "Checking if Opensearch server is up..." "$GREEN"
+  curl_result=$(curl -s -k -u $opensearch_username:"$opensearch_password2" https://localhost:9200)
+  search_text='cluster_name" : "opensearch'
+  if echo "$curl_result" | grep -q "$search_text"; then
+      echo -e "Opensearch is up! Used authenticated curl.\n"
+  else
+    echo -e "Something's wrong with Opensearch...\n"
+  fi
+}
+
+configure_opensearch() {
+
+  config_strings=(
+  "indices.query.bool.max_clause_count" "indices.query.bool.max_clause_count: 8192"
+  "search.max_buckets" "search.max_buckets: 250000"
+  )
+
+  find_and_replace "/etc/opensearch/opensearch.yml" "${config_strings[@]}" || handle_error "File etc/opensearch/opensearch.yml not found " "${LINENO}"
+}
+
+install_opensearch_dashboards() {
+  echo -e "Downloading and installing Opensearch Dashboards...\n"
+  echo "deb [signed-by=/usr/share/keyrings/opensearch-keyring] https://artifacts.opensearch.org/releases/bundle/opensearch-dashboards/2.x/apt stable main" | sudo tee /etc/apt/sources.list.d/opensearch-dashboards-2.x.list || handle_error "Failed to add Opensearch-dashboards repository." "${LINENO}"
+  apt-get -q update && apt-get -q install opensearch-dashboards=$opensearch_version
+}
+
+configure_opensearch_dashboards() {
+#   echo -e "Generating Opensearch Dashboards saved objects encryption key...\n"
+#   output=$(/usr/share/kibana/bin/kibana-encryption-keys generate -q)
+#   key_line=$(echo "$output" | grep '^xpack.encryptedSavedObjects.encryptionKey')
+#   if [[ -n "$key_line" ]]; then
+#       echo "$key_line" | tee -a /etc/opensearch-dashboards/opensearch_dashboards.yml > /dev/null
+#   else
+#       echo "No encryption key line found."
+#   fi
+
+  echo -e "Enabling and starting Opensearch Dashboards service...\n"
+  systemctl daemon-reload && systemctl enable opensearch-dashboards.service && systemctl start opensearch-dashboards.service
+  sleep_message "Giving Opensearch Dashboards service time to stabilize" 20
+  echo -e "Configuring Opensearch Dashboards - set 0.0.0.0 as server.host\n"
+  replace_text "/etc/opensearch-dashboards/opensearch_dashboards.yml" "# server.host: \"localhost\"" "server.host: \"0.0.0.0\"" "${LINENO}"
+  echo -e "Configuring Opensearch Dashboards - set opensearch.hosts to localhost instead of interface IP...\n"
+  replace_text "/etc/opensearch-dashboards/opensearch_dashboards.yml" "opensearch.hosts: \['https:\/\/[^']*'\]" "opensearch.hosts: \['https:\/\/localhost:9200'\]" "${LINENO}"
+  replace_text "/etc/opensearch-dashboards/opensearch_dashboards.yml" "opensearch.username: kibanaserver" "opensearch.username: admin" "${LINENO}"
+  replace_text "/etc/opensearch-dashboards/opensearch_dashboards.yml" "opensearch.password: kibanaserver" "opensearch.password: $opensearch_password2" "${LINENO}"
+  systemctl daemon-reload
+  systemctl restart opensearch-dashboards.service
+  sleep_message "Giving Opensearch Dashboards service time to stabilize" 20
+
+}
 
 main() {
   check_for_script_updates
   confirm_and_proceed
+  select_search_engine
   print_startup_message
   check_for_root
   sanitize_system
-  #check_existing_installations
   check_compatibility
   disable_predictable_network_names
   install_os_updates
@@ -1218,15 +1480,40 @@ main() {
   install_prerequisites
   tune_system
   sleep_message "Giving dpkg time to clean up" 10
-  install_elasticsearch
-  configure_jvm_memory
-  start_elasticsearch
+  case "$SEARCH_ENGINE" in 
+    "Elastic")
+      install_elasticsearch
+      configure_jvm_memory
+      start_elasticsearch
+      ;;
+    "Opensearch")
+      install_opensearch
+      configure_jvm_memory
+      start_opensearch
+      ;;
+  esac
   sleep_message "Giving dpkg time to clean up" 10
-  install_kibana
-  configure_kibana
-  change_elasticsearch_password
+  case "$SEARCH_ENGINE" in 
+    "Elastic")
+      install_kibana
+      configure_kibana
+      change_elasticsearch_password
+      ;;
+    "Opensearch")
+      install_opensearch_dashboards
+      configure_opensearch_dashboards
+      ;;
+  esac
   install_elastiflow
-  install_dashboards
+  case "$SEARCH_ENGINE" in 
+    "Elastic")
+      install_kibana_dashboards
+      set_kibana_homepage "ElastiFlow (flow): Overview"
+      ;;
+    "Opensearch")
+      install_osd_dashboards
+      ;;
+  esac
   download_aux_files
   check_all_services
   check_dashboards_status
@@ -1234,10 +1521,10 @@ main() {
   display_info
   display_dashboard_url
   create_banner
-  set_kibana_homepage "ElastiFlow (flow): Overview"
   update_jvm_options
   print_message "**************************" "$GREEN"
   print_message "All done" "$GREEN"
+  print_message "Access the GUI via http://$ip_address:5601" "$GREEN"
   print_message "**************************" "$GREEN"
   cleanup
   }
