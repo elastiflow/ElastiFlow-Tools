@@ -11,7 +11,7 @@ exec > >(tee -a "$LOG_FILE") 2>&1
 # run script in non-interactive mode by default
 export DEBIAN_FRONTEND=noninteractive
 
-# Version: 3.0.4.0
+# Version: 3.0.4.1
 
 ########################################################
 # If you do not have an ElastiFlow Account ID and ElastiFlow Flow License Key,
@@ -34,9 +34,9 @@ elastic_password2="elastic"
 opensearch_version=2.18.0
 opensearch_username="admin"
 opensearch_password2="yourStrongPassword123!"
-OPENSEARCH_INITIAL_ADMIN_PASSWORD="yourStrongPassword123!"
+#OPENSEARCH_INITIAL_ADMIN_PASSWORD="yourStrongPassword123!"
 osd_flow_dashboards_version="2.14.x"
-SEARCH_ENGINE='Elastic'
+DATA_PLATFORM='Elastic'
 # vm specs 64 gigs ram, 16 vcpus, 2 TB disk, license for up to 64k FPS, fpus 4 - so there's a 16k FPS limit, 1 week retention
 fpus="4"
 ########################################################
@@ -99,10 +99,10 @@ select_search_engine(){
   # Perform actions based on the user's choice
   case "$choice" in
       1)
-          SEARCH_ENGINE='Elastic'
+          DATA_PLATFORM='Elastic'
           ;;
       2)
-          SEARCH_ENGINE='Opensearch'
+          DATA_PLATFORM='Opensearch'
           ;;
       3)
           echo "Exiting..."
@@ -587,7 +587,7 @@ get_dashboard_url() {
   local kibana_url="http://$ip_address:5601"
   local dashboard_title="$1"
   local encoded_title=$(echo "$dashboard_title" | sed 's/ /%20/g' | sed 's/:/%3A/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
-  case "$SEARCH_ENGINE" in 
+  case "$DATA_PLATFORM" in 
     "Elastic")
       local response=$(curl -s -u "$elastic_username:$elastic_password2" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
       ;;
@@ -599,7 +599,7 @@ get_dashboard_url() {
   if [ -z "$dashboard_id" ]; then
     echo "Dashboard not found"
   else
-    case "$SEARCH_ENGINE" in 
+    case "$DATA_PLATFORM" in 
     "Elastic")
       echo "$kibana_url/app/kibana#/dashboard/$dashboard_id"
       ;;
@@ -868,7 +868,7 @@ change_elasticsearch_password() {
 }
 
 install_elastiflow() {
-  case "$SEARCH_ENGINE" in 
+  case "$DATA_PLATFORM" in 
     "Elastic")
       elastiflow_config_strings=(
       "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: 'true'"
@@ -979,7 +979,21 @@ install_osd_dashboards() {
   print_message "Downloading and installing ElastiFlow flow dashboards" "$GREEN"
   git clone https://github.com/elastiflow/elastiflow_for_opensearch.git /etc/elastiflow_for_opensearch/
 
-  response=$(curl --connect-timeout 10 -X POST -u $opensearch_username:$opensearch_password2 "localhost:5601/api/saved_objects/_import?overwrite=true" -H "osd-xsrf: true" --form file=@/etc/elastiflow_for_opensearch/dashboards/flow/dashboards-$osd_flow_dashboards_version-flow-$flow_dashboards_codex_ecs.ndjson -H 'osd-xsrf: true')
+  #create tenants using opensearch documented REST API
+  curl -k -XPUT -H'content-type: application/json' https://"$opensearch_username:$opensearch_password2"@localhost:9200/_plugins/_security/api/tenants/elastiflow -d '{"description": "ElastiFLow Dashboards"}'
+  
+
+  #login to opensearch-dashboards and save the cookie.
+  curl -k -XGET -u "$opensearch_username:$opensearch_password2" -c dashboards_cookie http://localhost:5601/api/login/
+  curl -k -XGET -b dashboards_cookie http://localhost:5601/api/v1/configuration/account | jq
+
+  #switch tenant. note the tenant is kept inside the cookie so we need to save it after this request
+  curl -k -XPOST -b dashboards_cookie -c dashboards_cookie -H'osd-xsrf: true' -H'content-type: application/json' http://localhost:5601/api/v1/multitenancy/tenant -d '{"tenant": "elastiflow", "username": "admin"}'
+  curl -k -XGET -b dashboards_cookie http://localhost:5601/api/v1/configuration/account | jq
+
+  #push the dashboard using the same cookie
+  response=$(curl -k -XPOST -H'osd-xsrf: true' -b dashboards_cookie http://localhost:5601/api/saved_objects/_import?overwrite=true --form file=@/etc/elastiflow_for_opensearch/dashboards/flow/dashboards-$osd_flow_dashboards_version-flow-$flow_dashboards_codex_ecs.ndjson)
+  # response=$(curl --connect-timeout 10 -X POST -u $opensearch_username:$opensearch_password2 "localhost:5601/api/saved_objects/_import?overwrite=true" -H "osd-xsrf: true" --form file=@/etc/elastiflow_for_opensearch/dashboards/flow/dashboards-$osd_flow_dashboards_version-flow-$flow_dashboards_codex_ecs.ndjson -H 'osd-xsrf: true')
 
   if [ $? -ne 0 ]; then
     printf "Error: %s\n" "$response"
@@ -1027,7 +1041,7 @@ resize_part_to_max() {
 
 
 check_all_services() {
-  case "$SEARCH_ENGINE" in 
+  case "$DATA_PLATFORM" in 
     "Elastic")
       SERVICES=("elasticsearch.service" "kibana.service" "flowcoll.service")
       ;;
@@ -1055,7 +1069,7 @@ display_info() {
   echo -e "Installed ElastiFlow Flow version: $version"
   version=$flow_dashboards_version
   echo -e "Installed ElastiFlow Flow Dashboards version: $flow_dashboards_codex_ecs $version"
-  case "$SEARCH_ENGINE" in 
+  case "$DATA_PLATFORM" in 
     "Elastic")
       version=$(/usr/share/kibana/bin/kibana --version --allow-root | jq -r '.config.serviceVersion.value' 2>/dev/null)
       echo -e "Installed Kibana version: $version\n"
@@ -1080,7 +1094,7 @@ display_info() {
 
 display_dashboard_url() {
   dashboard_url=$(get_dashboard_url "ElastiFlow (flow): Overview")
-  case "$SEARCH_ENGINE" in 
+  case "$DATA_PLATFORM" in 
     "Elastic")
       printf "*********************************************\n"
       printf "\033[32m\nGo to %s (%s / %s)\n\033[0m" "$dashboard_url" "$elastic_username" "$elastic_password2"
@@ -1464,6 +1478,47 @@ configure_opensearch_dashboards() {
 
 }
 
+install_data_platform() {
+  case "$DATA_PLATFORM" in 
+    "Elastic")
+      install_elasticsearch
+      configure_jvm_memory
+      start_elasticsearch
+      ;;
+    "Opensearch")
+      install_opensearch
+      configure_jvm_memory
+      start_opensearch
+      ;;
+  esac
+}
+
+install_data_playtform_ui() {
+  case "$DATA_PLATFORM" in 
+    "Elastic")
+      install_kibana
+      configure_kibana
+      change_elasticsearch_password
+      ;;
+    "Opensearch")
+      install_opensearch_dashboards
+      configure_opensearch_dashboards
+      ;;
+  esac
+}
+
+ install_dashboards() {
+  case "$DATA_PLATFORM" in 
+    "Elastic")
+      install_kibana_dashboards
+      set_kibana_homepage "ElastiFlow (flow): Overview"
+      ;;
+    "Opensearch")
+      install_osd_dashboards
+      ;;
+  esac
+ }
+
 main() {
   check_for_script_updates
   confirm_and_proceed
@@ -1480,40 +1535,11 @@ main() {
   install_prerequisites
   tune_system
   sleep_message "Giving dpkg time to clean up" 10
-  case "$SEARCH_ENGINE" in 
-    "Elastic")
-      install_elasticsearch
-      configure_jvm_memory
-      start_elasticsearch
-      ;;
-    "Opensearch")
-      install_opensearch
-      configure_jvm_memory
-      start_opensearch
-      ;;
-  esac
+  install_data_platform
   sleep_message "Giving dpkg time to clean up" 10
-  case "$SEARCH_ENGINE" in 
-    "Elastic")
-      install_kibana
-      configure_kibana
-      change_elasticsearch_password
-      ;;
-    "Opensearch")
-      install_opensearch_dashboards
-      configure_opensearch_dashboards
-      ;;
-  esac
+  install_data_playtform_ui
   install_elastiflow
-  case "$SEARCH_ENGINE" in 
-    "Elastic")
-      install_kibana_dashboards
-      set_kibana_homepage "ElastiFlow (flow): Overview"
-      ;;
-    "Opensearch")
-      install_osd_dashboards
-      ;;
-  esac
+  install_dashboards
   download_aux_files
   check_all_services
   check_dashboards_status
@@ -1522,11 +1548,12 @@ main() {
   display_dashboard_url
   create_banner
   update_jvm_options
+  cleanup
   print_message "**************************" "$GREEN"
   print_message "All done" "$GREEN"
   print_message "Access the GUI via http://$ip_address:5601" "$GREEN"
   print_message "**************************" "$GREEN"
-  cleanup
+
   }
 
 main

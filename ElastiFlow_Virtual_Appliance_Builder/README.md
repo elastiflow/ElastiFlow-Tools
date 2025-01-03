@@ -51,3 +51,6 @@ opensearch_password2="yourStrongPassword123!"
 # vm specs 64 gigs ram, 16 vcpus, 2 TB disk, license for up to 64k FPS, fpus 4 - so there's a 16k FPS limit, 1 week retention
 fpus="4"
 ```
+Opensearch:
+--------
+You will need to switch to the ElastiFlow tenant to see all of the installed ElastiFlow dashboards
