@@ -4,6 +4,7 @@ services:
     image: elastiflow/snmp-collector:${ELASTIFLOW_SNMP_VERSION}
     container_name: snmp-collector
     restart: 'unless-stopped'
+    network_mode: 'host'
     volumes:
       - /etc/elastiflow:/etc/elastiflow
     environment:
