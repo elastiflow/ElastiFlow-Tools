@@ -1144,7 +1144,7 @@ cleanup (){
 
 download_aux_files() {
   local current_dir="$(pwd)"
-  download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/configure/configure.sh" "$current_dir/configure.sh"
+  download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/ElastiFlow_Virtual_Appliance_Builder/configure.sh" "$current_dir/configure.sh"
 }
 
 
