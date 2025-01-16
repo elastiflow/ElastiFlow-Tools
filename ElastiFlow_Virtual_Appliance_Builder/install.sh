@@ -11,7 +11,7 @@ exec > >(tee -a "$LOG_FILE") 2>&1
 # run script in non-interactive mode by default
 export DEBIAN_FRONTEND=noninteractive
 
-# Version: 3.0.4.1
+# Version: 3.0.4.2
 
 ########################################################
 # If you do not have an ElastiFlow Account ID and ElastiFlow Flow License Key,
@@ -27,7 +27,13 @@ flowcoll_version="7.5.3"
 elasticsearch_version="8.16.1"
 kibana_version="8.16.1"
 flow_dashboards_version="8.14.x"
+
+#If you are using codex schema, this should be set to "codex". Otherwise set to "ecs"
 flow_dashboards_codex_ecs="codex"
+
+#If you are using codex schema, this should be set to "false". Otherwise, set to "true", for ecs.
+ecs_enable="false"
+
 flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
 elastic_username="elastic"
 elastic_password2="elastic"
@@ -877,7 +883,7 @@ install_elastiflow() {
       "EF_FLOW_LICENSED_UNITS" "EF_FLOW_LICENSED_UNITS: $fpus"
       "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: 'true'"
       "EF_OUTPUT_ELASTICSEARCH_ADDRESSES" "EF_OUTPUT_ELASTICSEARCH_ADDRESSES: '127.0.0.1:9200'"
-      "EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE: 'false'"
+      "EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE: '${ecs_enable}'"
       "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: '${elastic_password2}'"
       "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: 'true'"
       "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION" "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: 'true'"
@@ -912,7 +918,7 @@ install_elastiflow() {
       "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: 'false'"
       "EF_OUTPUT_OPENSEARCH_ENABLE" "EF_OUTPUT_OPENSEARCH_ENABLE: 'true'"
       "EF_OUTPUT_OPENSEARCH_ADDRESSES" "EF_OUTPUT_OPENSEARCH_ADDRESSES: '127.0.0.1:9200'"
-      "EF_OUTPUT_OPENSEARCH_ECS_ENABLE" "EF_OUTPUT_OPENSEARCH_ECS_ENABLE: 'false'"
+      "EF_OUTPUT_OPENSEARCH_ECS_ENABLE" "EF_OUTPUT_OPENSEARCH_ECS_ENABLE: '${ecs_enable}'" 
       "EF_OUTPUT_OPENSEARCH_USERNAME" "EF_OUTPUT_OPENSEARCH_USERNAME: 'admin'"
       "EF_OUTPUT_OPENSEARCH_PASSWORD" "EF_OUTPUT_OPENSEARCH_PASSWORD: '${opensearch_password2}'"
       "EF_OUTPUT_OPENSEARCH_TLS_ENABLE" "EF_OUTPUT_OPENSEARCH_TLS_ENABLE: 'true'"
