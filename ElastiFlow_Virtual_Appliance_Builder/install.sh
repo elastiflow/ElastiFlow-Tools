@@ -829,6 +829,7 @@ install_kibana() {
 }
 
 configure_kibana() {
+  print_message "Configuring Kibana..." "$GREEN"
   echo -e "Generating Kibana saved objects encryption key...\n"
   output=$(/usr/share/kibana/bin/kibana-encryption-keys generate -q)
   key_line=$(echo "$output" | grep '^xpack.encryptedSavedObjects.encryptionKey')
@@ -846,11 +847,22 @@ configure_kibana() {
   echo -e "Enabling and starting Kibana service...\n"
   systemctl daemon-reload && systemctl enable kibana.service && systemctl start kibana.service
   sleep_message "Giving Kibana service time to stabilize" 20
+  
   echo -e "Configuring Kibana - set 0.0.0.0 as server.host\n"
   replace_text "/etc/kibana/kibana.yml" "#server.host: \"localhost\"" "server.host: \"0.0.0.0\"" "${LINENO}"
+
+  #replacing any other instances of the current IP with 0.0.0.0
+  replace_text "/etc/kibana/kibana.yml" "$ip_address" "0.0.0.0" "${LINENO}"
+
   echo -e "Configuring Kibana - set elasticsearch.hosts to localhost instead of interface IP...\n"
   replace_text "/etc/kibana/kibana.yml" "elasticsearch.hosts: \['https:\/\/[^']*'\]" "elasticsearch.hosts: \['https:\/\/localhost:9200'\]" "${LINENO}"
+  
+  # Stop Kibana from complaining about missing base url
   replace_text "/etc/kibana/kibana.yml" '#server.publicBaseUrl: ""' 'server.publicBaseUrl: "http://kibana.example.com:5601"' "${LINENO}"
+
+  # Help with Kibana complaining during long running queries
+  replace_text "/etc/kibana/kibana.yml" "#unifiedSearch.autocomplete.valueSuggestions.timeout: 1000" "unifiedSearch.autocomplete.valueSuggestions.timeout: 4000" "${LINENO}"
+  replace_text "/etc/kibana/kibana.yml" "#unifiedSearch.autocomplete.valueSuggestions.terminateAfter: 100000" "unifiedSearch.autocomplete.valueSuggestions.terminateAfter: 100000" "${LINENO}"
 
   echo -e "Disabling Kibana / Elastic telemetry\n"
   echo "telemetry.optIn: false" >> /etc/kibana/kibana.yml
