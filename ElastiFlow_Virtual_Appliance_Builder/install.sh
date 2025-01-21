@@ -829,6 +829,7 @@ install_kibana() {
 }
 
 configure_kibana() {
+  print_message "Configuring Kibana..." "$GREEN"
   echo -e "Generating Kibana saved objects encryption key...\n"
   output=$(/usr/share/kibana/bin/kibana-encryption-keys generate -q)
   key_line=$(echo "$output" | grep '^xpack.encryptedSavedObjects.encryptionKey')
@@ -846,13 +847,24 @@ configure_kibana() {
   echo -e "Enabling and starting Kibana service...\n"
   systemctl daemon-reload && systemctl enable kibana.service && systemctl start kibana.service
   sleep_message "Giving Kibana service time to stabilize" 20
+  
   echo -e "Configuring Kibana - set 0.0.0.0 as server.host\n"
   replace_text "/etc/kibana/kibana.yml" "#server.host: \"localhost\"" "server.host: \"0.0.0.0\"" "${LINENO}"
+
+  echo -e "Configuring Kibana - Replacing any other instances of the current IP with 0.0.0.0\n"
+  replace_text "/etc/kibana/kibana.yml" "$ip_address" "0.0.0.0" "${LINENO}"
+
   echo -e "Configuring Kibana - set elasticsearch.hosts to localhost instead of interface IP...\n"
   replace_text "/etc/kibana/kibana.yml" "elasticsearch.hosts: \['https:\/\/[^']*'\]" "elasticsearch.hosts: \['https:\/\/localhost:9200'\]" "${LINENO}"
+  
+  echo -e "Configuring Kibana - Stopping Kibana from complaining about missing base url\n"
   replace_text "/etc/kibana/kibana.yml" '#server.publicBaseUrl: ""' 'server.publicBaseUrl: "http://kibana.example.com:5601"' "${LINENO}"
 
-  echo -e "Disabling Kibana / Elastic telemetry\n"
+  echo -e "Configuring Kibana - Help with Kibana complaining during long running queries\n"
+  replace_text "/etc/kibana/kibana.yml" "#unifiedSearch.autocomplete.valueSuggestions.timeout: 1000" "unifiedSearch.autocomplete.valueSuggestions.timeout: 4000" "${LINENO}"
+  replace_text "/etc/kibana/kibana.yml" "#unifiedSearch.autocomplete.valueSuggestions.terminateAfter: 100000" "unifiedSearch.autocomplete.valueSuggestions.terminateAfter: 100000" "${LINENO}"
+
+  echo -e "Configuring Kibana - Disabling Kibana / Elastic telemetry\n"
   echo "telemetry.optIn: false" >> /etc/kibana/kibana.yml
   echo "telemetry.enabled: false" >> /etc/kibana/kibana.yml
 
@@ -963,7 +975,7 @@ install_elastiflow() {
 }
 
 install_kibana_dashboards() {
-  print_message "Downloading and installing ElastiFlow flow dashboards" "$GREEN"
+  print_message "Downloading and installing ElastiFlow flow dashboards..." "$GREEN"
   git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
 
   response=$(curl --connect-timeout 10 -X POST -u $elastic_username:$elastic_password "localhost:5601/api/saved_objects/_import?overwrite=true" -H "kbn-xsrf: true" --form file=@/etc/elastiflow_for_elasticsearch/kibana/flow/kibana-$flow_dashboards_version-flow-$flow_dashboards_codex_ecs.ndjson -H 'kbn-xsrf: true')
@@ -982,7 +994,7 @@ install_kibana_dashboards() {
 }
 
 install_osd_dashboards() {
-  print_message "Downloading and installing ElastiFlow flow dashboards" "$GREEN"
+  print_message "Downloading and installing ElastiFlow flow dashboards..." "$GREEN"
   git clone https://github.com/elastiflow/elastiflow_for_opensearch.git /etc/elastiflow_for_opensearch/
 
   #create tenants using opensearch documented REST API
@@ -1111,7 +1123,7 @@ display_dashboard_url() {
     "Opensearch")
       printf "*********************************************\n"
       printf "\033[32m\nGo to %s (%s / %s)\n\033[0m" "$dashboard_url" "$opensearch_username" "$opensearch_password2"
-      printf "DO NOT CHANGE THIS PASSWORD VIA OPENSEACRH DASHBOARDS. ONLY CHANGE IT VIA sudo ./configure\n"
+      printf "DO NOT CHANGE THIS PASSWORD VIA OPENSEARCH DASHBOARDS. ONLY CHANGE IT VIA sudo ./configure\n"
       printf "For further configuration options, run sudo ./configure\n"
       printf "*********************************************\n"
       ;;
@@ -1416,8 +1428,8 @@ pick_search_engine() {
 
 install_opensearch() {
   print_message "Installing Opensearch...\n" "$GREEN"
-  curl -o- https://artifacts.opensearch.org/publickeys/opensearch.pgp | sudo gpg --dearmor --batch --yes -o /usr/share/keyrings/opensearch-keyring || handle_error "Failed to add Opensearch GPG key." "${LINENO}"
-  echo "deb [signed-by=/usr/share/keyrings/opensearch-keyring] https://artifacts.opensearch.org/releases/bundle/opensearch/2.x/apt stable main" | sudo tee /etc/apt/sources.list.d/opensearch-2.x.list || handle_error "Failed to add Opensearch repository." "${LINENO}"
+  curl -o- https://artifacts.opensearch.org/publickeys/opensearch.pgp | gpg --dearmor --batch --yes -o /usr/share/keyrings/opensearch-keyring || handle_error "Failed to add Opensearch GPG key." "${LINENO}"
+  echo "deb [signed-by=/usr/share/keyrings/opensearch-keyring] https://artifacts.opensearch.org/releases/bundle/opensearch/2.x/apt stable main" | tee /etc/apt/sources.list.d/opensearch-2.x.list || handle_error "Failed to add Opensearch repository." "${LINENO}"
   opensearch_install_log=$(apt-get -q update &&  env OPENSEARCH_INITIAL_ADMIN_PASSWORD=$opensearch_password2 apt-get install opensearch=$opensearch_version | stdbuf -oL tee /dev/console) || handle_error "Failed to install Opensearch." "${LINENO}"
   print_message "Configuring Opensearch...\n" "$GREEN"
   configure_opensearch
@@ -1455,7 +1467,7 @@ configure_opensearch() {
 
 install_opensearch_dashboards() {
   echo -e "Downloading and installing Opensearch Dashboards...\n"
-  echo "deb [signed-by=/usr/share/keyrings/opensearch-keyring] https://artifacts.opensearch.org/releases/bundle/opensearch-dashboards/2.x/apt stable main" | sudo tee /etc/apt/sources.list.d/opensearch-dashboards-2.x.list || handle_error "Failed to add Opensearch-dashboards repository." "${LINENO}"
+  echo "deb [signed-by=/usr/share/keyrings/opensearch-keyring] https://artifacts.opensearch.org/releases/bundle/opensearch-dashboards/2.x/apt stable main" | tee /etc/apt/sources.list.d/opensearch-dashboards-2.x.list || handle_error "Failed to add Opensearch-dashboards repository." "${LINENO}"
   apt-get -q update && apt-get -q install opensearch-dashboards=$opensearch_version
 }
 
