@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ElastiFlow PoC Configurator for configuring ElastiFlow Virtual Appliance
-# Version: 2.8.4.3.0
+# Version: 2.8.4.3.1
 # Author: O.J. Wolanyk
 
 # Define color codes
@@ -9,13 +9,13 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-flow_collector_version="7.5.0"
+flow_collector_version="7.6.0"
 flow_kibana_dashboards_version="8.14.x"
 flow_kibana_dashboards_codex_ecs="codex"
 osd_flow_dashboards_version="2.14.x"
 flow_config_path="/etc/elastiflow/flowcoll.yml"
 
-snmp_collector_version="7.5.0"
+snmp_collector_version="7.6.0"
 snmp_kibana_dashboards_version="8.14.x"
 snmp_kibana_dashboards_codex_ecs="codex"
 osd_snmp_dashboards_version="2.14.x"
@@ -140,6 +140,8 @@ install_snmp_collector() {
   snmp_config_strings=(
     "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: 'true'"
     "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: \"${elastiflow_account_id}\""
+    "EF_LICENSE_TELEMETRY_HOSTS" "EF_LICENSE_TELEMETRY_HOSTS: 0"
+    "EF_LICENSE_KEY" "EF_LICENSE_KEY: '${snmp_license_key}'"
     "EF_SNMP_LICENSE_KEY" "EF_SNMP_LICENSE_KEY: \"${snmp_license_key}\""
     "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: 'true'"
     "EF_OUTPUT_ELASTICSEARCH_ADDRESSES" "EF_OUTPUT_ELASTICSEARCH_ADDRESSES: '127.0.0.1:9200'"

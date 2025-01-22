@@ -575,7 +575,7 @@ printf "\n\n\n*********Disabling swap file if present...\n\n"
 extract_elastiflow_flow() {
     # Set variables
     DEB_URL="https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_${ELASTIFLOW_FLOW_VERSION}_linux_amd64.deb"
-    DEB_FILE="flow-collector_7.2.2_linux_amd64.deb"
+    DEB_FILE="flow-collector_${ELASTIFLOW_FLOW_VERSION}_linux_amd64.deb"
     TEMP_DIR="/tmp/elastiflow_flow_deb"
     TARGET_DIR="/etc/elastiflow"
 
