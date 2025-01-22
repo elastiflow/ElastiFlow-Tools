@@ -11,17 +11,22 @@ exec > >(tee -a "$LOG_FILE") 2>&1
 # run script in non-interactive mode by default
 export DEBIAN_FRONTEND=noninteractive
 
-# Version: 3.0.4.2
+# Version: 3.0.4.3
 
 ########################################################
 # If you do not have an ElastiFlow Account ID and ElastiFlow Flow License Key,
 # please go here: https://elastiflow.com/get-started
 # Paste these values on the corresponding line, between the quotes
+elastiflow_license_key=""
 elastiflow_account_id=""
+#
+# Following is used for licences generates from 7.6.0 onward
+#
 elastiflow_flow_license_key=""
+frps=0
 ########################################################
 
-flowcoll_version="7.5.3"
+flowcoll_version="7.6.0"
 
 #note: Elastic 8.16.1 is the last version to have free TSDS
 elasticsearch_version="8.16.1"
@@ -650,7 +655,7 @@ replace_text() {
 
 check_for_root() {
   print_message "Checking for root..." "$GREEN"
-
+scp 
   if [ "$(id -u)" -ne 0 ]; then
     echo "This script must be run as root" 1>&2
     exit 1
@@ -889,6 +894,8 @@ install_elastiflow() {
   case "$DATA_PLATFORM" in 
     "Elastic")
       elastiflow_config_strings=(
+      "EF_LICENSE_KEY" "EF_LICENSE_KEY: '${elastiflow_license_key}'"
+      "EF_LICENSE_FLOW_RECORDS_PER_SECOND" "EF_LICENSE_FLOW_RECORDS_PER_SECOND: $frps"
       "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: 'true'"
       "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: '${elastiflow_account_id}'"
       "EF_FLOW_LICENSE_KEY" "EF_FLOW_LICENSE_KEY: '${elastiflow_flow_license_key}'"
@@ -923,6 +930,8 @@ install_elastiflow() {
       ;;
     "Opensearch")
       elastiflow_config_strings=(
+      "EF_LICENSE_KEY" "EF_LICENSE_KEY: '${elastiflow_license_key}'"
+      "EF_LICENSE_FLOW_RECORDS_PER_SECOND" "EF_LICENSE_FLOW_RECORDS_PER_SECOND: $frps"
       "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: 'true'"
       "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: '${elastiflow_account_id}'"
       "EF_FLOW_LICENSE_KEY" "EF_FLOW_LICENSE_KEY: '${elastiflow_flow_license_key}'"

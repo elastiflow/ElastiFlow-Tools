@@ -8,9 +8,10 @@
 # Paste these values on the corresponding line, between the quotes
 elastiflow_account_id=""
 elastiflow_flow_license_key=""
+fpus=1
 ########################################################
 
-elastiflow_version="7.2.1"
+elastiflow_version="7.6.0"
 flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
 elastic_username="elastic"
 elastic_password2="elastic"
