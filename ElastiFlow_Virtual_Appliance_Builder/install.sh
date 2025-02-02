@@ -1,9 +1,41 @@
 #!/bin/bash
 
+# Version: 3.0.4.4
+
+########################################################
+# ELASTIFLOW_CONFIGURATION
+########################################################
+flowcoll_version="7.6.0"
+# If you do not have an ElastiFlow Account ID and ElastiFlow Flow License Key,
+# please go here: https://elastiflow.com/get-started
+elastiflow_license_key=""
+elastiflow_account_id=""
+# Following is used for licenses generated from 7.6.0 onward
+elastiflow_flow_license_key=""
+frps=0
+
+########################################################
+# DATA PLATFORM CONFIGURATION
+########################################################
+#note: Elastic 8.16.3 is the last version to have free TSDS
+elastic_tsds="true"
+elasticsearch_version="8.16.3"
+kibana_version="8.16.3"
+flow_dashboards_version="8.14.x"
+#If you are using codex schema, this should be set to "codex". Otherwise set to "ecs"
+flow_dashboards_codex_ecs="codex"
+#If you are using codex schema, this should be set to "false". Otherwise, set to "true", for ecs.
+ecs_enable="false"
+elastic_username="elastic"
+elastic_password2="elastic"
+opensearch_version=2.18.0
+opensearch_username="admin"
+opensearch_password2="yourStrongPassword123!"
+osd_flow_dashboards_version="2.14.x"
+########################################################
 
 # Create a timestamped log file in the current directory
 LOG_FILE="$PWD/elastiflow_install_$(date +'%Y%m%d_%H%M%S').log"
-
 
 # Redirect all output to the log file
 exec > >(tee -a "$LOG_FILE") 2>&1
@@ -11,46 +43,10 @@ exec > >(tee -a "$LOG_FILE") 2>&1
 # run script in non-interactive mode by default
 export DEBIAN_FRONTEND=noninteractive
 
-# Version: 3.0.4.3
-
-########################################################
-# If you do not have an ElastiFlow Account ID and ElastiFlow Flow License Key,
-# please go here: https://elastiflow.com/get-started
-# Paste these values on the corresponding line, between the quotes
-elastiflow_license_key=""
-elastiflow_account_id=""
-#
-# Following is used for licences generates from 7.6.0 onward
-#
-elastiflow_flow_license_key=""
-frps=0
-########################################################
-
-flowcoll_version="7.6.0"
-
-#note: Elastic 8.16.1 is the last version to have free TSDS
-elasticsearch_version="8.16.1"
-kibana_version="8.16.1"
-flow_dashboards_version="8.14.x"
-
-#If you are using codex schema, this should be set to "codex". Otherwise set to "ecs"
-flow_dashboards_codex_ecs="codex"
-
-#If you are using codex schema, this should be set to "false". Otherwise, set to "true", for ecs.
-ecs_enable="false"
-
 flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
-elastic_username="elastic"
-elastic_password2="elastic"
-opensearch_version=2.18.0
-opensearch_username="admin"
-opensearch_password2="yourStrongPassword123!"
-#OPENSEARCH_INITIAL_ADMIN_PASSWORD="yourStrongPassword123!"
-osd_flow_dashboards_version="2.14.x"
-DATA_PLATFORM='Elastic'
+DATA_PLATFORM=''
 # vm specs 64 gigs ram, 16 vcpus, 2 TB disk, license for up to 64k FPS, fpus 4 - so there's a 16k FPS limit, 1 week retention
 fpus="4"
-########################################################
 
 #leave blank
 osversion=""
@@ -783,29 +779,6 @@ configure_jvm_memory() {
   echo "Elasticsearch JVM options set to use $jvm_mem_gb GB for both -Xms and -Xmx."
 }
 
-
-# Function to prompt the user and update JVM options
-update_jvm_options() {
-    # Ask the user if they would like to specify new JVM memory limits. This is so you can run this script on a 8 gig machine for instance, but then configure JVM for 32 gigs or some other amount.
-    read -p "Would you like to specify new JVM memory limits? If you don't know what this means, answer 'no'. (yes/no or y/n): " user_choice
-
-    # Convert the user's input to lowercase for easier comparison
-    user_choice=$(echo "$user_choice" | tr '[:upper:]' '[:lower:]')
-
-    if [[ "$user_choice" == "yes" || "$user_choice" == "y" ]]; then
-        # Prompt the user for the JVM memory size in GB
-        read -p "Enter the JVM memory size in GB: " jvm_mem_gb
-
-        # Update the jvm_options variable with the new value
-        jvm_options="-Xms${jvm_mem_gb}g\n-Xmx${jvm_mem_gb}g"
-        echo -e "$jvm_options" | tee /etc/elasticsearch/jvm.options.d/heap.options > /dev/null
-        echo "Elasticsearch JVM options set to use $jvm_mem_gb GB for both -Xms and -Xmx."
-    else
-        echo "No changes were made to the JVM memory limits."
-    fi
-}
-
-
 start_elasticsearch() {
   print_message "Enabling and starting ElasticSearch service..." "$GREEN"
   systemctl daemon-reload && systemctl enable elasticsearch.service && systemctl start elasticsearch.service
@@ -911,7 +884,7 @@ install_elastiflow() {
       "EF_PROCESSOR_DECODE_IPFIX_ENABLE" "EF_PROCESSOR_DECODE_IPFIX_ENABLE: 'true'"
       "EF_LOGGER_FILE_LOG_ENABLE" "EF_LOGGER_FILE_LOG_ENABLE: 'true'"
       "EF_LOGGER_FILE_LOG_FILENAME" "EF_LOGGER_FILE_LOG_FILENAME: '/var/log/elastiflow/flowcoll/flowcoll.log'"
-      "EF_OUTPUT_ELASTICSEARCH_TSDS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TSDS_ENABLE: 'true'"
+      "EF_OUTPUT_ELASTICSEARCH_TSDS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TSDS_ENABLE: '${elastic_tsds}'"
       "EF_PROCESSOR_ENRICH_IPADDR_METADATA_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_METADATA_ENABLE: 'true'"
       "EF_PROCESSOR_ENRICH_IPADDR_METADATA_USERDEF_PATH" "EF_PROCESSOR_ENRICH_IPADDR_METADATA_USERDEF_PATH: '/etc/elastiflow/metadata/ipaddrs.yml'"
       "EF_PROCESSOR_ENRICH_NETIF_METADATA_ENABLE" "EF_PROCESSOR_ENRICH_NETIF_METADATA_ENABLE: 'true'"
@@ -949,7 +922,6 @@ install_elastiflow() {
       "EF_PROCESSOR_DECODE_IPFIX_ENABLE" "EF_PROCESSOR_DECODE_IPFIX_ENABLE: 'true'"
       "EF_LOGGER_FILE_LOG_ENABLE" "EF_LOGGER_FILE_LOG_ENABLE: 'true'"
       "EF_LOGGER_FILE_LOG_FILENAME" "EF_LOGGER_FILE_LOG_FILENAME: '/var/log/elastiflow/flowcoll/flowcoll.log'"
-      "EF_OUTPUT_ELASTICSEARCH_TSDS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TSDS_ENABLE: 'true'"
       "EF_PROCESSOR_ENRICH_IPADDR_METADATA_ENABLE" "EF_PROCESSOR_ENRICH_IPADDR_METADATA_ENABLE: 'true'"
       "EF_PROCESSOR_ENRICH_IPADDR_METADATA_USERDEF_PATH" "EF_PROCESSOR_ENRICH_IPADDR_METADATA_USERDEF_PATH: '/etc/elastiflow/metadata/ipaddrs.yml'"
       "EF_PROCESSOR_ENRICH_NETIF_METADATA_ENABLE" "EF_PROCESSOR_ENRICH_NETIF_METADATA_ENABLE: 'true'"
@@ -1574,13 +1546,12 @@ main() {
   display_info
   display_dashboard_url
   create_banner
-  update_jvm_options
   cleanup
   print_message "**************************" "$GREEN"
   print_message "All done" "$GREEN"
   print_message "Access the GUI via http://$ip_address:5601" "$GREEN"
   print_message "**************************" "$GREEN"
-
+  
   }
 
 main
