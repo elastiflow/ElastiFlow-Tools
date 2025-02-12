@@ -27,17 +27,16 @@ sudo bash -c "$(wget -qLO - https://raw.githubusercontent.com/elastiflow/ElastiF
 
 Options:
 ----------------
-Options:
-The following are optional variable assignments that you can make in the script. If you are unsure of what these variables mean, please leave them as they are.
+The following are optional variable assignments that you can make in the script. If you would like to customize the variables in the script, download the shell scripts, edit the key value pairs. as If you are unsure of what these variables mean, please leave them as they are.
 ```elastiflow_account_id=""
 elastiflow_flow_license_key=""
 flowcoll_version="7.5.3"
 
-#note: Elastic 8.16.1 is the last version to have free TSDS
-elasticsearch_version="8.16.1"
+#note: Elastic 8.16.3 is the last version to have free TSDS
+elasticsearch_version="8.16.3"
 opensearch_version=2.18.0
 
-kibana_version="8.16.1"
+kibana_version="8.16.13"
 
 flow_dashboards_version="8.14.x"
 flow_dashboards_codex_ecs="codex"
