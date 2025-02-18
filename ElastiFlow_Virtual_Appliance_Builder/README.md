@@ -2,7 +2,7 @@
 Script to easily install everything needed to PoC ElastiFlow Flowcoll and SNMPColl
 
 ## Author
-[O.J. Wolanyk]
+[O.J. Wolanyk and Pat Vogelsang]
 
 What this is:
 ----------------
@@ -33,10 +33,10 @@ elastiflow_flow_license_key=""
 flowcoll_version="7.5.3"
 
 #note: Elastic 8.16.3 is the last version to have free TSDS
-elasticsearch_version="8.16.3"
-opensearch_version=2.18.0
+elasticsearch_version="8.16.4"
+opensearch_version="2.18.0"
 
-kibana_version="8.16.13"
+kibana_version="8.16.4"
 
 flow_dashboards_version="8.14.x"
 flow_dashboards_codex_ecs="codex"
