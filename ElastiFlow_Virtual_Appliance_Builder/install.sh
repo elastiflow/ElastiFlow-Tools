@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Version: 3.0.4.4
+# Version: 3.0.4.5
 
 ########################################################
 # ELASTIFLOW_CONFIGURATION
 ########################################################
-flowcoll_version="7.6.0"
+flowcoll_version="7.7.1"
 # If you do not have an ElastiFlow Account ID and ElastiFlow Flow License Key,
 # please go here: https://elastiflow.com/get-started
 elastiflow_license_key=""
@@ -17,10 +17,10 @@ frps=0
 ########################################################
 # DATA PLATFORM CONFIGURATION
 ########################################################
-#note: Elastic 8.16.3 is the last version to have free TSDS
+#note: Elastic 8.16.4 is the last version to have free TSDS
 elastic_tsds="true"
-elasticsearch_version="8.16.3"
-kibana_version="8.16.3"
+elasticsearch_version="8.16.4"
+kibana_version="8.16.4"
 flow_dashboards_version="8.14.x"
 #If you are using codex schema, this should be set to "codex". Otherwise set to "ecs"
 flow_dashboards_codex_ecs="codex"
