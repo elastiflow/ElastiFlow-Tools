@@ -6,12 +6,9 @@
 # ELASTIFLOW_CONFIGURATION
 ########################################################
 flowcoll_version="7.7.1"
-# If you do not have an ElastiFlow Account ID and ElastiFlow Flow License Key,
-# please go here: https://elastiflow.com/get-started
-elastiflow_license_key=""
-elastiflow_account_id=""
-# Following is used for licenses generated from 7.6.0 onward
-elastiflow_flow_license_key=""
+# If you do not have an ElastiFlow Account ID and License Key, please go here: https://elastiflow.com/get-started
+ef_license_key=""
+ef_account_id=""
 frps=0
 
 ########################################################
@@ -867,10 +864,10 @@ install_elastiflow() {
   case "$DATA_PLATFORM" in 
     "Elastic")
       elastiflow_config_strings=(
-      "EF_LICENSE_KEY" "EF_LICENSE_KEY: '${elastiflow_license_key}'"
+      "EF_LICENSE_KEY" "EF_LICENSE_KEY: '${ef_license_key}'"
       "EF_LICENSE_FLOW_RECORDS_PER_SECOND" "EF_LICENSE_FLOW_RECORDS_PER_SECOND: $frps"
       "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: 'true'"
-      "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: '${elastiflow_account_id}'"
+      "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: '${ef_account_id}'"
       "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: 'true'"
       "EF_OUTPUT_ELASTICSEARCH_ADDRESSES" "EF_OUTPUT_ELASTICSEARCH_ADDRESSES: '127.0.0.1:9200'"
       "EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE: '${ecs_enable}'"
@@ -901,11 +898,11 @@ install_elastiflow() {
       ;;
     "Opensearch")
       elastiflow_config_strings=(
-      "EF_LICENSE_KEY" "EF_LICENSE_KEY: '${elastiflow_license_key}'"
+      "EF_LICENSE_KEY" "EF_LICENSE_KEY: '${ef_license_key}'"
       "EF_LICENSE_FLOW_RECORDS_PER_SECOND" "EF_LICENSE_FLOW_RECORDS_PER_SECOND: $frps"
       "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: 'true'"
-      "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: '${elastiflow_account_id}'"
-      "EF_FLOW_LICENSE_KEY" "EF_FLOW_LICENSE_KEY: '${elastiflow_flow_license_key}'"
+      "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: '${ef_account_id}'"
+      "EF_LICENSE_KEY" "EF_LICENSE_KEY: '${ef_license_key}'"
       "EF_FLOW_LICENSED_UNITS" "EF_FLOW_LICENSED_UNITS: $fpus"
       "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: 'false'"
       "EF_OUTPUT_OPENSEARCH_ENABLE" "EF_OUTPUT_OPENSEARCH_ENABLE: 'true'"
