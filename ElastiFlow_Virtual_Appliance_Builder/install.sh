@@ -42,8 +42,8 @@ export DEBIAN_FRONTEND=noninteractive
 
 flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
 DATA_PLATFORM=''
-# vm specs 64 gigs ram, 16 vcpus, 2 TB disk, license for up to 64k FPS, fpus 4 - so there's a 16k FPS limit, 1 week retention
-fpus="4"
+# vm specs 64 gigs ram, 16 vcpus, 2 TB disk, license for up to 64k FPS, 1 week retention at 16K FPS
+
 
 #leave blank
 osversion=""
@@ -902,8 +902,6 @@ install_elastiflow() {
       "EF_LICENSE_FLOW_RECORDS_PER_SECOND" "EF_LICENSE_FLOW_RECORDS_PER_SECOND: $frps"
       "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: 'true'"
       "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: '${ef_account_id}'"
-      "EF_LICENSE_KEY" "EF_LICENSE_KEY: '${ef_license_key}'"
-      "EF_FLOW_LICENSED_UNITS" "EF_FLOW_LICENSED_UNITS: $fpus"
       "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: 'false'"
       "EF_OUTPUT_OPENSEARCH_ENABLE" "EF_OUTPUT_OPENSEARCH_ENABLE: 'true'"
       "EF_OUTPUT_OPENSEARCH_ADDRESSES" "EF_OUTPUT_OPENSEARCH_ADDRESSES: '127.0.0.1:9200'"
