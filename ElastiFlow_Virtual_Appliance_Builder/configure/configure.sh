@@ -117,11 +117,11 @@ install_snmp_collector() {
 
   # Prompt the user for the SNMP flow key
   while true; do
-    read -p "Enter your ElastiFlow SNMP License Key (or 'q' to quit): " snmp_license_key
-    if [[ $snmp_license_key == "q" ]]; then
+    read -p "Enter your ElastiFlow License Key (or 'q' to quit): " ef_license_key
+    if [[ $ef_license_key == "q" ]]; then
       return
-    elif [[ -z $snmp_license_key ]]; then
-      print_message "ElastiFlow SNMP License Key cannot be empty. Please enter a valid key." "$RED"
+    elif [[ -z $ef_license_key ]]; then
+      print_message "ElastiFlow License Key cannot be empty. Please enter a valid key." "$RED"
     else
       break
     fi
@@ -141,7 +141,7 @@ install_snmp_collector() {
     "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: 'true'"
     "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: \"${elastiflow_account_id}\""
     "EF_LICENSE_TELEMETRY_HOSTS" "EF_LICENSE_TELEMETRY_HOSTS: 0"
-    "EF_LICENSE_KEY" "EF_LICENSE_KEY: '${snmp_license_key}'"
+    "EF_LICENSE_KEY" "EF_LICENSE_KEY: '${ef_license_key}'"
     "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: 'true'"
     "EF_OUTPUT_ELASTICSEARCH_ADDRESSES" "EF_OUTPUT_ELASTICSEARCH_ADDRESSES: '127.0.0.1:9200'"
     "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: '$elastic_password'"
@@ -1052,7 +1052,7 @@ perform_health_check() {
     if [ -n "$ef_account_id" ] && [ -n "$ef_license_key" ] && [ "$ef_license_accepted" == "true" ]; then
       print_message "EF_LICENSE_ACCEPTED: $ef_license_accepted, EF_ACCOUNT_ID: $ef_account_id, EF_LICENSE_KEY: $ef_license_key" "$GREEN"
     else
-      print_message "ElastiFlow account ID, flow license key, or license accepted is not correctly configured" "$RED"
+      print_message "ElastiFlow account ID, license key, or license accepted is not correctly configured" "$RED"
     fi
 
     if grep -q '^EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE: "true"' /etc/elastiflow/flowcoll.yml && grep -q '^EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE: "true"' /etc/elastiflow/flowcoll.yml; then
@@ -1182,7 +1182,7 @@ perform_health_check() {
     if [ -n "$ef_account_id" ] && [ -n "$ef_license_key" ] && [ "$ef_license_accepted" == "true" ]; then
       print_message "EF_LICENSE_ACCEPTED: $ef_license_accepted, EF_ACCOUNT_ID: $ef_account_id, EF_LICENSE_KEY: $ef_license_key" "$GREEN"
     else
-      print_message "ElastiFlow account ID, flow license key, or license accepted is not correctly configured" "$RED"
+      print_message "ElastiFlow account ID, license key, or license accepted is not correctly configured" "$RED"
     fi
 
     print_message "************************************" "$NC"
@@ -1361,11 +1361,11 @@ configure_trial() {
   done
 
   while true; do
-    read -p "Enter your ElastiFlow flow license key (or 'q' to quit): " flow_license_key
-    if [[ $flow_license_key == "q" ]]; then
+    read -p "Enter your ElastiFlow license key (or 'q' to quit): " ef_license_key
+    if [[ $ef_license_key == "q" ]]; then
       return
-    elif [[ -z $flow_license_key ]]; then
-      print_message "ElastiFlow flow license key cannot be empty. Please enter a valid key." "$RED"
+    elif [[ -z $ef_license_key ]]; then
+      print_message "ElastiFlow license key cannot be empty. Please enter a valid key." "$RED"
     else
       break
     fi
@@ -1374,14 +1374,14 @@ configure_trial() {
   STRINGS_TO_REPLACE=(
     "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: \"true\""
     "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: \"${elastiflow_account_id}\""
-    "EF_LICENSE_KEY" "EF_LICENSE_KEY: \"${flow_license_key}\""
+    "EF_LICENSE_KEY" "EF_LICENSE_KEY: \"${ef_license_key}\""
   )
 
   backup_existing_flowcoll
   find_and_replace "$FILE_PATH" "${STRINGS_TO_REPLACE[@]}"
   reload_and_restart_services "flowcoll.service"
   if check_service_health configure_trial; then
-    print_message "Fully featured trial enabled with the provided ElastiFlow account ID and flow license key." "$GREEN"
+    print_message "Fully featured trial enabled with the provided ElastiFlow account ID and license key." "$GREEN"
   else
     print_message "Failed to enable fully featured trial. Changes reverted. Returning to main menu." "$RED"
   fi
