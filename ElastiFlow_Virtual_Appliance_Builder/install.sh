@@ -117,7 +117,7 @@ select_search_engine(){
 
 sanitize_system() {
 
-print_message "Finding and cleaning previous / competing installations..." "$GREEN"
+  print_message "Finding and cleaning previous / competing installations..." "$GREEN"
 
   # Define services, directories, and keywords
   SERVICES=("flowcoll" "elasticsearch" "kibana" "opensearch" "opensearch-dashboards" "snmpcoll")
@@ -176,15 +176,26 @@ print_message "Finding and cleaning previous / competing installations..." "$GRE
     echo "JRE packages not found. Skipping..."
   fi
 
-  # Delete directories and files matching keywords
-  for KEYWORD in "${KEYWORDS[@]}"; do
-    echo "Deleting directories containing: $KEYWORD"
-    find / -type d -name "*${KEYWORD}*" -exec rm -rf {} \; 2>/dev/null
-    echo "Directories containing $KEYWORD deleted."
+  # Helper function to list local mount points
+  list_local_mounts() {
+    # This captures filesystems whose mount lines start with `/dev/`
+    # Adjust this grep if you also want to include other local FS types (e.g., zfs, btrfs on devices).
+    mount | grep -E '^/dev/' | awk '{print $3}'
+  }
 
-    echo "Deleting files containing: $KEYWORD"
-    find / -type f -name "*${KEYWORD}*" -exec rm -f {} \; 2>/dev/null
-    echo "Files containing $KEYWORD deleted."
+  # Delete directories and files matching keywords on local filesystems only
+  for KEYWORD in "${KEYWORDS[@]}"; do
+    echo "Deleting directories containing: $KEYWORD (local filesystems only)"
+    for mp in $(list_local_mounts); do
+      find "$mp" -xdev -type d -name "*${KEYWORD}*" -exec rm -rf {} \; 2>/dev/null
+    done
+    echo "Directories containing $KEYWORD deleted from local filesystems."
+
+    echo "Deleting files containing: $KEYWORD (local filesystems only)"
+    for mp in $(list_local_mounts); do
+      find "$mp" -xdev -type f -name "*${KEYWORD}*" -exec rm -f {} \; 2>/dev/null
+    done
+    echo "Files containing $KEYWORD deleted from local filesystems."
   done
 
   # Clean up unused dependencies
@@ -197,7 +208,7 @@ print_message "Finding and cleaning previous / competing installations..." "$GRE
   done
 
   for KEYWORD in "${KEYWORDS[@]}"; do
-    echo "Checked for directories and files containing: $KEYWORD - deleted if present."
+    echo "Checked for directories and files containing: $KEYWORD - deleted if present (on local FS)."
   done
 
   for PORT in "${PORTS[@]}"; do
@@ -206,6 +217,7 @@ print_message "Finding and cleaning previous / competing installations..." "$GRE
 
   echo "Unused dependencies removed. Cleanup complete."
 }
+
 
 
 
