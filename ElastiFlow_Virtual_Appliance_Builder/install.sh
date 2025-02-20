@@ -44,7 +44,6 @@ flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
 DATA_PLATFORM=''
 # vm specs 64 gigs ram, 16 vcpus, 2 TB disk, license for up to 64k FPS, 1 week retention at 16K FPS
 
-
 #leave blank
 osversion=""
 
