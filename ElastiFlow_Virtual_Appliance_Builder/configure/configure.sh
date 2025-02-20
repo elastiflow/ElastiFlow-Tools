@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ElastiFlow PoC Configurator for configuring ElastiFlow Virtual Appliance
-# Version: 2.8.4.3.1
+# Version: 2.8.4.3.2
 # Author: O.J. Wolanyk
 
 # Define color codes
