@@ -24,7 +24,7 @@ flow_dashboards_codex_ecs="codex"
 #If you are using codex schema, this should be set to "false". Otherwise, set to "true", for ecs.
 ecs_enable="false"
 elastic_username="elastic"
-elastic_password2="elastic"
+elastic_password="elastic"
 opensearch_version=2.18.0
 opensearch_username="admin"
 opensearch_password2="yourStrongPassword123!"
@@ -398,7 +398,7 @@ configure_snapshot_repo() {
 
   # Create the snapshot repository via Elasticsearch API
 
-  curl -s -u "$elastic_username:$elastic_password2" -X PUT "http://localhost:9200/_snapshot/my_snapshot" \
+  curl -s -u "$elastic_username:$elastic_password" -X PUT "http://localhost:9200/_snapshot/my_snapshot" \
     -H "Content-Type: application/json" \
     -d '{
           "type": "fs",
@@ -593,7 +593,7 @@ get_dashboard_url() {
   local encoded_title=$(echo "$dashboard_title" | sed 's/ /%20/g' | sed 's/:/%3A/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
   case "$DATA_PLATFORM" in 
     "Elastic")
-      local response=$(curl -s -u "$elastic_username:$elastic_password2" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
+      local response=$(curl -s -u "$elastic_username:$elastic_password" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
       ;;
     "Opensearch")
       local response=$(curl -s -u "$opensearch_username:$opensearch_password2" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'osd-xsrf: true')
@@ -754,9 +754,9 @@ install_elasticsearch() {
   echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] https://artifacts.elastic.co/packages/8.x/apt stable main" | tee /etc/apt/sources.list.d/elastic-8.x.list || handle_error "Failed to add Elasticsearch repository." "${LINENO}"
   elastic_install_log=$(apt-get -q update && apt-get -q install elasticsearch=$elasticsearch_version | stdbuf -oL tee /dev/console) || handle_error "Failed to install Elasticsearch." "${LINENO}"
   #elastic_install_log=$(apt-get -q update && apt-get -q -y install elasticsearch | stdbuf -oL tee /dev/console) || handle_error "Failed to install Elasticsearch." "${LINENO}"
-  elastic_password=$(echo "$elastic_install_log" | awk -F' : ' '/The generated password for the elastic built-in superuser/{print $2}')
-  elastic_password=$(echo -n "$elastic_password" | tr -cd '[:print:]')
-  #printf "Elastic password: $elastic_password\n"
+  elastic_initial_password=$(echo "$elastic_install_log" | awk -F' : ' '/The generated password for the elastic built-in superuser/{print $2}')
+  elastic_initial_password=$(echo -n "$elastic_initial_password" | tr -cd '[:print:]')
+  #printf "Elastic password: $elastic_initial_password\n"
   print_message "Configuring ElasticSearch...\n" "$GREEN"
   configure_elasticsearch
 }
@@ -787,7 +787,7 @@ start_elasticsearch() {
     echo "Elasticsearch is not running.\n"
   fi
   print_message "Checking if Elastic server is up..." "$GREEN"
-  curl_result=$(curl -s -k -u $elastic_username:"$elastic_password" https://localhost:9200)
+  curl_result=$(curl -s -k -u $elastic_username:"$elastic_initial_password" https://localhost:9200)
   search_text='cluster_name" : "elasticsearch'
   if echo "$curl_result" | grep -q "$search_text"; then
       echo -e "Elastic is up! Used authenticated curl.\n"
@@ -852,12 +852,12 @@ configure_kibana() {
 }
 
 change_elasticsearch_password() {
-  print_message "Changing Elastic password to \"elastic\"...\n"
-  curl -k -X POST -u "$elastic_username:$elastic_password" "https://localhost:9200/_security/user/elastic/_password" -H 'Content-Type: application/json' -d"
+  print_message "Changing Elastic password to $elastic_password...\n"
+  curl -k -X POST -u "$elastic_username:$elastic_initial_password" "https://localhost:9200/_security/user/elastic/_password" -H 'Content-Type: application/json' -d"
   {
-    \"password\": \"$elastic_password2\"
+    \"password\": \"$elastic_password\"
   }"
-  elastic_password=$elastic_password2
+  elastic_initial_password=$elastic_password
 }
 
 install_elastiflow() {
@@ -871,7 +871,7 @@ install_elastiflow() {
       "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: 'true'"
       "EF_OUTPUT_ELASTICSEARCH_ADDRESSES" "EF_OUTPUT_ELASTICSEARCH_ADDRESSES: '127.0.0.1:9200'"
       "EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE: '${ecs_enable}'"
-      "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: '${elastic_password2}'"
+      "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: '${elastic_password}'"
       "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: 'true'"
       "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION" "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: 'true'"
       "EF_FLOW_SERVER_UDP_IP" "EF_FLOW_SERVER_UDP_IP: '0.0.0.0'"
@@ -954,7 +954,7 @@ install_kibana_dashboards() {
   print_message "Downloading and installing ElastiFlow flow dashboards..." "$GREEN"
   git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
 
-  response=$(curl --connect-timeout 10 -X POST -u $elastic_username:$elastic_password "localhost:5601/api/saved_objects/_import?overwrite=true" -H "kbn-xsrf: true" --form file=@/etc/elastiflow_for_elasticsearch/kibana/flow/kibana-$flow_dashboards_version-flow-$flow_dashboards_codex_ecs.ndjson -H 'kbn-xsrf: true')
+  response=$(curl --connect-timeout 10 -X POST -u $elastic_username:$elastic_initial_password "localhost:5601/api/saved_objects/_import?overwrite=true" -H "kbn-xsrf: true" --form file=@/etc/elastiflow_for_elasticsearch/kibana/flow/kibana-$flow_dashboards_version-flow-$flow_dashboards_codex_ecs.ndjson -H 'kbn-xsrf: true')
 
   if [ $? -ne 0 ]; then
     printf "Error: %s\n" "$response"
@@ -1091,7 +1091,7 @@ display_dashboard_url() {
   case "$DATA_PLATFORM" in 
     "Elastic")
       printf "*********************************************\n"
-      printf "\033[32m\nGo to %s (%s / %s)\n\033[0m" "$dashboard_url" "$elastic_username" "$elastic_password2"
+      printf "\033[32m\nGo to %s (%s / %s)\n\033[0m" "$dashboard_url" "$elastic_username" "$elastic_password"
       printf "DO NOT CHANGE THIS PASSWORD VIA KIBANA. ONLY CHANGE IT VIA sudo ./configure\n"
       printf "For further configuration options, run sudo ./configure\n"
       printf "*********************************************\n"
@@ -1151,7 +1151,7 @@ set_kibana_homepage() {
   print_message "Setting homepage to ElastiFlow dashboard..." "$GREEN"
 
   # Fetch the dashboard ID
-  local find_response=$(curl -s -u "$elastic_username:$elastic_password2" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
+  local find_response=$(curl -s -u "$elastic_username:$elastic_password" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
   dashboard_id=$(echo "$find_response" | jq -r '.saved_objects[] | select(.attributes.title=="'"$dashboard_title"'") | .id')
 
   if [ -z "$dashboard_id" ]; then
@@ -1160,7 +1160,7 @@ set_kibana_homepage() {
     local payload="{\"changes\":{\"defaultRoute\":\"/app/dashboards#/view/${dashboard_id}\"}}"
 
     # Update the default route
-    local update_response=$(curl -s -o /dev/null -w "%{http_code}" -u "$elastic_username:$elastic_password2" \
+    local update_response=$(curl -s -o /dev/null -w "%{http_code}" -u "$elastic_username:$elastic_password" \
       -X POST "$kibana_url/api/kibana/settings" \
       -H "kbn-xsrf: true" \
       -H "Content-Type: application/json" \
