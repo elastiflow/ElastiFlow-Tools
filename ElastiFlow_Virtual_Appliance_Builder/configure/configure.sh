@@ -142,7 +142,6 @@ install_snmp_collector() {
     "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: \"${elastiflow_account_id}\""
     "EF_LICENSE_TELEMETRY_HOSTS" "EF_LICENSE_TELEMETRY_HOSTS: 0"
     "EF_LICENSE_KEY" "EF_LICENSE_KEY: '${snmp_license_key}'"
-    "EF_SNMP_LICENSE_KEY" "EF_SNMP_LICENSE_KEY: \"${snmp_license_key}\""
     "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: 'true'"
     "EF_OUTPUT_ELASTICSEARCH_ADDRESSES" "EF_OUTPUT_ELASTICSEARCH_ADDRESSES: '127.0.0.1:9200'"
     "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: '$elastic_password'"
@@ -1046,12 +1045,12 @@ perform_health_check() {
     if [ -f "$flowcoll_file" ]; then
       # Extract values from the flowcoll.yml file
       ef_account_id=$(grep '^EF_ACCOUNT_ID: ' "$flowcoll_file" | awk '{print $2}' | tr -d '"')
-      ef_flow_license_key=$(grep '^EF_FLOW_LICENSE_KEY: ' "$flowcoll_file" | awk '{print $2}' | tr -d '"')
+      ef_license_key=$(grep '^EF_LICENSE_KEY: ' "$flowcoll_file" | awk '{print $2}' | tr -d '"')
       ef_license_accepted=$(grep '^EF_LICENSE_ACCEPTED: ' "$flowcoll_file" | awk '{print $2}' | tr -d '"')
     fi
 
-    if [ -n "$ef_account_id" ] && [ -n "$ef_flow_license_key" ] && [ "$ef_license_accepted" == "true" ]; then
-      print_message "EF_LICENSE_ACCEPTED: $ef_license_accepted, EF_ACCOUNT_ID: $ef_account_id, EF_FLOW_LICENSE_KEY: $ef_flow_license_key" "$GREEN"
+    if [ -n "$ef_account_id" ] && [ -n "$ef_license_key" ] && [ "$ef_license_accepted" == "true" ]; then
+      print_message "EF_LICENSE_ACCEPTED: $ef_license_accepted, EF_ACCOUNT_ID: $ef_account_id, EF_LICENSE_KEY: $ef_license_key" "$GREEN"
     else
       print_message "ElastiFlow account ID, flow license key, or license accepted is not correctly configured" "$RED"
     fi
@@ -1176,12 +1175,12 @@ perform_health_check() {
     if [ -f "$snmpcoll_file" ]; then
       # Extract values from the snmpcoll.yml file
       ef_account_id=$(grep '^EF_ACCOUNT_ID: ' "$snmpcoll_file" | awk '{print $2}' | tr -d '"')
-      ef_flow_license_key=$(grep '^EF_FLOW_LICENSE_KEY: ' "$snmpcoll_file" | awk '{print $2}' | tr -d '"')
+      ef_license_key=$(grep '^EF_LICENSE_KEY: ' "$snmpcoll_file" | awk '{print $2}' | tr -d '"')
       ef_license_accepted=$(grep '^EF_LICENSE_ACCEPTED: ' "$snmpcoll_file" | awk '{print $2}' | tr -d '"')
     fi
 
-    if [ -n "$ef_account_id" ] && [ -n "$ef_flow_license_key" ] && [ "$ef_license_accepted" == "true" ]; then
-      print_message "EF_LICENSE_ACCEPTED: $ef_license_accepted, EF_ACCOUNT_ID: $ef_account_id, EF_FLOW_LICENSE_KEY: $ef_flow_license_key" "$GREEN"
+    if [ -n "$ef_account_id" ] && [ -n "$ef_license_key" ] && [ "$ef_license_accepted" == "true" ]; then
+      print_message "EF_LICENSE_ACCEPTED: $ef_license_accepted, EF_ACCOUNT_ID: $ef_account_id, EF_LICENSE_KEY: $ef_license_key" "$GREEN"
     else
       print_message "ElastiFlow account ID, flow license key, or license accepted is not correctly configured" "$RED"
     fi
@@ -1348,7 +1347,7 @@ configure_trial() {
   show_trial
 
   ef_account_id=$(grep '^EF_ACCOUNT_ID: ' $FILE_PATH | awk '{print $2}' | tr -d '"')
-  ef_flow_license_key=$(grep '^EF_FLOW_LICENSE_KEY: ' $FILE_PATH | awk '{print $2}' | tr -d '"')
+  ef_license_key=$(grep '^EF_LICENSE_KEY: ' $FILE_PATH | awk '{print $2}' | tr -d '"')
 
  while true; do
     read -p "Enter your ElastiFlow account ID (or 'q' to quit): " elastiflow_account_id
@@ -1375,7 +1374,7 @@ configure_trial() {
   STRINGS_TO_REPLACE=(
     "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: \"true\""
     "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: \"${elastiflow_account_id}\""
-    "EF_FLOW_LICENSE_KEY" "EF_FLOW_LICENSE_KEY: \"${flow_license_key}\""
+    "EF_LICENSE_KEY" "EF_LICENSE_KEY: \"${flow_license_key}\""
   )
 
   backup_existing_flowcoll
