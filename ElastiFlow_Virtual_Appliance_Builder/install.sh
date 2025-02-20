@@ -27,7 +27,7 @@ elastic_username="elastic"
 elastic_password="elastic"
 opensearch_version=2.18.0
 opensearch_username="admin"
-opensearch_password2="yourStrongPassword123!"
+opensearch_password="yourStrongPassword123!"
 osd_flow_dashboards_version="2.14.x"
 ########################################################
 
@@ -596,7 +596,7 @@ get_dashboard_url() {
       local response=$(curl -s -u "$elastic_username:$elastic_password" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
       ;;
     "Opensearch")
-      local response=$(curl -s -u "$opensearch_username:$opensearch_password2" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'osd-xsrf: true')
+      local response=$(curl -s -u "$opensearch_username:$opensearch_password" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'osd-xsrf: true')
       ;;
   esac
   dashboard_id=$(echo "$response" | jq -r '.saved_objects[] | select(.attributes.title=="'"$dashboard_title"'") | .id')
@@ -909,7 +909,7 @@ install_elastiflow() {
       "EF_OUTPUT_OPENSEARCH_ADDRESSES" "EF_OUTPUT_OPENSEARCH_ADDRESSES: '127.0.0.1:9200'"
       "EF_OUTPUT_OPENSEARCH_ECS_ENABLE" "EF_OUTPUT_OPENSEARCH_ECS_ENABLE: '${ecs_enable}'" 
       "EF_OUTPUT_OPENSEARCH_USERNAME" "EF_OUTPUT_OPENSEARCH_USERNAME: 'admin'"
-      "EF_OUTPUT_OPENSEARCH_PASSWORD" "EF_OUTPUT_OPENSEARCH_PASSWORD: '${opensearch_password2}'"
+      "EF_OUTPUT_OPENSEARCH_PASSWORD" "EF_OUTPUT_OPENSEARCH_PASSWORD: '${opensearch_password}'"
       "EF_OUTPUT_OPENSEARCH_TLS_ENABLE" "EF_OUTPUT_OPENSEARCH_TLS_ENABLE: 'true'"
       "EF_OUTPUT_OPENSEARCH_TLS_SKIP_VERIFICATION" "EF_OUTPUT_OPENSEARCH_TLS_SKIP_VERIFICATION: 'true'"
       "EF_FLOW_SERVER_UDP_IP" "EF_FLOW_SERVER_UDP_IP: '0.0.0.0'"
@@ -974,11 +974,11 @@ install_osd_dashboards() {
   git clone https://github.com/elastiflow/elastiflow_for_opensearch.git /etc/elastiflow_for_opensearch/
 
   #create tenants using opensearch documented REST API
-  curl -k -XPUT -H'content-type: application/json' https://"$opensearch_username:$opensearch_password2"@localhost:9200/_plugins/_security/api/tenants/elastiflow -d '{"description": "ElastiFLow Dashboards"}'
+  curl -k -XPUT -H'content-type: application/json' https://"$opensearch_username:$opensearch_password"@localhost:9200/_plugins/_security/api/tenants/elastiflow -d '{"description": "ElastiFLow Dashboards"}'
   
 
   #login to opensearch-dashboards and save the cookie.
-  curl -k -XGET -u "$opensearch_username:$opensearch_password2" -c dashboards_cookie http://localhost:5601/api/login/
+  curl -k -XGET -u "$opensearch_username:$opensearch_password" -c dashboards_cookie http://localhost:5601/api/login/
   curl -k -XGET -b dashboards_cookie http://localhost:5601/api/v1/configuration/account | jq
 
   #switch tenant. note the tenant is kept inside the cookie so we need to save it after this request
@@ -987,7 +987,7 @@ install_osd_dashboards() {
 
   #push the dashboard using the same cookie
   response=$(curl -k -XPOST -H'osd-xsrf: true' -b dashboards_cookie http://localhost:5601/api/saved_objects/_import?overwrite=true --form file=@/etc/elastiflow_for_opensearch/dashboards/flow/dashboards-$osd_flow_dashboards_version-flow-$flow_dashboards_codex_ecs.ndjson)
-  # response=$(curl --connect-timeout 10 -X POST -u $opensearch_username:$opensearch_password2 "localhost:5601/api/saved_objects/_import?overwrite=true" -H "osd-xsrf: true" --form file=@/etc/elastiflow_for_opensearch/dashboards/flow/dashboards-$osd_flow_dashboards_version-flow-$flow_dashboards_codex_ecs.ndjson -H 'osd-xsrf: true')
+  # response=$(curl --connect-timeout 10 -X POST -u $opensearch_username:$opensearch_password "localhost:5601/api/saved_objects/_import?overwrite=true" -H "osd-xsrf: true" --form file=@/etc/elastiflow_for_opensearch/dashboards/flow/dashboards-$osd_flow_dashboards_version-flow-$flow_dashboards_codex_ecs.ndjson -H 'osd-xsrf: true')
 
   if [ $? -ne 0 ]; then
     printf "Error: %s\n" "$response"
@@ -1098,7 +1098,7 @@ display_dashboard_url() {
       ;;
     "Opensearch")
       printf "*********************************************\n"
-      printf "\033[32m\nGo to %s (%s / %s)\n\033[0m" "$dashboard_url" "$opensearch_username" "$opensearch_password2"
+      printf "\033[32m\nGo to %s (%s / %s)\n\033[0m" "$dashboard_url" "$opensearch_username" "$opensearch_password"
       printf "DO NOT CHANGE THIS PASSWORD VIA OPENSEARCH DASHBOARDS. ONLY CHANGE IT VIA sudo ./configure\n"
       printf "For further configuration options, run sudo ./configure\n"
       printf "*********************************************\n"
@@ -1406,7 +1406,7 @@ install_opensearch() {
   print_message "Installing Opensearch...\n" "$GREEN"
   curl -o- https://artifacts.opensearch.org/publickeys/opensearch.pgp | gpg --dearmor --batch --yes -o /usr/share/keyrings/opensearch-keyring || handle_error "Failed to add Opensearch GPG key." "${LINENO}"
   echo "deb [signed-by=/usr/share/keyrings/opensearch-keyring] https://artifacts.opensearch.org/releases/bundle/opensearch/2.x/apt stable main" | tee /etc/apt/sources.list.d/opensearch-2.x.list || handle_error "Failed to add Opensearch repository." "${LINENO}"
-  opensearch_install_log=$(apt-get -q update &&  env OPENSEARCH_INITIAL_ADMIN_PASSWORD=$opensearch_password2 apt-get install opensearch=$opensearch_version | stdbuf -oL tee /dev/console) || handle_error "Failed to install Opensearch." "${LINENO}"
+  opensearch_install_log=$(apt-get -q update &&  env OPENSEARCH_INITIAL_ADMIN_PASSWORD=$opensearch_password apt-get install opensearch=$opensearch_version | stdbuf -oL tee /dev/console) || handle_error "Failed to install Opensearch." "${LINENO}"
   print_message "Configuring Opensearch...\n" "$GREEN"
   configure_opensearch
 }
@@ -1422,7 +1422,7 @@ start_opensearch() {
     echo "Opensearch is not running.\n"
   fi
   print_message "Checking if Opensearch server is up..." "$GREEN"
-  curl_result=$(curl -s -k -u $opensearch_username:"$opensearch_password2" https://localhost:9200)
+  curl_result=$(curl -s -k -u $opensearch_username:"$opensearch_password" https://localhost:9200)
   search_text='cluster_name" : "opensearch'
   if echo "$curl_result" | grep -q "$search_text"; then
       echo -e "Opensearch is up! Used authenticated curl.\n"
@@ -1465,7 +1465,7 @@ configure_opensearch_dashboards() {
   echo -e "Configuring Opensearch Dashboards - set opensearch.hosts to localhost instead of interface IP...\n"
   replace_text "/etc/opensearch-dashboards/opensearch_dashboards.yml" "opensearch.hosts: \['https:\/\/[^']*'\]" "opensearch.hosts: \['https:\/\/localhost:9200'\]" "${LINENO}"
   replace_text "/etc/opensearch-dashboards/opensearch_dashboards.yml" "opensearch.username: kibanaserver" "opensearch.username: admin" "${LINENO}"
-  replace_text "/etc/opensearch-dashboards/opensearch_dashboards.yml" "opensearch.password: kibanaserver" "opensearch.password: $opensearch_password2" "${LINENO}"
+  replace_text "/etc/opensearch-dashboards/opensearch_dashboards.yml" "opensearch.password: kibanaserver" "opensearch.password: $opensearch_password" "${LINENO}"
   systemctl daemon-reload
   systemctl restart opensearch-dashboards.service
   sleep_message "Giving Opensearch Dashboards service time to stabilize" 20
