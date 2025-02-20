@@ -843,7 +843,7 @@ configure_kibana() {
   echo "telemetry.optIn: false" >> /etc/kibana/kibana.yml
   echo "telemetry.enabled: false" >> /etc/kibana/kibana.yml
 
-  echo -e "Configuring Kibana - enabling PNG and PDF report generation...\n"
+  echo -e "Configuring Kibana - Enabling PNG and PDF report generation...\n"
   echo -e '\nxpack.reporting.capture.browser.chromium.disableSandbox: true\nxpack.reporting.queue.timeout: 120000\nxpack.reporting.capture.timeouts:\n  openUrl: 30000\n  renderComplete: 30000\n  waitForElements: 30000' >> /etc/kibana/kibana.yml
   systemctl daemon-reload
   systemctl restart kibana.service
