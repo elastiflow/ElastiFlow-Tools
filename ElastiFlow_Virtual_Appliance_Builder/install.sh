@@ -9,7 +9,7 @@ flowcoll_version="7.7.2"
 # If you do not have an ElastiFlow Account ID and License Key, please go here: https://elastiflow.com/get-started
 ef_license_key=""
 ef_account_id=""
-frps=""
+frps="16000"
 
 ########################################################
 # DATA PLATFORM CONFIGURATION
