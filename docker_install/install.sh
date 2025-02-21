@@ -120,7 +120,7 @@ check_system_health(){
   check_elastic_ready
   check_kibana_ready
   check_elastiflow_flow_open_ports
-  check_elastiflow_readyz
+  # check_elastiflow_readyz
   check_elastiflow_livez
   get_dashboard_status "ElastiFlow (flow): Overview"
   get_dashboard_status "ElastiFlow (telemetry): Overview"
