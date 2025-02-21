@@ -1,36 +1,33 @@
 #!/bin/bash
 
-# Version: 3.0.4.4
+# Version: 3.0.4.6
 
 ########################################################
 # ELASTIFLOW_CONFIGURATION
 ########################################################
-flowcoll_version="7.6.0"
-# If you do not have an ElastiFlow Account ID and ElastiFlow Flow License Key,
-# please go here: https://elastiflow.com/get-started
-elastiflow_license_key=""
-elastiflow_account_id=""
-# Following is used for licenses generated from 7.6.0 onward
-elastiflow_flow_license_key=""
-frps=0
+flowcoll_version="7.7.2"
+# If you do not have an ElastiFlow Account ID and License Key, please go here: https://elastiflow.com/get-started
+ef_license_key=""
+ef_account_id=""
+frps="16000"
 
 ########################################################
 # DATA PLATFORM CONFIGURATION
 ########################################################
-#note: Elastic 8.16.3 is the last version to have free TSDS
+#note: Elastic 8.16.4 is the last version to have free TSDS
 elastic_tsds="true"
-elasticsearch_version="8.16.3"
-kibana_version="8.16.3"
+elasticsearch_version="8.16.4"
+kibana_version="8.16.4"
 flow_dashboards_version="8.14.x"
 #If you are using codex schema, this should be set to "codex". Otherwise set to "ecs"
 flow_dashboards_codex_ecs="codex"
 #If you are using codex schema, this should be set to "false". Otherwise, set to "true", for ecs.
 ecs_enable="false"
 elastic_username="elastic"
-elastic_password2="elastic"
+elastic_password="elastic"
 opensearch_version=2.18.0
 opensearch_username="admin"
-opensearch_password2="yourStrongPassword123!"
+opensearch_password="yourStrongPassword123!"
 osd_flow_dashboards_version="2.14.x"
 ########################################################
 
@@ -45,8 +42,7 @@ export DEBIAN_FRONTEND=noninteractive
 
 flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
 DATA_PLATFORM=''
-# vm specs 64 gigs ram, 16 vcpus, 2 TB disk, license for up to 64k FPS, fpus 4 - so there's a 16k FPS limit, 1 week retention
-fpus="4"
+# vm specs 64 gigs ram, 16 vcpus, 2 TB disk, license for up to 64k FPS, 1 week retention at 16K FPS
 
 #leave blank
 osversion=""
@@ -121,7 +117,7 @@ select_search_engine(){
 
 sanitize_system() {
 
-print_message "Finding and cleaning previous / competing installations..." "$GREEN"
+  print_message "Finding and cleaning previous / competing installations..." "$GREEN"
 
   # Define services, directories, and keywords
   SERVICES=("flowcoll" "elasticsearch" "kibana" "opensearch" "opensearch-dashboards" "snmpcoll")
@@ -180,15 +176,26 @@ print_message "Finding and cleaning previous / competing installations..." "$GRE
     echo "JRE packages not found. Skipping..."
   fi
 
-  # Delete directories and files matching keywords
-  for KEYWORD in "${KEYWORDS[@]}"; do
-    echo "Deleting directories containing: $KEYWORD"
-    find / -type d -name "*${KEYWORD}*" -exec rm -rf {} \; 2>/dev/null
-    echo "Directories containing $KEYWORD deleted."
+  # Helper function to list local mount points
+  list_local_mounts() {
+    # This captures filesystems whose mount lines start with `/dev/`
+    # Adjust this grep if you also want to include other local FS types (e.g., zfs, btrfs on devices).
+    mount | grep -E '^/dev/' | awk '{print $3}'
+  }
 
-    echo "Deleting files containing: $KEYWORD"
-    find / -type f -name "*${KEYWORD}*" -exec rm -f {} \; 2>/dev/null
-    echo "Files containing $KEYWORD deleted."
+  # Delete directories and files matching keywords on local filesystems only
+  for KEYWORD in "${KEYWORDS[@]}"; do
+    echo "Deleting directories containing: $KEYWORD (local filesystems only)"
+    for mp in $(list_local_mounts); do
+      find "$mp" -xdev -type d -name "*${KEYWORD}*" -exec rm -rf {} \; 2>/dev/null
+    done
+    echo "Directories containing $KEYWORD deleted from local filesystems."
+
+    echo "Deleting files containing: $KEYWORD (local filesystems only)"
+    for mp in $(list_local_mounts); do
+      find "$mp" -xdev -type f -name "*${KEYWORD}*" -exec rm -f {} \; 2>/dev/null
+    done
+    echo "Files containing $KEYWORD deleted from local filesystems."
   done
 
   # Clean up unused dependencies
@@ -201,7 +208,7 @@ print_message "Finding and cleaning previous / competing installations..." "$GRE
   done
 
   for KEYWORD in "${KEYWORDS[@]}"; do
-    echo "Checked for directories and files containing: $KEYWORD - deleted if present."
+    echo "Checked for directories and files containing: $KEYWORD - deleted if present (on local FS)."
   done
 
   for PORT in "${PORTS[@]}"; do
@@ -210,6 +217,7 @@ print_message "Finding and cleaning previous / competing installations..." "$GRE
 
   echo "Unused dependencies removed. Cleanup complete."
 }
+
 
 
 
@@ -401,7 +409,7 @@ configure_snapshot_repo() {
 
   # Create the snapshot repository via Elasticsearch API
 
-  curl -s -u "$elastic_username:$elastic_password2" -X PUT "http://localhost:9200/_snapshot/my_snapshot" \
+  curl -s -u "$elastic_username:$elastic_password" -X PUT "http://localhost:9200/_snapshot/my_snapshot" \
     -H "Content-Type: application/json" \
     -d '{
           "type": "fs",
@@ -596,10 +604,10 @@ get_dashboard_url() {
   local encoded_title=$(echo "$dashboard_title" | sed 's/ /%20/g' | sed 's/:/%3A/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
   case "$DATA_PLATFORM" in 
     "Elastic")
-      local response=$(curl -s -u "$elastic_username:$elastic_password2" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
+      local response=$(curl -s -u "$elastic_username:$elastic_password" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
       ;;
     "Opensearch")
-      local response=$(curl -s -u "$opensearch_username:$opensearch_password2" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'osd-xsrf: true')
+      local response=$(curl -s -u "$opensearch_username:$opensearch_password" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'osd-xsrf: true')
       ;;
   esac
   dashboard_id=$(echo "$response" | jq -r '.saved_objects[] | select(.attributes.title=="'"$dashboard_title"'") | .id')
@@ -757,9 +765,9 @@ install_elasticsearch() {
   echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] https://artifacts.elastic.co/packages/8.x/apt stable main" | tee /etc/apt/sources.list.d/elastic-8.x.list || handle_error "Failed to add Elasticsearch repository." "${LINENO}"
   elastic_install_log=$(apt-get -q update && apt-get -q install elasticsearch=$elasticsearch_version | stdbuf -oL tee /dev/console) || handle_error "Failed to install Elasticsearch." "${LINENO}"
   #elastic_install_log=$(apt-get -q update && apt-get -q -y install elasticsearch | stdbuf -oL tee /dev/console) || handle_error "Failed to install Elasticsearch." "${LINENO}"
-  elastic_password=$(echo "$elastic_install_log" | awk -F' : ' '/The generated password for the elastic built-in superuser/{print $2}')
-  elastic_password=$(echo -n "$elastic_password" | tr -cd '[:print:]')
-  #printf "Elastic password: $elastic_password\n"
+  elastic_initial_password=$(echo "$elastic_install_log" | awk -F' : ' '/The generated password for the elastic built-in superuser/{print $2}')
+  elastic_initial_password=$(echo -n "$elastic_initial_password" | tr -cd '[:print:]')
+  #printf "Elastic password: $elastic_initial_password\n"
   print_message "Configuring ElasticSearch...\n" "$GREEN"
   configure_elasticsearch
 }
@@ -790,7 +798,7 @@ start_elasticsearch() {
     echo "Elasticsearch is not running.\n"
   fi
   print_message "Checking if Elastic server is up..." "$GREEN"
-  curl_result=$(curl -s -k -u $elastic_username:"$elastic_password" https://localhost:9200)
+  curl_result=$(curl -s -k -u $elastic_username:"$elastic_initial_password" https://localhost:9200)
   search_text='cluster_name" : "elasticsearch'
   if echo "$curl_result" | grep -q "$search_text"; then
       echo -e "Elastic is up! Used authenticated curl.\n"
@@ -846,7 +854,7 @@ configure_kibana() {
   echo "telemetry.optIn: false" >> /etc/kibana/kibana.yml
   echo "telemetry.enabled: false" >> /etc/kibana/kibana.yml
 
-  echo -e "Configuring Kibana - enabling PNG and PDF report generation...\n"
+  echo -e "Configuring Kibana - Enabling PNG and PDF report generation...\n"
   echo -e '\nxpack.reporting.capture.browser.chromium.disableSandbox: true\nxpack.reporting.queue.timeout: 120000\nxpack.reporting.capture.timeouts:\n  openUrl: 30000\n  renderComplete: 30000\n  waitForElements: 30000' >> /etc/kibana/kibana.yml
   systemctl daemon-reload
   systemctl restart kibana.service
@@ -855,28 +863,26 @@ configure_kibana() {
 }
 
 change_elasticsearch_password() {
-  print_message "Changing Elastic password to \"elastic\"...\n"
-  curl -k -X POST -u "$elastic_username:$elastic_password" "https://localhost:9200/_security/user/elastic/_password" -H 'Content-Type: application/json' -d"
+  print_message "Changing Elastic password to $elastic_password...\n"
+  curl -k -X POST -u "$elastic_username:$elastic_initial_password" "https://localhost:9200/_security/user/elastic/_password" -H 'Content-Type: application/json' -d"
   {
-    \"password\": \"$elastic_password2\"
+    \"password\": \"$elastic_password\"
   }"
-  elastic_password=$elastic_password2
+  elastic_initial_password=$elastic_password
 }
 
 install_elastiflow() {
   case "$DATA_PLATFORM" in 
     "Elastic")
       elastiflow_config_strings=(
-      "EF_LICENSE_KEY" "EF_LICENSE_KEY: '${elastiflow_license_key}'"
+      "EF_LICENSE_KEY" "EF_LICENSE_KEY: '${ef_license_key}'"
       "EF_LICENSE_FLOW_RECORDS_PER_SECOND" "EF_LICENSE_FLOW_RECORDS_PER_SECOND: $frps"
       "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: 'true'"
-      "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: '${elastiflow_account_id}'"
-      "EF_FLOW_LICENSE_KEY" "EF_FLOW_LICENSE_KEY: '${elastiflow_flow_license_key}'"
-      "EF_FLOW_LICENSED_UNITS" "EF_FLOW_LICENSED_UNITS: $fpus"
+      "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: '${ef_account_id}'"
       "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: 'true'"
       "EF_OUTPUT_ELASTICSEARCH_ADDRESSES" "EF_OUTPUT_ELASTICSEARCH_ADDRESSES: '127.0.0.1:9200'"
       "EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ECS_ENABLE: '${ecs_enable}'"
-      "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: '${elastic_password2}'"
+      "EF_OUTPUT_ELASTICSEARCH_PASSWORD" "EF_OUTPUT_ELASTICSEARCH_PASSWORD: '${elastic_password}'"
       "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE" "EF_OUTPUT_ELASTICSEARCH_TLS_ENABLE: 'true'"
       "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION" "EF_OUTPUT_ELASTICSEARCH_TLS_SKIP_VERIFICATION: 'true'"
       "EF_FLOW_SERVER_UDP_IP" "EF_FLOW_SERVER_UDP_IP: '0.0.0.0'"
@@ -903,18 +909,16 @@ install_elastiflow() {
       ;;
     "Opensearch")
       elastiflow_config_strings=(
-      "EF_LICENSE_KEY" "EF_LICENSE_KEY: '${elastiflow_license_key}'"
+      "EF_LICENSE_KEY" "EF_LICENSE_KEY: '${ef_license_key}'"
       "EF_LICENSE_FLOW_RECORDS_PER_SECOND" "EF_LICENSE_FLOW_RECORDS_PER_SECOND: $frps"
       "EF_LICENSE_ACCEPTED" "EF_LICENSE_ACCEPTED: 'true'"
-      "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: '${elastiflow_account_id}'"
-      "EF_FLOW_LICENSE_KEY" "EF_FLOW_LICENSE_KEY: '${elastiflow_flow_license_key}'"
-      "EF_FLOW_LICENSED_UNITS" "EF_FLOW_LICENSED_UNITS: $fpus"
+      "EF_ACCOUNT_ID" "EF_ACCOUNT_ID: '${ef_account_id}'"
       "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: 'false'"
       "EF_OUTPUT_OPENSEARCH_ENABLE" "EF_OUTPUT_OPENSEARCH_ENABLE: 'true'"
       "EF_OUTPUT_OPENSEARCH_ADDRESSES" "EF_OUTPUT_OPENSEARCH_ADDRESSES: '127.0.0.1:9200'"
       "EF_OUTPUT_OPENSEARCH_ECS_ENABLE" "EF_OUTPUT_OPENSEARCH_ECS_ENABLE: '${ecs_enable}'" 
       "EF_OUTPUT_OPENSEARCH_USERNAME" "EF_OUTPUT_OPENSEARCH_USERNAME: 'admin'"
-      "EF_OUTPUT_OPENSEARCH_PASSWORD" "EF_OUTPUT_OPENSEARCH_PASSWORD: '${opensearch_password2}'"
+      "EF_OUTPUT_OPENSEARCH_PASSWORD" "EF_OUTPUT_OPENSEARCH_PASSWORD: '${opensearch_password}'"
       "EF_OUTPUT_OPENSEARCH_TLS_ENABLE" "EF_OUTPUT_OPENSEARCH_TLS_ENABLE: 'true'"
       "EF_OUTPUT_OPENSEARCH_TLS_SKIP_VERIFICATION" "EF_OUTPUT_OPENSEARCH_TLS_SKIP_VERIFICATION: 'true'"
       "EF_FLOW_SERVER_UDP_IP" "EF_FLOW_SERVER_UDP_IP: '0.0.0.0'"
@@ -959,7 +963,7 @@ install_kibana_dashboards() {
   print_message "Downloading and installing ElastiFlow flow dashboards..." "$GREEN"
   git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
 
-  response=$(curl --connect-timeout 10 -X POST -u $elastic_username:$elastic_password "localhost:5601/api/saved_objects/_import?overwrite=true" -H "kbn-xsrf: true" --form file=@/etc/elastiflow_for_elasticsearch/kibana/flow/kibana-$flow_dashboards_version-flow-$flow_dashboards_codex_ecs.ndjson -H 'kbn-xsrf: true')
+  response=$(curl --connect-timeout 10 -X POST -u $elastic_username:$elastic_initial_password "localhost:5601/api/saved_objects/_import?overwrite=true" -H "kbn-xsrf: true" --form file=@/etc/elastiflow_for_elasticsearch/kibana/flow/kibana-$flow_dashboards_version-flow-$flow_dashboards_codex_ecs.ndjson -H 'kbn-xsrf: true')
 
   if [ $? -ne 0 ]; then
     printf "Error: %s\n" "$response"
@@ -979,11 +983,11 @@ install_osd_dashboards() {
   git clone https://github.com/elastiflow/elastiflow_for_opensearch.git /etc/elastiflow_for_opensearch/
 
   #create tenants using opensearch documented REST API
-  curl -k -XPUT -H'content-type: application/json' https://"$opensearch_username:$opensearch_password2"@localhost:9200/_plugins/_security/api/tenants/elastiflow -d '{"description": "ElastiFLow Dashboards"}'
+  curl -k -XPUT -H'content-type: application/json' https://"$opensearch_username:$opensearch_password"@localhost:9200/_plugins/_security/api/tenants/elastiflow -d '{"description": "ElastiFLow Dashboards"}'
   
 
   #login to opensearch-dashboards and save the cookie.
-  curl -k -XGET -u "$opensearch_username:$opensearch_password2" -c dashboards_cookie http://localhost:5601/api/login/
+  curl -k -XGET -u "$opensearch_username:$opensearch_password" -c dashboards_cookie http://localhost:5601/api/login/
   curl -k -XGET -b dashboards_cookie http://localhost:5601/api/v1/configuration/account | jq
 
   #switch tenant. note the tenant is kept inside the cookie so we need to save it after this request
@@ -992,7 +996,7 @@ install_osd_dashboards() {
 
   #push the dashboard using the same cookie
   response=$(curl -k -XPOST -H'osd-xsrf: true' -b dashboards_cookie http://localhost:5601/api/saved_objects/_import?overwrite=true --form file=@/etc/elastiflow_for_opensearch/dashboards/flow/dashboards-$osd_flow_dashboards_version-flow-$flow_dashboards_codex_ecs.ndjson)
-  # response=$(curl --connect-timeout 10 -X POST -u $opensearch_username:$opensearch_password2 "localhost:5601/api/saved_objects/_import?overwrite=true" -H "osd-xsrf: true" --form file=@/etc/elastiflow_for_opensearch/dashboards/flow/dashboards-$osd_flow_dashboards_version-flow-$flow_dashboards_codex_ecs.ndjson -H 'osd-xsrf: true')
+  # response=$(curl --connect-timeout 10 -X POST -u $opensearch_username:$opensearch_password "localhost:5601/api/saved_objects/_import?overwrite=true" -H "osd-xsrf: true" --form file=@/etc/elastiflow_for_opensearch/dashboards/flow/dashboards-$osd_flow_dashboards_version-flow-$flow_dashboards_codex_ecs.ndjson -H 'osd-xsrf: true')
 
   if [ $? -ne 0 ]; then
     printf "Error: %s\n" "$response"
@@ -1096,14 +1100,14 @@ display_dashboard_url() {
   case "$DATA_PLATFORM" in 
     "Elastic")
       printf "*********************************************\n"
-      printf "\033[32m\nGo to %s (%s / %s)\n\033[0m" "$dashboard_url" "$elastic_username" "$elastic_password2"
+      printf "\033[32m\nGo to %s (%s / %s)\n\033[0m" "$dashboard_url" "$elastic_username" "$elastic_password"
       printf "DO NOT CHANGE THIS PASSWORD VIA KIBANA. ONLY CHANGE IT VIA sudo ./configure\n"
       printf "For further configuration options, run sudo ./configure\n"
       printf "*********************************************\n"
       ;;
     "Opensearch")
       printf "*********************************************\n"
-      printf "\033[32m\nGo to %s (%s / %s)\n\033[0m" "$dashboard_url" "$opensearch_username" "$opensearch_password2"
+      printf "\033[32m\nGo to %s (%s / %s)\n\033[0m" "$dashboard_url" "$opensearch_username" "$opensearch_password"
       printf "DO NOT CHANGE THIS PASSWORD VIA OPENSEARCH DASHBOARDS. ONLY CHANGE IT VIA sudo ./configure\n"
       printf "For further configuration options, run sudo ./configure\n"
       printf "*********************************************\n"
@@ -1156,7 +1160,7 @@ set_kibana_homepage() {
   print_message "Setting homepage to ElastiFlow dashboard..." "$GREEN"
 
   # Fetch the dashboard ID
-  local find_response=$(curl -s -u "$elastic_username:$elastic_password2" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
+  local find_response=$(curl -s -u "$elastic_username:$elastic_password" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
   dashboard_id=$(echo "$find_response" | jq -r '.saved_objects[] | select(.attributes.title=="'"$dashboard_title"'") | .id')
 
   if [ -z "$dashboard_id" ]; then
@@ -1165,7 +1169,7 @@ set_kibana_homepage() {
     local payload="{\"changes\":{\"defaultRoute\":\"/app/dashboards#/view/${dashboard_id}\"}}"
 
     # Update the default route
-    local update_response=$(curl -s -o /dev/null -w "%{http_code}" -u "$elastic_username:$elastic_password2" \
+    local update_response=$(curl -s -o /dev/null -w "%{http_code}" -u "$elastic_username:$elastic_password" \
       -X POST "$kibana_url/api/kibana/settings" \
       -H "kbn-xsrf: true" \
       -H "Content-Type: application/json" \
@@ -1411,7 +1415,7 @@ install_opensearch() {
   print_message "Installing Opensearch...\n" "$GREEN"
   curl -o- https://artifacts.opensearch.org/publickeys/opensearch.pgp | gpg --dearmor --batch --yes -o /usr/share/keyrings/opensearch-keyring || handle_error "Failed to add Opensearch GPG key." "${LINENO}"
   echo "deb [signed-by=/usr/share/keyrings/opensearch-keyring] https://artifacts.opensearch.org/releases/bundle/opensearch/2.x/apt stable main" | tee /etc/apt/sources.list.d/opensearch-2.x.list || handle_error "Failed to add Opensearch repository." "${LINENO}"
-  opensearch_install_log=$(apt-get -q update &&  env OPENSEARCH_INITIAL_ADMIN_PASSWORD=$opensearch_password2 apt-get install opensearch=$opensearch_version | stdbuf -oL tee /dev/console) || handle_error "Failed to install Opensearch." "${LINENO}"
+  opensearch_install_log=$(apt-get -q update &&  env OPENSEARCH_INITIAL_ADMIN_PASSWORD=$opensearch_password apt-get install opensearch=$opensearch_version | stdbuf -oL tee /dev/console) || handle_error "Failed to install Opensearch." "${LINENO}"
   print_message "Configuring Opensearch...\n" "$GREEN"
   configure_opensearch
 }
@@ -1427,7 +1431,7 @@ start_opensearch() {
     echo "Opensearch is not running.\n"
   fi
   print_message "Checking if Opensearch server is up..." "$GREEN"
-  curl_result=$(curl -s -k -u $opensearch_username:"$opensearch_password2" https://localhost:9200)
+  curl_result=$(curl -s -k -u $opensearch_username:"$opensearch_password" https://localhost:9200)
   search_text='cluster_name" : "opensearch'
   if echo "$curl_result" | grep -q "$search_text"; then
       echo -e "Opensearch is up! Used authenticated curl.\n"
@@ -1470,7 +1474,7 @@ configure_opensearch_dashboards() {
   echo -e "Configuring Opensearch Dashboards - set opensearch.hosts to localhost instead of interface IP...\n"
   replace_text "/etc/opensearch-dashboards/opensearch_dashboards.yml" "opensearch.hosts: \['https:\/\/[^']*'\]" "opensearch.hosts: \['https:\/\/localhost:9200'\]" "${LINENO}"
   replace_text "/etc/opensearch-dashboards/opensearch_dashboards.yml" "opensearch.username: kibanaserver" "opensearch.username: admin" "${LINENO}"
-  replace_text "/etc/opensearch-dashboards/opensearch_dashboards.yml" "opensearch.password: kibanaserver" "opensearch.password: $opensearch_password2" "${LINENO}"
+  replace_text "/etc/opensearch-dashboards/opensearch_dashboards.yml" "opensearch.password: kibanaserver" "opensearch.password: $opensearch_password" "${LINENO}"
   systemctl daemon-reload
   systemctl restart opensearch-dashboards.service
   sleep_message "Giving Opensearch Dashboards service time to stabilize" 20
