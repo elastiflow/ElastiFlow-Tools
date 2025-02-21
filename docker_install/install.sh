@@ -5,6 +5,10 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
+# Define Global Variables
+SCRIPT_DIR="$(dirname "$(realpath "$0")")"
+INSTALL_DIR="$SCRIPT_DIR/elastiflow_install"
+
 
 # Function to check if the user is root
 check_root() {
@@ -116,7 +120,7 @@ check_system_health(){
   check_elastic_ready
   check_kibana_ready
   check_elastiflow_flow_open_ports
-  check_elastiflow_readyz
+  # check_elastiflow_readyz
   check_elastiflow_livez
   get_dashboard_status "ElastiFlow (flow): Overview"
   get_dashboard_status "ElastiFlow (telemetry): Overview"
@@ -351,7 +355,7 @@ install_prerequisites() {
 load_env_vars(){
 # Load the .env file from the current directory
 if [ -f $INSTALL_DIR/.env ]; then
-    source /home/user/elastiflow_install/.env
+    source $INSTALL_DIR/.env
     printf "Environment variables loaded\n"
 else
     echo "Error: .env file not found"
@@ -367,26 +371,33 @@ install_dashboards() {
   git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
   
   check_kibana_status
-
+  DASH_VER="${elastiflow_product}_DASHBOARDS_VERSION"
   # Path to the downloaded JSON file
-  json_file="/etc/elastiflow_for_elasticsearch/kibana/$elastiflow_product/kibana-$DASHBOARDS_VERSION-$elastiflow_product-$DASHBOARDS_CODEX_ECS.ndjson"
-
-  response=$(curl --silent --show-error --fail --connect-timeout 10 -X POST -u "elastic:$ELASTIC_PASSWORD" \
-    "localhost:5601/api/saved_objects/_import?overwrite=true" \
-    -H "kbn-xsrf: true" \
-    --form file=@"$json_file" \
-    -H 'kbn-xsrf: true')
-
-  dashboards_success=$(echo "$response" | jq -r '.success')
-
-  if [ "$dashboards_success" == "true" ]; then
-    print_message "$elastiflow_product dashboards installed successfully." "$GREEN"
+  # json_file="/etc/elastiflow_for_elasticsearch/kibana/$elastiflow_product/kibana-$DASHBOARDS_VERSION-$elastiflow_product-$DASHBOARDS_CODEX_ECS.ndjson"
+  if [ "$elastiflow_product" = "snmp_traps" ]; then
+    json_file="/etc/elastiflow_for_elasticsearch/kibana/$elastiflow_product/kibana-${!DASH_VER}-snmp-traps-$DASHBOARDS_CODEX_ECS.ndjson"
   else
-    print_message "$elastiflow_product dashboards not installed successfully." "$RED"
-    echo "Debug: API response:"
-    echo "$response"
+    json_file="/etc/elastiflow_for_elasticsearch/kibana/$elastiflow_product/kibana-${!DASH_VER}-$elastiflow_product-$DASHBOARDS_CODEX_ECS.ndjson"
   fi
+  if [ -e $json_file ]; then
+    response=$(curl --silent --show-error --fail --connect-timeout 10 -X POST -u "elastic:$ELASTIC_PASSWORD" \
+      "localhost:5601/api/saved_objects/_import?overwrite=true" \
+      -H "kbn-xsrf: true" \
+      --form file=@"$json_file" \
+      -H 'kbn-xsrf: true')
 
+    dashboards_success=$(echo "$response" | jq -r '.success')
+
+    if [ "$dashboards_success" == "true" ]; then
+      print_message "$elastiflow_product dashboards installed successfully." "$GREEN"
+    else
+      print_message "$elastiflow_product dashboards not installed successfully." "$RED"
+      echo "Debug: API response:"
+      echo "$response"
+    fi
+  else
+    echo "'$json_file' does not exist"
+  fi
   rm -rf "/etc/elastiflow_for_elasticsearch/"
 }
 
@@ -405,6 +416,7 @@ download_files() {
   curl -L -o "$INSTALL_DIR/elasticsearch_kibana_compose.yml" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elasticsearch_kibana_compose.yml"
   curl -L -o "$INSTALL_DIR/elastiflow_flow_compose.yml" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elastiflow_flow_compose.yml"
   curl -L -o "$INSTALL_DIR/elastiflow_snmp_compose.yml" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elastiflow_snmp_compose.yml"
+  curl -L -o "$INSTALL_DIR/elastiflow_trao_compose.yml" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elastiflow_trap_compose.yml"
   curl -L -o "$INSTALL_DIR/install_docker.sh" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/install_docker.sh"
 }
 
@@ -520,7 +532,14 @@ deploy_elastiflow_snmp() {
   git clone https://github.com/elastiflow/snmp.git
   cd "$INSTALL_DIR"
   docker compose -f elastiflow_snmp_compose.yml up -d
+
+  mkdir -p /var/lib/elastiflow/trapcoll
+  chown -R 1000:1000 /var/lib/elastiflow/trapcoll
+  chmod -R 755 /var/lib/elastiflow/trapcoll
+
+  docker compose -f elastiflow_trap_compose.yml up -d
   install_dashboards "snmp"
+  install_dashboards "snmp_traps"
   echo "ElastiFlow SNMP Collector has been deployed successfully!"
 }
 

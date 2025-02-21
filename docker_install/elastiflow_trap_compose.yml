@@ -1,16 +1,16 @@
 services:
-  # ElastiFlow NetObserv SNMP
-  snmp-collector:
-    image: elastiflow/snmp-collector:${ELASTIFLOW_SNMP_VERSION}
-    container_name: snmp-collector
+  # ElastiFlow NetObserv SNMP Trap
+  trap-collector:
+    image: elastiflow/trap-collector:${ELASTIFLOW_SNMP_VERSION}
+    container_name: trap-collector
     restart: 'unless-stopped'
     network_mode: 'host'
     volumes:
       - /etc/elastiflow:/etc/elastiflow
+      - /var/lib/elastiflow/trapcoll:/var/lib/elastiflow/trapcoll
     environment:
       EF_LICENSE_ACCEPTED: 'true'
       EF_ACCOUNT_ID: '${ELASTIFLOW_SNMP_ACCOUNT_ID}'
-      EF_SNMP_LICENSE_KEY: '${ELASTIFLOW_SNMP_KEY}'
       EF_LICENSE_KEY: '${ELASTIFLOW_LICENSE_KEY}'
       EF_LICENSE_TELEMETRY_HOSTS: '${ELASTIFLOW_LICENSE_TELEMETRY_HOSTS}'
      
@@ -28,47 +28,37 @@ services:
       #EF_LOGGER_LEVEL: 'info'
       #EF_LOGGER_ENCODING: 'json'
       #EF_LOGGER_FILE_LOG_ENABLE: 'false'
-      #EF_LOGGER_FILE_LOG_FILENAME: '/var/log/elastiflow/flowcoll/flowcoll.log'
+      #EF_LOGGER_FILE_LOG_FILENAME: ''
       #EF_LOGGER_FILE_LOG_MAX_SIZE: 100
       #EF_LOGGER_FILE_LOG_MAX_AGE: ''
       #EF_LOGGER_FILE_LOG_MAX_BACKUPS: 4
       #EF_LOGGER_FILE_LOG_COMPRESS: 'false'
+      EF_INPUT_TRAP_ENABLE: "true"
+      #EF_INPUT_TRAP_LISTENER_AUTHORITATIVE_ENGINE_ID: authoritative_engine_id
+      #EF_INPUT_TRAP_LISTENER_CREDENTIALS_DIRECTORY_PATH: /etc/elastiflow/snmp/traps/credentials
+      #EF_INPUT_TRAP_LISTENER_CREDENTIALS_SECURE_STORE_CREATE: "false"
+      #EF_INPUT_TRAP_LISTENER_CREDENTIALS_SECURE_STORE_ENABLE: "false"
+      #EF_INPUT_TRAP_LISTENER_CREDENTIALS_SECURE_STORE_PASSWORD: ""
+      #EF_INPUT_TRAP_LISTENER_CREDENTIALS_SECURE_STORE_PRIVATE_KEY_FILE_PATH: /etc/elastiflow/snmp/traps/.age/key.age
+      #EF_INPUT_TRAP_LISTENER_CREDENTIALS_SECURE_STORE_PUBLIC_KEY: ""
+      #EF_INPUT_TRAP_LISTENER_CREDENTIALS_SECURE_STORE_PUBLIC_KEY_FILE_PATH: /etc/elastiflow/snmp/traps/.age/public-age-keys.txt
+      #EF_INPUT_TRAP_LISTENER_CREDENTIALS_SECURE_STORE_TYPE: standard
+      #EF_INPUT_TRAP_LISTENER_DEVICE_STORE_CHANGE_DETECTION_ENABLE: "true"
+      #EF_INPUT_TRAP_LISTENER_DEVICE_STORE_PATH: /var/lib/elastiflow/trapcoll/devices.yml
+      #EF_INPUT_TRAP_LISTENER_DEVICE_STORE_TTL: 30
+      EF_INPUT_TRAP_LISTENER_IP: 0.0.0.0
+      #EF_INPUT_TRAP_LISTENER_NORMALIZER_POOL_SIZE: 3
+      EF_INPUT_TRAP_LISTENER_PORT: 8162
+      EF_INPUT_TRAP_LISTENER_TRANSPORT: udp
 
-      #EF_INPUT_SNMP_POLLER_WORKER_POOL_SIZE:  # defaults to the number of CPU threads * 4
-      #EF_INPUT_SNMP_POLLER_ERROR_HANDLING: 'partial'
-      #EF_INPUT_SNMP_DEVICE_DEFINITIONS_DIRECTORY_PATH: '/etc/elastiflow/snmp/devices'
-      #EF_INPUT_SNMP_DEVICE_GROUP_DEFINITIONS_DIRECTORY_PATH: '/etc/elastiflow/snmp/device_groups'
-      #EF_INPUT_SNMP_OBJECT_GROUP_DEFINITIONS_DIRECTORY_PATH: '/etc/elastiflow/snmp/object_groups'
-      #EF_INPUT_SNMP_OBJECT_DEFINITIONS_DIRECTORY_PATH: '/etc/elastiflow/snmp/objects'
-      EF_INPUT_SNMP_PERSIST_ENABLE: 'false'
-      #EF_INPUT_SNMP_PERSIST_DIRECTORY_PATH: '/usr/share/elastiflow/snmpcoll'
-
-      #EF_PROCESSOR_SNMP_ENUM_DEFINITIONS_DIRECTORY_PATH: '/etc/elastiflow/snmp/enums'
-      #EF_PROCESSOR_POOL_SIZE:
+      EF_PROCESSOR_TRAP_DSL_ENABLE: "true"
+      #EF_PROCESSOR_TRAP_DSL_ENTERPRISE_FILE_PATH: /etc/elastiflow/snmp/traps/enterprises.yml
+      #EF_PROCESSOR_TRAP_DSL_ENUM_DEFINITIONS_DIRECTORY_PATH: /etc/elastiflow/snmp/enums
+      #EF_PROCESSOR_TRAP_DSL_GENERIC_FILE_PATH: /etc/elastiflow/snmp/traps/generic.yml
+      #EF_PROCESSOR_TRAP_DSL_RULES_DIRECTORY_PATH: /etc/elastiflow/snmp/traps/rules
+      
+      #EF_PROCESSOR_POOL_SIZE: 0
       #EF_PROCESSOR_TRANSLATE_KEEP_IDS: 'default'
-
-      #EF_PROCESSOR_ENRICH_IPADDR_TTL: 7200
-
-      EF_PROCESSOR_ENRICH_IPADDR_METADATA_ENABLE: 'false'
-      #EF_PROCESSOR_ENRICH_IPADDR_METADATA_USERDEF_PATH: '/etc/elastiflow/metadata/ipaddrs.yml'
-      #EF_PROCESSOR_ENRICH_IPADDR_METADATA_REFRESH_RATE: 15
-
-      EF_PROCESSOR_ENRICH_IPADDR_DNS_ENABLE: 'false'
-      EF_PROCESSOR_ENRICH_IPADDR_DNS_NAMESERVER_IP: ''
-      EF_PROCESSOR_ENRICH_IPADDR_DNS_NAMESERVER_TIMEOUT: 3000
-      #EF_PROCESSOR_ENRICH_IPADDR_DNS_RESOLVE_PRIVATE: 'true'
-      #EF_PROCESSOR_ENRICH_IPADDR_DNS_RESOLVE_PUBLIC: 'true'
-      #EF_PROCESSOR_ENRICH_IPADDR_DNS_USERDEF_PATH: '/etc/elastiflow/hostname/user_defined.yml'
-      #EF_PROCESSOR_ENRICH_IPADDR_DNS_USERDEF_REFRESH_RATE: 15
-      #EF_PROCESSOR_ENRICH_IPADDR_DNS_INCLEXCL_PATH: '/etc/elastiflow/hostname/incl_excl.yml'
-      #EF_PROCESSOR_ENRICH_IPADDR_DNS_INCLEXCL_REFRESH_RATE: 15
-
-      #EF_PROCESSOR_DURATION_PRECISION: 'ms'
-      #EF_PROCESSOR_TIMESTAMP_PRECISION: 'ms'
-      #EF_PROCESSOR_PERCENT_NORM: 100
-      #EF_PROCESSOR_KEEP_CPU_TICKS: 'false'
-
-      #EF_PROCESSOR_DROP_FIELDS: ''
 
       # stdout
       #EF_OUTPUT_STDOUT_ENABLE: 'false'
