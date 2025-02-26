@@ -93,7 +93,7 @@ If you would like to enable geo IP and ASN enrichment, please do the following:
 1) Sign up for [Geolite2](https://www.maxmind.com/en/geolite2/signup) database access.
 2) Download gzipped database files (GeoLite2 ASN and GeoLite2 City)
 3) Extract their contents to `/etc/elastiflow/maxmind/`
-4) Enable Geo and ASN enrichment in `elastiflow_flow_compose.yml`
+4) Enable Geo and ASN enrichment in `elasticsearch_kibana_compose.yml`
   ```
   EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_GEOIP_ENABLE: 'true'
   EF_PROCESSOR_ENRICH_IPADDR_MAXMIND_ASN_ENABLE: 'true'
