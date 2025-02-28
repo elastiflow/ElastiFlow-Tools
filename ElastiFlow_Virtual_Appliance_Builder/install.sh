@@ -25,7 +25,7 @@ flow_dashboards_codex_ecs="codex"
 ecs_enable="false"
 elastic_username="elastic"
 elastic_password="elastic"
-opensearch_version=2.18.0
+opensearch_version=2.19.0
 opensearch_username="admin"
 opensearch_password="yourStrongPassword123!"
 osd_flow_dashboards_version="2.14.x"
@@ -659,7 +659,7 @@ replace_text() {
 
 check_for_root() {
   print_message "Checking for root..." "$GREEN"
-scp 
+
   if [ "$(id -u)" -ne 0 ]; then
     echo "This script must be run as root" 1>&2
     exit 1
@@ -772,7 +772,7 @@ install_elasticsearch() {
   configure_elasticsearch
 }
 
-configure_jvm_memory() {
+configure_jvm_memory_elastic() {
   print_message "Configuring JVM memory usage..." "$GREEN"
   total_mem_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
   one_third_mem_gb=$(echo "$total_mem_kb / 1024 / 1024 / 3" | bc -l)
@@ -785,6 +785,21 @@ configure_jvm_memory() {
   jvm_options="-Xms${jvm_mem_gb}g\n-Xmx${jvm_mem_gb}g"
   echo -e "$jvm_options" | tee /etc/elasticsearch/jvm.options.d/heap.options > /dev/null
   echo "Elasticsearch JVM options set to use $jvm_mem_gb GB for both -Xms and -Xmx."
+}
+
+configure_jvm_memory_opensearch() {
+  print_message "Configuring JVM memory usage..." "$GREEN"
+  total_mem_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+  one_third_mem_gb=$(echo "$total_mem_kb / 1024 / 1024 / 3" | bc -l)
+  rounded_mem_gb=$(printf "%.0f" "$one_third_mem_gb")
+  if [ "$rounded_mem_gb" -gt 31 ]; then
+      jvm_mem_gb=31
+  else
+      jvm_mem_gb=$rounded_mem_gb
+  fi
+  jvm_options="-Xms${jvm_mem_gb}g\n-Xmx${jvm_mem_gb}g"
+  echo -e "$jvm_options" | tee /etc/opensearch/jvm.options > /dev/null
+  echo "Opensearch JVM options set to use $jvm_mem_gb GB for both -Xms and -Xmx."
 }
 
 start_elasticsearch() {
@@ -1485,12 +1500,12 @@ install_data_platform() {
   case "$DATA_PLATFORM" in 
     "Elastic")
       install_elasticsearch
-      configure_jvm_memory
+      configure_jvm_memory_elastic
       start_elasticsearch
       ;;
     "Opensearch")
       install_opensearch
-      configure_jvm_memory
+      configure_jvm_memory_opensearch
       start_opensearch
       ;;
   esac
