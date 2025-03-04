@@ -497,7 +497,7 @@ deploy_elastic_kibana() {
   echo "Deploying Elastic and Kibana..."
   disable_swap_if_swapfile_in_use
   tune_system
-  generate_saved_objects_enc_key
+  #generate_saved_objects_enc_key
   cd "$INSTALL_DIR"
   docker compose -f elasticsearch_kibana_compose.yml up -d
   echo "Elastic and Kibana have been deployed successfully!"
