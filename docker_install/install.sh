@@ -519,7 +519,7 @@ deploy_elastiflow_flow() {
   chmod -R 755 /var/lib/elastiflow/flowcoll
 
   docker compose -f elastiflow_flow_compose.yml up -d
-  install_dashboards "FLOW"
+  install_dashboards "flow"
   echo "ElastiFlow Flow Collector has been deployed successfully!"
 }
 
@@ -537,8 +537,8 @@ deploy_elastiflow_snmp() {
   chmod -R 755 /var/lib/elastiflow/trapcoll
 
   docker compose -f elastiflow_trap_compose.yml up -d
-  install_dashboards "SNMP"
-  install_dashboards "SNMP_TRAPS"
+  install_dashboards "snmp"
+  install_dashboards "snmp_traps"
   echo "ElastiFlow SNMP Collector has been deployed successfully!"
 }
 
