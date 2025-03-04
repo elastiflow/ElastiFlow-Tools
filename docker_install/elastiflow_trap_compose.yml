@@ -10,7 +10,7 @@ services:
       - /var/lib/elastiflow/trapcoll:/var/lib/elastiflow/trapcoll
     environment:
       EF_LICENSE_ACCEPTED: 'true'
-      EF_ACCOUNT_ID: '${ELASTIFLOW_SNMP_ACCOUNT_ID}'
+      EF_ACCOUNT_ID: '${ELASTIFLOW_ACCOUNT_ID}'
       EF_LICENSE_KEY: '${ELASTIFLOW_LICENSE_KEY}'
       EF_LICENSE_TELEMETRY_HOSTS: '${ELASTIFLOW_LICENSE_TELEMETRY_HOSTS}'
      
