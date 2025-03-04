@@ -366,8 +366,9 @@ fi
 
 install_dashboards() {
   local version=$1
-  local product=$2
+  local filename=$2
   local schema=$3
+  local directory=$4
 
   # Clone the repository
   git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
@@ -375,7 +376,7 @@ install_dashboards() {
   check_kibana_status
 
   # Path to the downloaded JSON file
-  json_file="/etc/elastiflow_for_elasticsearch/kibana/$product/kibana-$version-$product-$schema.ndjson"
+  json_file="/etc/elastiflow_for_elasticsearch/kibana/$directory/kibana-$version-$filename-$schema.ndjson"
   if [ -e $json_file ]; then
     response=$(curl --silent --show-error --fail --connect-timeout 10 -X POST -u "elastic:$ELASTIC_PASSWORD" \
       "localhost:5601/api/saved_objects/_import?overwrite=true" \
@@ -386,9 +387,9 @@ install_dashboards() {
     dashboards_success=$(echo "$response" | jq -r '.success')
 
     if [ "$dashboards_success" == "true" ]; then
-      print_message "$product dashboards installed successfully." "$GREEN"
+      print_message "$filename dashboards installed successfully." "$GREEN"
     else
-      print_message "$product dashboards not installed successfully." "$RED"
+      print_message "$filename dashboards not installed successfully." "$RED"
       echo "Debug: API response:"
       echo "$response"
     fi
@@ -516,7 +517,10 @@ deploy_elastiflow_flow() {
   chmod -R 755 /var/lib/elastiflow/flowcoll
 
   docker compose -f elastiflow_flow_compose.yml up -d
-  install_dashboards "$FLOW_DASHBOARDS_VERSION" "flow" "$FLOW_DASHBOARDS_SCHEMA"  
+
+  #version, prod_filename, schema, prod_directory
+  install_dashboards "$FLOW_DASHBOARDS_VERSION" "flow" "$FLOW_DASHBOARDS_SCHEMA" "flow" 
+
   echo "ElastiFlow Flow Collector has been deployed successfully!"
 }
 
@@ -534,8 +538,11 @@ deploy_elastiflow_snmp() {
   chmod -R 755 /var/lib/elastiflow/trapcoll
 
   docker compose -f elastiflow_trap_compose.yml up -d
-  install_dashboards "$SNMP_DASHBOARDS_VERSION" "snmp" "$SNMP_DASHBOARDS_SCHEMA"  
-  install_dashboards "$SNMP_TRAPS_DASHBOARDS_VERSION" "snmp-traps" "$SNMP_TRAPS_DASHBOARDS_SCHEMA"  
+  
+  #version, prod_filename, schema, prod_directory
+  install_dashboards "$SNMP_DASHBOARDS_VERSION" "snmp" "$SNMP_DASHBOARDS_SCHEMA" "snmp"  
+  install_dashboards "$SNMP_TRAPS_DASHBOARDS_VERSION" "snmp-traps" "$SNMP_TRAPS_DASHBOARDS_SCHEMA" "snmp_traps" 
+  
   echo "ElastiFlow SNMP Collector has been deployed successfully!"
 }
 
