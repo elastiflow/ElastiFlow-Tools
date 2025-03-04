@@ -495,7 +495,6 @@ EOF
 # Function to deploy Elastic and Kibana using Docker Compose
 deploy_elastic_kibana() {
   echo "Deploying Elastic and Kibana..."
-  disable_swap_if_swapfile_in_use
   tune_system
   #generate_saved_objects_enc_key
   cd "$INSTALL_DIR"
@@ -541,52 +540,6 @@ deploy_elastiflow_snmp() {
   install_dashboards "SNMP"
   install_dashboards "SNMP_TRAPS"
   echo "ElastiFlow SNMP Collector has been deployed successfully!"
-}
-
-
-# Function to check and disable swap if any swap file is in use
-disable_swap_if_swapfile_in_use() {
-  
-printf "\n\n\n*********Disabling swap file if present...\n\n"
-
-    # Check if swap is on
-    swap_status=$(swapon --show)
-
-    if [ -n "$swap_status" ]; then
-        echo "Swap is currently on."
-
-        # Get the swap file name if it's in use (filtering for file type swaps)
-        swapfile=$(swapon --show | awk '$2 == "file" {print $1}')
-
-        if [ -n "$swapfile" ]; then
-            echo "$swapfile is in use."
-
-            # Turn off swap
-            echo "Turning off swap..."
-            swapoff -a
-
-            # Check if swapoff was successful
-            if [ $? -eq 0 ]; then
-                echo "Swap has been turned off."
-
-                # Delete the detected swap file
-                echo "Deleting $swapfile..."
-                rm -f "$swapfile"
-
-                if [ $? -eq 0 ]; then
-                    echo "$swapfile has been deleted."
-                else
-                    echo "Failed to delete $swapfile."
-                fi
-            else
-                echo "Failed to turn off swap."
-            fi
-        else
-            echo "No swap file found in use."
-        fi
-    else
-        echo "Swap is currently off."
-    fi
 }
 
 
