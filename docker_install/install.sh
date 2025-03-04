@@ -365,20 +365,17 @@ fi
 
 
 install_dashboards() {
-  local elastiflow_product=$1
+  local version=$1
+  local product=$2
+  local schema=$3
 
   # Clone the repository
   git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
   
   check_kibana_status
-  DASH_VER="${elastiflow_product}_DASHBOARDS_VERSION"
+
   # Path to the downloaded JSON file
-  # json_file="/etc/elastiflow_for_elasticsearch/kibana/$elastiflow_product/kibana-$DASHBOARDS_VERSION-$elastiflow_product-$DASHBOARDS_CODEX_ECS.ndjson"
-  if [ "$elastiflow_product" = "snmp_traps" ]; then
-    json_file="/etc/elastiflow_for_elasticsearch/kibana/$elastiflow_product/kibana-${!DASH_VER}-snmp-traps-$DASHBOARDS_CODEX_ECS.ndjson"
-  else
-    json_file="/etc/elastiflow_for_elasticsearch/kibana/$elastiflow_product/kibana-${!DASH_VER}-$elastiflow_product-$DASHBOARDS_CODEX_ECS.ndjson"
-  fi
+  json_file="/etc/elastiflow_for_elasticsearch/kibana/$product/kibana-$version-$product-$schema.ndjson"
   if [ -e $json_file ]; then
     response=$(curl --silent --show-error --fail --connect-timeout 10 -X POST -u "elastic:$ELASTIC_PASSWORD" \
       "localhost:5601/api/saved_objects/_import?overwrite=true" \
@@ -389,9 +386,9 @@ install_dashboards() {
     dashboards_success=$(echo "$response" | jq -r '.success')
 
     if [ "$dashboards_success" == "true" ]; then
-      print_message "$elastiflow_product dashboards installed successfully." "$GREEN"
+      print_message "$product dashboards installed successfully." "$GREEN"
     else
-      print_message "$elastiflow_product dashboards not installed successfully." "$RED"
+      print_message "$product dashboards not installed successfully." "$RED"
       echo "Debug: API response:"
       echo "$response"
     fi
@@ -519,7 +516,7 @@ deploy_elastiflow_flow() {
   chmod -R 755 /var/lib/elastiflow/flowcoll
 
   docker compose -f elastiflow_flow_compose.yml up -d
-  install_dashboards "flow"
+  install_dashboards "$FLOW_DASHBOARDS_VERSION" "flow" "$FLOW_DASHBOARDS_SCHEMA"  
   echo "ElastiFlow Flow Collector has been deployed successfully!"
 }
 
@@ -537,8 +534,8 @@ deploy_elastiflow_snmp() {
   chmod -R 755 /var/lib/elastiflow/trapcoll
 
   docker compose -f elastiflow_trap_compose.yml up -d
-  install_dashboards "snmp"
-  install_dashboards "snmp_traps"
+  install_dashboards "$SNMP_DASHBOARDS_VERSION" "snmp" "$SNMP_DASHBOARDS_SCHEMA"  
+  install_dashboards "$SNMP_TRAPS_DASHBOARDS_VERSION" "snmp-traps" "$SNMP_TRAPS_DASHBOARDS_SCHEMA"  
   echo "ElastiFlow SNMP Collector has been deployed successfully!"
 }
 
@@ -581,13 +578,6 @@ extract_elastiflow_flow() {
     rm -rf "$TEMP_DIR" "$DEB_FILE"
 
     echo "ElastiFlow flow yml files have been extracted!"
-}
-
-
-# create xpack.encryptedSavedObjects.encryptionKey and append to .env
-generate_saved_objects_enc_key() {
-  XPACK_SAVED_OBJECTS_KEY=$(openssl rand -base64 32)
-  echo "XPACK_SAVED_OBJECTS_KEY=${XPACK_SAVED_OBJECTS_KEY}" | tee -a $INSTALL_DIR/.env > /dev/null
 }
 
 
