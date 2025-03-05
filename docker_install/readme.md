@@ -41,6 +41,7 @@ You could instead use the following one liner to do everything:
   echo -e "\n# Memory mapping limits for Elasticsearch\nvm.max_map_count=262144\n# Network settings for high performance\nnet.core.netdev_max_backlog=4096\nnet.core.rmem_default=262144\nnet.core.rmem_max=67108864\nnet.ipv4.udp_rmem_min=131072\nnet.ipv4.udp_mem=2097152 4194304 8388608" | sudo tee -a /etc/sysctl.conf > /dev/null && sudo sysctl -p
   ```
 
+
 <details>
 <summary>Explanation of parameters:</summary>
 
@@ -59,14 +60,30 @@ You could instead use the following one liner to do everything:
 
 #### 2) Disable swapping
 
-High performance data platforms like Elastic don't like to swap to disk.
-
-1) First, view your current swap configuration with `swapon --show`. If swap is active, you'll see the details of the swap partitions or files. Turn off swapping with `sudo swapoff -a`
-
-2) If there is a swap partition, in the /etc/fstab file, look for the line that defines the swap partition or file and comment it out.  It usually looks something like this:
-`/swapfile none swap sw 0 0`. If there is a swap file, then delete it with, `sudo rm /swap.img` replacing `swapfile.img` with the name of your swap file.
-
-3) Verify swap is off with `swapon --show`
+1) Create or edit daemon.json
+```
+sudo nano /etc/docker/daemon.json
+```
+2) Add the following text:
+```
+{
+  "default-ulimits": {
+    "memlock": {
+      "name": "memlock",
+      "soft": -1,
+      "hard": -1
+    }
+  }
+}
+```
+3) Restart docker daemon
+```
+sudo systemctl restart docker
+```
+You can instead use a one liner to do everything:
+```
+echo '{"default-ulimits": {"memlock": {"name": "memlock", "soft": -1, "hard": -1}}}' | sudo tee /etc/docker/daemon.json > /dev/null && sudo systemctl restart docker
+```
 
 #### 3) Download Docker Compose files
 Create a new directory on your server and download `elasticsearch_kibana_compose.yml`, `elastiflow_flow_compose.yml`, and `.env` from [here](https://github.com/elastiflow/ElastiFlow-Tools/edit/main/docker_install)

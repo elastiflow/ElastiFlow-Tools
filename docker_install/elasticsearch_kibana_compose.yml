@@ -1,6 +1,6 @@
 services:
   setup:
-    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION}
     volumes:
       - certs:/usr/share/elasticsearch/config/certs
     user: "0"
@@ -52,7 +52,7 @@ services:
     depends_on:
       setup:
         condition: service_healthy
-    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${KIBANA_VERSION}
     restart: 'unless-stopped'
     volumes:
       - certs:/usr/share/elasticsearch/config/certs
@@ -102,7 +102,7 @@ services:
     depends_on:
       es01:
         condition: service_healthy
-    image: docker.elastic.co/kibana/kibana:${STACK_VERSION}
+    image: docker.elastic.co/kibana/kibana:${KIBANA_VERSION}
     restart: 'unless-stopped'
     volumes:
       - certs:/usr/share/kibana/config/certs
@@ -116,6 +116,7 @@ services:
       - ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD}
       - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=config/certs/ca/ca.crt
       - SERVER_PUBLICBASEURL=http://kibana.example.com:5601
+      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=ElastiFlow_0123456789_0123456789_0123456789
     mem_limit: ${MEM_LIMIT_KIBANA}
     healthcheck:
       test:

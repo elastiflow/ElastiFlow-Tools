@@ -11,8 +11,7 @@ services:
       - /var/lib/elastiflow/flowcoll:/var/lib/elastiflow/flowcoll
     environment:
       EF_LICENSE_ACCEPTED: 'true'
-      EF_ACCOUNT_ID: '${ELASTIFLOW_FLOW_ACCOUNT_ID}'
-      EF_FLOW_LICENSE_KEY: '${ELASTIFLOW_FLOW_KEY}'
+      EF_ACCOUNT_ID: '${ELASTIFLOW_ACCOUNT_ID}'
       EF_LICENSE_KEY: '${ELASTIFLOW_LICENSE_KEY}'
       EF_LICENSE_FLOW_RECORDS_PER_SECOND: '${ELASTIFLOW_LICENSE_FLOW_RECORDS_PER_SECOND}'
       #EF_FLOW_LICENSED_UNITS:

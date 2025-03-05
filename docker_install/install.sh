@@ -98,7 +98,7 @@ edit_env_file() {
     case "$answer" in
       [yY]|[yY][eE][sS])
         echo "Opening .env file for editing..."
-        sudo nano "$env_file"  # Open the .env file with sudo nano
+        nano "$env_file"  # Open the .env file with nano
         return 0  # Exit after editing
         ;;
       [nN]|[nN][oO]|"")
@@ -365,20 +365,18 @@ fi
 
 
 install_dashboards() {
-  local elastiflow_product=$1
+  local version=$1
+  local filename=$2
+  local schema=$3
+  local directory=$4
 
   # Clone the repository
   git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
   
   check_kibana_status
-  DASH_VER="${elastiflow_product}_DASHBOARDS_VERSION"
+
   # Path to the downloaded JSON file
-  # json_file="/etc/elastiflow_for_elasticsearch/kibana/$elastiflow_product/kibana-$DASHBOARDS_VERSION-$elastiflow_product-$DASHBOARDS_CODEX_ECS.ndjson"
-  if [ "$elastiflow_product" = "snmp_traps" ]; then
-    json_file="/etc/elastiflow_for_elasticsearch/kibana/$elastiflow_product/kibana-${!DASH_VER}-snmp-traps-$DASHBOARDS_CODEX_ECS.ndjson"
-  else
-    json_file="/etc/elastiflow_for_elasticsearch/kibana/$elastiflow_product/kibana-${!DASH_VER}-$elastiflow_product-$DASHBOARDS_CODEX_ECS.ndjson"
-  fi
+  json_file="/etc/elastiflow_for_elasticsearch/kibana/$directory/kibana-$version-$filename-$schema.ndjson"
   if [ -e $json_file ]; then
     response=$(curl --silent --show-error --fail --connect-timeout 10 -X POST -u "elastic:$ELASTIC_PASSWORD" \
       "localhost:5601/api/saved_objects/_import?overwrite=true" \
@@ -389,9 +387,9 @@ install_dashboards() {
     dashboards_success=$(echo "$response" | jq -r '.success')
 
     if [ "$dashboards_success" == "true" ]; then
-      print_message "$elastiflow_product dashboards installed successfully." "$GREEN"
+      print_message "$filename dashboards installed successfully." "$GREEN"
     else
-      print_message "$elastiflow_product dashboards not installed successfully." "$RED"
+      print_message "$filename dashboards not installed successfully." "$RED"
       echo "Debug: API response:"
       echo "$response"
     fi
@@ -488,6 +486,9 @@ EOF
   echo "$kernel_tuning" >> /etc/sysctl.conf
   sysctl -p
   echo "Kernel parameters updated in /etc/sysctl.conf with previous configurations commented out."
+
+  echo '{"default-ulimits": {"memlock": {"name": "memlock", "soft": -1, "hard": -1}}}' | tee /etc/docker/daemon.json > /dev/null && systemctl restart docker
+
   printf "\n\n\n*********System tuning done...\n\n"
 }
 
@@ -495,9 +496,8 @@ EOF
 # Function to deploy Elastic and Kibana using Docker Compose
 deploy_elastic_kibana() {
   echo "Deploying Elastic and Kibana..."
-  disable_swap_if_swapfile_in_use
   tune_system
-  generate_saved_objects_enc_key
+  #generate_saved_objects_enc_key
   cd "$INSTALL_DIR"
   docker compose -f elasticsearch_kibana_compose.yml up -d
   echo "Elastic and Kibana have been deployed successfully!"
@@ -520,7 +520,10 @@ deploy_elastiflow_flow() {
   chmod -R 755 /var/lib/elastiflow/flowcoll
 
   docker compose -f elastiflow_flow_compose.yml up -d
-  install_dashboards "flow"
+
+  #version, prod_filename, schema, prod_directory
+  install_dashboards "$FLOW_DASHBOARDS_VERSION" "flow" "$FLOW_DASHBOARDS_SCHEMA" "flow" 
+
   echo "ElastiFlow Flow Collector has been deployed successfully!"
 }
 
@@ -538,55 +541,12 @@ deploy_elastiflow_snmp() {
   chmod -R 755 /var/lib/elastiflow/trapcoll
 
   docker compose -f elastiflow_trap_compose.yml up -d
-  install_dashboards "snmp"
-  install_dashboards "snmp_traps"
-  echo "ElastiFlow SNMP Collector has been deployed successfully!"
-}
-
-
-# Function to check and disable swap if any swap file is in use
-disable_swap_if_swapfile_in_use() {
   
-printf "\n\n\n*********Disabling swap file if present...\n\n"
-
-    # Check if swap is on
-    swap_status=$(swapon --show)
-
-    if [ -n "$swap_status" ]; then
-        echo "Swap is currently on."
-
-        # Get the swap file name if it's in use (filtering for file type swaps)
-        swapfile=$(swapon --show | awk '$2 == "file" {print $1}')
-
-        if [ -n "$swapfile" ]; then
-            echo "$swapfile is in use."
-
-            # Turn off swap
-            echo "Turning off swap..."
-            swapoff -a
-
-            # Check if swapoff was successful
-            if [ $? -eq 0 ]; then
-                echo "Swap has been turned off."
-
-                # Delete the detected swap file
-                echo "Deleting $swapfile..."
-                rm -f "$swapfile"
-
-                if [ $? -eq 0 ]; then
-                    echo "$swapfile has been deleted."
-                else
-                    echo "Failed to delete $swapfile."
-                fi
-            else
-                echo "Failed to turn off swap."
-            fi
-        else
-            echo "No swap file found in use."
-        fi
-    else
-        echo "Swap is currently off."
-    fi
+  #version, prod_filename, schema, prod_directory
+  install_dashboards "$SNMP_DASHBOARDS_VERSION" "snmp" "$SNMP_DASHBOARDS_SCHEMA" "snmp"  
+  install_dashboards "$SNMP_TRAPS_DASHBOARDS_VERSION" "snmp-traps" "$SNMP_TRAPS_DASHBOARDS_SCHEMA" "snmp_traps" 
+  
+  echo "ElastiFlow SNMP Collector has been deployed successfully!"
 }
 
 
@@ -628,13 +588,6 @@ extract_elastiflow_flow() {
     rm -rf "$TEMP_DIR" "$DEB_FILE"
 
     echo "ElastiFlow flow yml files have been extracted!"
-}
-
-
-# create xpack.encryptedSavedObjects.encryptionKey and append to .env
-generate_saved_objects_enc_key() {
-  XPACK_SAVED_OBJECTS_KEY=$(openssl rand -base64 32)
-  echo "XPACK_SAVED_OBJECTS_KEY=${XPACK_SAVED_OBJECTS_KEY}" | tee -a $INSTALL_DIR/.env > /dev/null
 }
 
 
