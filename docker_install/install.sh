@@ -98,7 +98,7 @@ edit_env_file() {
     case "$answer" in
       [yY]|[yY][eE][sS])
         echo "Opening .env file for editing..."
-        sudo nano "$env_file"  # Open the .env file with sudo nano
+        nano "$env_file"  # Open the .env file with nano
         return 0  # Exit after editing
         ;;
       [nN]|[nN][oO]|"")
@@ -486,6 +486,9 @@ EOF
   echo "$kernel_tuning" >> /etc/sysctl.conf
   sysctl -p
   echo "Kernel parameters updated in /etc/sysctl.conf with previous configurations commented out."
+
+  echo '{"default-ulimits": {"memlock": {"name": "memlock", "soft": -1, "hard": -1}}}' | tee /etc/docker/daemon.json > /dev/null && systemctl restart docker
+
   printf "\n\n\n*********System tuning done...\n\n"
 }
 
