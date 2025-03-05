@@ -41,6 +41,7 @@ You could instead use the following one liner to do everything:
   echo -e "\n# Memory mapping limits for Elasticsearch\nvm.max_map_count=262144\n# Network settings for high performance\nnet.core.netdev_max_backlog=4096\nnet.core.rmem_default=262144\nnet.core.rmem_max=67108864\nnet.ipv4.udp_rmem_min=131072\nnet.ipv4.udp_mem=2097152 4194304 8388608" | sudo tee -a /etc/sysctl.conf > /dev/null && sudo sysctl -p
   ```
 
+
 <details>
 <summary>Explanation of parameters:</summary>
 
@@ -81,7 +82,7 @@ sudo systemctl restart docker
 ```
 You can instead use a one liner to do everything:
 ```
-sudo bash -c 'echo "{\"default-ulimits\": {\"memlock\": {\"name\": \"memlock\", \"soft\": -1, \"hard\": -1}}}" > /etc/docker/daemon.json' && sudo systemctl restart docker
+echo '{"default-ulimits": {"memlock": {"name": "memlock", "soft": -1, "hard": -1}}}' | sudo tee /etc/docker/daemon.json > /dev/null && sudo systemctl restart docker
 ```
 
 #### 3) Download Docker Compose files
