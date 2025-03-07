@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Check for unattended mode argument
+UNATTENDED=false
+if [[ "$1" == "--unattended" ]]; then
+  UNATTENDED=true
+fi
+
 # Version: 3.0.4.6
 
 ########################################################
@@ -73,7 +79,12 @@ install_os_updates() {
 }
 
 select_search_engine(){
-  #!/bin/bash
+  if $UNATTENDED; then
+    echo "Unattended mode: defaulting to Elasticsearch."
+    DATA_PLATFORM='Elastic'
+    return
+  fi
+
   # Define the options
   options=(
       "Elasticsearch"
@@ -478,6 +489,11 @@ display_system_info() {
 }
 
 confirm_and_proceed() {
+    if $UNATTENDED; then
+      echo "Unattended mode: auto-confirming and proceeding."
+      return
+    fi
+
     printf "This script converts Ubuntu server installations to an ElastiFlow Virtual Appliance. \nPrevious installations, remnants, and information related to the following will be purged from this system: \n\n-Opensearch \n-Opensearch dashboards \n-Kibana \n-Elasticsearch \n-ElastiFlow Unified Flow Collector \n-ElastiFlow Unified SNMP Collector \n-Other related products\n\n"
     printf "Please ensure that you are only running this script on a clean, freshly installed instance of Ubuntu Server 22+ that is going to only be used for ElastiFlow.\n"
     printf "This script could be destructive to the contents or configuration of your server. \n\nProceed? (yes/no or y/n):"
@@ -531,23 +547,27 @@ check_for_script_updates() {
   if [[ "$remote_version" > "$installed_version" ]]; then
     print_message "Script remote version $remote_version available." "$GREEN"
 
-    while true; do
-      echo -n "Do you want to update to the Remote version of the script? (y/n) [y]: "
-      for i in {10..1}; do
-        echo -n "$i "
-        sleep 1
+    if $UNATTENDED; then
+        update_choice="y"
+    else
+      while true; do
+        echo -n "Do you want to update to the Remote version of the script? (y/n) [y]: "
+        for i in {10..1}; do
+          echo -n "$i "
+          sleep 1
+        done
+        echo
+
+        read -rt 1 -n 1 update_choice
+        update_choice=${update_choice:-y}
+
+        if [[ $update_choice == "y" || $update_choice == "n" ]]; then
+          break
+        else
+          echo "Invalid input. Please enter 'y' or 'n'."
+        fi
       done
-      echo
-
-      read -rt 1 -n 1 update_choice
-      update_choice=${update_choice:-y}
-
-      if [[ $update_choice == "y" || $update_choice == "n" ]]; then
-        break
-      else
-        echo "Invalid input. Please enter 'y' or 'n'."
-      fi
-    done
+    fi
 
     if [[ $update_choice == "y" ]]; then
       print_message "Updating script to version $remote_version..." "$GREEN"
@@ -602,7 +622,7 @@ get_dashboard_url() {
   local kibana_url="http://$ip_address:5601"
   local dashboard_title="$1"
   local encoded_title=$(echo "$dashboard_title" | sed 's/ /%20/g' | sed 's/:/%3A/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
-  case "$DATA_PLATFORM" in 
+  case "$DATA_PLATFORM" in
     "Elastic")
       local response=$(curl -s -u "$elastic_username:$elastic_password" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
       ;;
@@ -614,7 +634,7 @@ get_dashboard_url() {
   if [ -z "$dashboard_id" ]; then
     echo "Dashboard not found"
   else
-    case "$DATA_PLATFORM" in 
+    case "$DATA_PLATFORM" in
     "Elastic")
       echo "$kibana_url/app/kibana#/dashboard/$dashboard_id"
       ;;
@@ -642,10 +662,15 @@ handle_error() {
   local error_msg="$1"
   local line_num="$2"
   echo "Error at line $line_num: $error_msg"
-  read -rp "Do you wish to continue? (y/n):" user_decision
-  if [[ $user_decision != "y" ]]; then
+  if $UNATTENDED; then
     echo "Exiting..."
     exit 1
+  else
+      read -rp "Do you wish to continue? (y/n):" user_decision
+      if [[ $user_decision != "y" ]]; then
+        echo "Exiting..."
+        exit 1
+      fi
   fi
 }
 
@@ -848,7 +873,7 @@ configure_kibana() {
   echo -e "Enabling and starting Kibana service...\n"
   systemctl daemon-reload && systemctl enable kibana.service && systemctl start kibana.service
   sleep_message "Giving Kibana service time to stabilize" 20
-  
+
   echo -e "Configuring Kibana - set 0.0.0.0 as server.host\n"
   replace_text "/etc/kibana/kibana.yml" "#server.host: \"localhost\"" "server.host: \"0.0.0.0\"" "${LINENO}"
 
@@ -857,7 +882,7 @@ configure_kibana() {
 
   echo -e "Configuring Kibana - set elasticsearch.hosts to localhost instead of interface IP...\n"
   replace_text "/etc/kibana/kibana.yml" "elasticsearch.hosts: \['https:\/\/[^']*'\]" "elasticsearch.hosts: \['https:\/\/localhost:9200'\]" "${LINENO}"
-  
+
   echo -e "Configuring Kibana - Stopping Kibana from complaining about missing base url\n"
   replace_text "/etc/kibana/kibana.yml" '#server.publicBaseUrl: ""' 'server.publicBaseUrl: "http://kibana.example.com:5601"' "${LINENO}"
 
@@ -887,7 +912,7 @@ change_elasticsearch_password() {
 }
 
 install_elastiflow() {
-  case "$DATA_PLATFORM" in 
+  case "$DATA_PLATFORM" in
     "Elastic")
       elastiflow_config_strings=(
       "EF_LICENSE_KEY" "EF_LICENSE_KEY: '${ef_license_key}'"
@@ -931,7 +956,7 @@ install_elastiflow() {
       "EF_OUTPUT_ELASTICSEARCH_ENABLE" "EF_OUTPUT_ELASTICSEARCH_ENABLE: 'false'"
       "EF_OUTPUT_OPENSEARCH_ENABLE" "EF_OUTPUT_OPENSEARCH_ENABLE: 'true'"
       "EF_OUTPUT_OPENSEARCH_ADDRESSES" "EF_OUTPUT_OPENSEARCH_ADDRESSES: '127.0.0.1:9200'"
-      "EF_OUTPUT_OPENSEARCH_ECS_ENABLE" "EF_OUTPUT_OPENSEARCH_ECS_ENABLE: '${ecs_enable}'" 
+      "EF_OUTPUT_OPENSEARCH_ECS_ENABLE" "EF_OUTPUT_OPENSEARCH_ECS_ENABLE: '${ecs_enable}'"
       "EF_OUTPUT_OPENSEARCH_USERNAME" "EF_OUTPUT_OPENSEARCH_USERNAME: 'admin'"
       "EF_OUTPUT_OPENSEARCH_PASSWORD" "EF_OUTPUT_OPENSEARCH_PASSWORD: '${opensearch_password}'"
       "EF_OUTPUT_OPENSEARCH_TLS_ENABLE" "EF_OUTPUT_OPENSEARCH_TLS_ENABLE: 'true'"
@@ -957,7 +982,7 @@ install_elastiflow() {
       "EF_OUTPUT_ELASTICSEARCH_INDEX_TEMPLATE_REPLICAS" "EF_OUTPUT_ELASTICSEARCH_INDEX_TEMPLATE_REPLICAS: 0"
       )
       ;;
-    esac
+  esac
 
   print_message "\nDownloading and installing ElastiFlow Flow Collector..." "$GREEN"
   #wget -O flow-collector_"$flowcoll_version"_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_"$flowcoll_version"_linux_amd64.deb
@@ -999,7 +1024,6 @@ install_osd_dashboards() {
 
   #create tenants using opensearch documented REST API
   curl -k -XPUT -H'content-type: application/json' https://"$opensearch_username:$opensearch_password"@localhost:9200/_plugins/_security/api/tenants/elastiflow -d '{"description": "ElastiFLow Dashboards"}'
-  
 
   #login to opensearch-dashboards and save the cookie.
   curl -k -XGET -u "$opensearch_username:$opensearch_password" -c dashboards_cookie http://localhost:5601/api/login/
@@ -1059,7 +1083,7 @@ resize_part_to_max() {
 
 
 check_all_services() {
-  case "$DATA_PLATFORM" in 
+  case "$DATA_PLATFORM" in
     "Elastic")
       SERVICES=("elasticsearch.service" "kibana.service" "flowcoll.service")
       ;;
@@ -1087,7 +1111,7 @@ display_info() {
   echo -e "Installed ElastiFlow Flow version: $version"
   version=$flow_dashboards_version
   echo -e "Installed ElastiFlow Flow Dashboards version: $flow_dashboards_codex_ecs $version"
-  case "$DATA_PLATFORM" in 
+  case "$DATA_PLATFORM" in
     "Elastic")
       version=$(/usr/share/kibana/bin/kibana --version --allow-root | jq -r '.config.serviceVersion.value' 2>/dev/null)
       echo -e "Installed Kibana version: $version\n"
@@ -1112,7 +1136,7 @@ display_info() {
 
 display_dashboard_url() {
   dashboard_url=$(get_dashboard_url "ElastiFlow (flow): Overview")
-  case "$DATA_PLATFORM" in 
+  case "$DATA_PLATFORM" in
     "Elastic")
       printf "*********************************************\n"
       printf "\033[32m\nGo to %s (%s / %s)\n\033[0m" "$dashboard_url" "$elastic_username" "$elastic_password"
@@ -1271,8 +1295,12 @@ install_latest_elastiflow_flow_collector() {
 
     # Attempt to download the checksum file
     if [ -n "$SHA256_URL" ]; then
-        wget -O "$DOWNLOAD_DIR/$(basename $SHA256_URL)" "$SHA256_URL" || {
+        wget -O "$DOWNLOAD_DIR/$(basename "$SHA256_URL")" "$SHA256_URL" || {
             echo "Warning: Failed to download checksum file."
+            if $UNATTENDED; then
+              echo "Unattended mode: aborting installation."
+              exit 1
+            fi
             read -p "Do you want to continue without checksum verification? [y/N]: " CONFIRM
             if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
                 echo "Installation aborted by user."
@@ -1284,8 +1312,12 @@ install_latest_elastiflow_flow_collector() {
 
     # Attempt to download the GPG signature file
     if [ -n "$GPG_SIG_URL" ]; then
-        wget -O "$DOWNLOAD_DIR/$(basename $GPG_SIG_URL)" "$GPG_SIG_URL" || {
+        wget -O "$DOWNLOAD_DIR/$(basename "$GPG_SIG_URL")" "$GPG_SIG_URL" || {
             echo "Warning: Failed to download GPG signature file."
+            if $UNATTENDED; then
+              echo "Unattended mode: aborting installation."
+              exit 1
+            fi
             read -p "Do you want to continue without GPG signature verification? [y/N]: " CONFIRM
             if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
                 echo "Installation aborted by user."
@@ -1296,40 +1328,52 @@ install_latest_elastiflow_flow_collector() {
     fi
 
 
-# Attempt to download the GPG public key file
-if [ -n "$GPG_PUBKEY_URL" ]; then
-    GPG_PUBKEY_FILE="$DOWNLOAD_DIR/$(basename $GPG_PUBKEY_URL)"
-    wget -O "$GPG_PUBKEY_FILE" "$GPG_PUBKEY_URL" || {
-        echo "Warning: Failed to download GPG public key file."
-        read -p "Do you want to continue without the GPG public key? [y/N]: " CONFIRM
-        if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
-            echo "Installation aborted by user."
-            exit 1
-        fi
-        GPG_PUBKEY_URL=""
-    }
-fi
+    # Attempt to download the GPG public key file
+    if [ -n "$GPG_PUBKEY_URL" ]; then
+        GPG_PUBKEY_FILE="$DOWNLOAD_DIR/$(basename $GPG_PUBKEY_URL)"
+        wget -O "$GPG_PUBKEY_FILE" "$GPG_PUBKEY_URL" || {
+            echo "Warning: Failed to download GPG public key file."
+            if $UNATTENDED; then
+              echo "Unattended mode: aborting installation."
+              exit 1
+            fi
+            read -p "Do you want to continue without the GPG public key? [y/N]: " CONFIRM
+            if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+                echo "Installation aborted by user."
+                exit 1
+            fi
+            GPG_PUBKEY_URL=""
+        }
+    fi
 
-# Import GPG public key
-if [ -n "$GPG_PUBKEY_FILE" ] && [ -f "$GPG_PUBKEY_FILE" ]; then
-    echo "Importing GPG public key..."
-    gpg --import "$GPG_PUBKEY_FILE" || {
-        echo "Warning: Failed to import GPG public key."
-        read -p "Do you want to continue without importing the GPG public key? [y/N]: " CONFIRM
-        if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
-            echo "Installation aborted by user."
-            exit 1
-        fi
-    }
-else
-    echo "No GPG public key file found. Skipping GPG key import."
-fi
+    # Import GPG public key
+    if [ -n "$GPG_PUBKEY_FILE" ] && [ -f "$GPG_PUBKEY_FILE" ]; then
+        echo "Importing GPG public key..."
+        gpg --import "$GPG_PUBKEY_FILE" || {
+            echo "Warning: Failed to import GPG public key."
+            if $UNATTENDED; then
+              echo "Unattended mode: aborting installation."
+              exit 1
+            fi
+            read -p "Do you want to continue without importing the GPG public key? [y/N]: " CONFIRM
+            if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+                echo "Installation aborted by user."
+                exit 1
+            fi
+        }
+    else
+        echo "No GPG public key file found. Skipping GPG key import."
+    fi
 
     # Import and trust the GPG key
     if [ -n "$GPG_KEY_ID" ]; then
         echo "Importing and trusting the GPG key..."
         echo "$GPG_KEY_ID:6:" | gpg --import-ownertrust || {
             echo "Warning: Failed to import GPG key."
+            if $UNATTENDED; then
+              echo "Unattended mode: aborting installation."
+              exit 1
+            fi
             read -p "Do you want to continue without GPG key import? [y/N]: " CONFIRM
             if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
                 echo "Installation aborted by user."
@@ -1497,7 +1541,7 @@ configure_opensearch_dashboards() {
 }
 
 install_data_platform() {
-  case "$DATA_PLATFORM" in 
+  case "$DATA_PLATFORM" in
     "Elastic")
       install_elasticsearch
       configure_jvm_memory_elastic
@@ -1512,7 +1556,7 @@ install_data_platform() {
 }
 
 install_data_playtform_ui() {
-  case "$DATA_PLATFORM" in 
+  case "$DATA_PLATFORM" in
     "Elastic")
       install_kibana
       configure_kibana
@@ -1526,7 +1570,7 @@ install_data_playtform_ui() {
 }
 
  install_dashboards() {
-  case "$DATA_PLATFORM" in 
+  case "$DATA_PLATFORM" in
     "Elastic")
       install_kibana_dashboards
       set_kibana_homepage "ElastiFlow (flow): Overview"
@@ -1570,7 +1614,6 @@ main() {
   print_message "All done" "$GREEN"
   print_message "Access the GUI via http://$ip_address:5601" "$GREEN"
   print_message "**************************" "$GREEN"
-  
   }
 
 main
