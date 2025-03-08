@@ -1351,6 +1351,7 @@ install_latest_elastiflow_flow_collector() {
         echo "Importing GPG public key..."
         # ensure home directory exists before importing the gpg key
         mkdir -p /home/"$(whoami)"
+        echo "created: /home/$(whoami)"
         gpg --import "$GPG_PUBKEY_FILE" || {
             echo "Warning: Failed to import GPG public key."
             if $UNATTENDED; then
