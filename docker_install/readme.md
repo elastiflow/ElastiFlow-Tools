@@ -15,7 +15,7 @@ To easily install ElasticSearch, Kibana, and ElastiFlow NetObserv Flow with Dock
   
 - Good copying and pasting skills
 
-- Docker. If you do not have Docker, you can use the convenience script:
+- Docker. If you do not have Docker, you can install it with the following convenience script:
   ```
   curl -fsSL https://get.docker.com | sudo sh
   ```
