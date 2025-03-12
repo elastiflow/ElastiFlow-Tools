@@ -112,6 +112,21 @@ You can instead use a one liner to do everything:
 ```
 sudo wget -O flow-collector_7.2.2_linux_amd64.deb https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_7.2.2_linux_amd64.deb && sudo mkdir -p elastiflow_extracted && sudo dpkg-deb -x flow-collector_7.2.2_linux_amd64.deb elastiflow_extracted && sudo mkdir -p /etc/elastiflow && sudo cp -r elastiflow_extracted/etc/elastiflow/. /etc/elastiflow
 ```
+
+#### 5) Configure memory in .env file:
+
+Use the following as inspiration.
+```
+Set heap size to about one-third of the system memory, but do not exceed 31g. Assuming 16GB of system memory, we'll set this to 5GB
+JVM_HEAP_SIZE=5
+
+Set the memory limit to 2x the heap size (currently set to 10GB)
+MEM_LIMIT_ELASTIC=10737418240
+
+Set the memory limit to 2GB for small to medium workloads (currently set to 2GB)
+MEM_LIMIT_KIBANA=2147483648
+```
+
 #### OPTIONAL: Geo and ASN Enrichment
 
 If you would like to enable geo IP and ASN enrichment, please do the following:
@@ -133,13 +148,13 @@ Be sure to replace `YOUR_LICENSE_KEY` with your GeoLite2 license key.
   sudo tar -xvzf GeoLite2-City.tar.gz  --strip-components 1 -C /etc/elastiflow/maxmind/
   ```
 
-#### 5) Deploy 
+#### 6) Deploy 
 
 From the directory where you downloaded the yml and .env files, 
   ```
   sudo docker compose -f elasticsearch_kibana_compose.yml -f elastiflow_flow_compose.yml up -d
   ```
-#### 6) Log in to Kibana 
+#### 7) Log in to Kibana 
 
 After a few minutes, browse to `http://IP_of_your_host:5601`.
 
@@ -147,7 +162,7 @@ Log in with:
 Username: `elastic` 
 Password: `elastic`
 
-#### 7) Install ElastiFlow NetObserv Flow dashboards:
+#### 8) Install ElastiFlow NetObserv Flow dashboards:
 
 1) Download this [dashboards file](https://github.com/elastiflow/elastiflow_for_elasticsearch/blob/master/kibana/flow/kibana-8.2.x-flow-codex.ndjson) to your local machine.
 
@@ -157,7 +172,7 @@ Password: `elastic`
    
 4) Browse for and upload the ndjson file you downloaded. Choose "import" and "overwrite".
 
-#### 8) Send Netflow
+#### 9) Send Netflow
 
   ##### Option 1: (Best)
   Send Netflow to IP_of_your_host:9995. Refer to your network hardware vendor for how to configure netflow / IPFIX / sFlow export.
@@ -189,10 +204,10 @@ Password: `elastic`
 
     sudo docker run -it --rm networkstatic/nflow-generator -t ElastiFlow_NetObserv_Flow_IP -p 9995
 
-#### 9) Visualize your Flow Data
+#### 10) Visualize your Flow Data
 In Kibana, do a global search (at the top) for the dashboard "ElastiFlow (flow): Overview" and open it. It may be a few minutes for flow records to populate as the system waits for flow templates to arrive.
 
-#### 10) Update Credentials
+#### 11) Update Credentials
 Now that you have ElastiFlow NetObserv Flow up and running, we advise that you change your Elasticsearch and Kibana passwords from `elastic` to something complex as soon as possible. Here's how to do it:
 
 1) Open your `.env` file in a text editor like nano.
