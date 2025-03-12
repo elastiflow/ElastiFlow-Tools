@@ -58,7 +58,7 @@ You could instead use the following one liner to do everything:
 `net.ipv4.udp_mem=2097152 4194304 8388608`: Defines UDP memory limits (in pages). 2 GB slows socket allocation, 4 GB starts dropping packets, and 8 GB is the max allowed. Helps manage high UDP traffic.
 </details>
 
-#### 2) Disable swapping
+#### 2) Disable swapping and limit log file size
 
 1) Create or edit daemon.json
 ```
@@ -75,6 +75,15 @@ sudo nano /etc/docker/daemon.json
     }
   }
 }
+
+{
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "10m",
+    "max-file": "3"
+  }
+}
+
 ```
 3) Restart docker daemon
 ```
@@ -82,7 +91,7 @@ sudo systemctl restart docker
 ```
 You can instead use a one liner to do everything:
 ```
-echo '{"default-ulimits": {"memlock": {"name": "memlock", "soft": -1, "hard": -1}}}' | sudo tee /etc/docker/daemon.json > /dev/null && sudo systemctl restart docker
+echo '{"default-ulimits":{"memlock":{"name":"memlock","soft":-1,"hard":-1}},"log-driver":"json-file","log-opts":{"max-size":"10m","max-file":"3"}}' | sudo tee /etc/docker/daemon.json > /dev/null && sudo systemctl restart docker
 ```
 
 #### 3) Download Docker Compose files
