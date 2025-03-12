@@ -6,7 +6,7 @@ ElastiFlow NetObserv Flow + Elastic Full Stack Deployment with Docker
 [O.J. Wolanyk]
 
 ### Purpose:
-To easily install ElasticSearch, Kibana, and ElastiFlow NetObserv Flow with Docker Compose. Tested with Elastic / Kibana 8.16.1 and ElastiFlow NetObserv Flow 7.7.2.
+For testing purposes or for small deployments with less than 500 FPS to easily install ElasticSearch, Kibana, and ElastiFlow NetObserv Flow with Docker Compose. Tested with Elastic / Kibana 8.16.1 and ElastiFlow NetObserv Flow 7.7.2.
 
 ### Prerequisites:
 - Internet connected, clean Ubuntu 22 (or greater) Linux server with admin access
