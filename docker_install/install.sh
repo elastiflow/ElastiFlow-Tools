@@ -18,6 +18,13 @@ check_root() {
   fi
 }
 
+check_rw(){
+# Check if /var/lib is mounted read-only
+if findmnt -n -o OPTIONS /var/lib | grep -qw ro; then
+  echo "Error: /var/lib is mounted read-only. Exiting."
+  exit 1
+fi
+}
 
 check_all_containers_up_for_10_seconds() {
   local check_interval=1  # Check every 1 second
@@ -622,6 +629,7 @@ check_kibana_status() {
 
 # Main script execution
 check_root
+check_rw
 install_prerequisites
 download_files
 edit_env_file
