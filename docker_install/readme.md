@@ -58,7 +58,9 @@ You could instead use the following one liner to do everything:
 `net.ipv4.udp_mem=2097152 4194304 8388608`: Defines UDP memory limits (in pages). 2 GB slows socket allocation, 4 GB starts dropping packets, and 8 GB is the max allowed. Helps manage high UDP traffic.
 </details>
 
-#### 2) Disable swapping and limit log file size
+#### 2) Configure Docker
+
+Disable swapping and limit log file size
 
 1) Create or edit daemon.json
 ```
@@ -175,7 +177,7 @@ Password: `elastic`
 #### 9) Send Netflow
 
   ##### Option 1: (Best)
-  Send Netflow to IP_of_your_host:9995. Refer to your network hardware vendor for how to configure netflow / IPFIX / sFlow export.
+  Send flow to IP_of_your_host:9995. Refer to your network hardware vendor for how to configure Netflow 5,7,9 / IPFIX / sFlow / jFLow export.
   
   ##### Option 2: (OK)
   Generate flow data from one of your hosts  
@@ -198,7 +200,7 @@ Password: `elastic`
   3) Run pmacct: `sudo pmacctd -f /etc/pmacct/pmacctd.conf`
     
   ##### Option 3: (Really?) 
-  Generate fake flow data
+  Generate sample flow data
 
   Be sure to replace `ElastiFlow_NetObserv_Flow_IP` with the IP address of your ElastiFlow NetObserv Flow server.
 
