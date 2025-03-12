@@ -18,6 +18,22 @@ check_root() {
   fi
 }
 
+#!/bin/bash
+
+check_for_ubuntu() {
+  if [ -f /etc/os-release ]; then
+    # Source the OS release info
+    . /etc/os-release
+    if [[ "$ID" != "ubuntu" ]]; then
+      echo "Error: This script requires Ubuntu, but detected '$ID'. Exiting."
+      exit 1
+    fi
+  else
+    echo "Error: /etc/os-release not found. Cannot verify OS. Exiting."
+    exit 1
+  fi
+}
+
 check_rw(){
 # Check if /var/lib is mounted read-only
 if findmnt -n -o OPTIONS /var/lib | grep -qw ro; then
@@ -628,6 +644,7 @@ check_kibana_status() {
 
 
 # Main script execution
+check_for_ubuntu
 check_root
 check_rw
 install_prerequisites
