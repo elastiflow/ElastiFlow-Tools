@@ -494,7 +494,7 @@ EOF
   sysctl -p
   echo "Kernel parameters updated in /etc/sysctl.conf with previous configurations commented out."
 
-  echo '{"default-ulimits": {"memlock": {"name": "memlock", "soft": -1, "hard": -1}}}' | tee /etc/docker/daemon.json > /dev/null && systemctl restart docker
+  echo '{"default-ulimits":{"memlock":{"name":"memlock","soft":-1,"hard":-1}},"log-driver":"json-file","log-opts":{"max-size":"10m","max-file":"3"}}' | tee /etc/docker/daemon.json > /dev/null && systemctl restart docker
 
   printf "\n\n\n*********System tuning done...\n\n"
 }
