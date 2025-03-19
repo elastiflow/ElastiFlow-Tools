@@ -416,8 +416,8 @@ check_docker() {
 
     if [ "$FULL_AUTO" -eq 1 ]; then
       echo "FULL_AUTO is set to 1. Skipping prompt and installing Docker."
-      chmod +x "$INSTALL_DIR/install_docker._rocky.sh"
-      bash "$INSTALL_DIR/install_docker._rocky.sh"
+      chmod +x "$INSTALL_DIR/install_docker_rocky.sh"
+      bash "$INSTALL_DIR/install_docker_rocky.sh"
       return 0
     fi
 
@@ -426,8 +426,8 @@ check_docker() {
       case "$choice" in
         [yY] | [yY][eE][sS] )
           echo "Installing Docker..."
-          chmod +x "$INSTALL_DIR/install_docker._rocky.sh"
-          bash "$INSTALL_DIR/install_docker._rocky.sh"
+          chmod +x "$INSTALL_DIR/install_docker_rocky.sh"
+          bash "$INSTALL_DIR/install_docker_rocky.sh"
 
           # Verify if Docker is installed after running the install script
           if ! command -v docker &> /dev/null; then
