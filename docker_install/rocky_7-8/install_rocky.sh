@@ -591,5 +591,5 @@ load_env_vars
 check_docker
 ask_deploy_elastic_kibana
 ask_deploy_elastiflow_flow
-ask_deploy_elastiflow_snmp
+#ask_deploy_elastiflow_snmp
 check_system_health
