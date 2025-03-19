@@ -14,7 +14,7 @@ fi
 . /etc/os-release
 
 # Check that it's actually Rocky and that VERSION_ID is 7 or 8
-if [ "$ID" != "rocky" ] || { [ "$VERSION_ID" != "7" ] && [ "$VERSION_ID" != "8" ]; }; then
+if [ "$ID" != "rocky" ] || { [[ ! "$VERSION_ID" =~ ^7\. ]] && [[ ! "$VERSION_ID" =~ ^8\. ]]; }; then
   echo "Unsupported OS. This script only works on Rocky Linux 7 or 8."
   exit 1
 fi
