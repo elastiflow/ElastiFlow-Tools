@@ -21,7 +21,7 @@ fi
 # -----------------------------------------
 
 # Define Global Variables
-SCRIPT_DIR="$(dirname "$(realpath "$0")")"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 INSTALL_DIR="$SCRIPT_DIR/elastiflow_install"
 
 # Function to check if the user is root
