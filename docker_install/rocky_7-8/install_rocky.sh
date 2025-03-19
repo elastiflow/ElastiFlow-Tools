@@ -406,7 +406,7 @@ download_files() {
   curl -L -o "$INSTALL_DIR/elastiflow_flow_compose.yml" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elastiflow_flow_compose.yml"
   curl -L -o "$INSTALL_DIR/elastiflow_snmp_compose.yml" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elastiflow_snmp_compose.yml"
   curl -L -o "$INSTALL_DIR/elastiflow_trap_compose.yml" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/elastiflow_trap_compose.yml"
-  curl -L -o "$INSTALL_DIR/install_docker_rocky.sh" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/ontech12-patch-4/docker_install/install_docker_rocky.sh"
+  curl -L -o "$INSTALL_DIR/install_docker_rocky.sh" --create-dirs "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/rocky_7-8/install_docker_rocky.sh"
 }
 
 # Function to check if Docker is installed and install if necessary
