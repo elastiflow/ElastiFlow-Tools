@@ -326,7 +326,7 @@ install_prerequisites() {
   dnf -y makecache > /dev/null 2>&1
 
   # List of packages to be installed on Rocky
-  packages=(jq net-tools git bc gnupg2 curl wget unzip openssl, epel-release, dpkg)
+  packages=(jq net-tools git bc gnupg2 curl wget unzip openssl epel-release dpkg)
 
 
   # Loop through the list and install each package
