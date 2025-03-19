@@ -73,7 +73,7 @@ services:
 
       #EF_PROCESSOR_TRANSLATE_KEEP_IDS: 'default'
 
-      EF_PROCESSOR_ENRICH_APP_ID_ENABLE: 'true'
+      EF_PROCESSOR_ENRICH_APP_ID_ENABLE: 'false'
       #EF_PROCESSOR_ENRICH_APP_ID_PATH: '/etc/elastiflow/app/appid.yml'
       #EF_PROCESSOR_ENRICH_APP_ID_TTL: 7200
       EF_PROCESSOR_ENRICH_APP_IPPORT_ENABLE: 'true'
