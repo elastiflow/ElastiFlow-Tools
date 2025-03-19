@@ -411,45 +411,31 @@ download_files() {
 
 # Function to check if Docker is installed and install if necessary
 check_docker() {
-  if ! command -v docker &> /dev/null; then
-    echo "Docker is not installed. This is required."
-
-    if [ "$FULL_AUTO" -eq 1 ]; then
-      echo "FULL_AUTO is set to 1. Skipping prompt and installing Docker."
-      chmod +x "$INSTALL_DIR/install_docker_rocky.sh"
-      bash "$INSTALL_DIR/install_docker_rocky.sh"
-      return 0
-    fi
-
-    while true; do
-      read -p "Do you want to install Docker? (y/n): " choice
-      case "$choice" in
-        [yY] | [yY][eE][sS] )
-          echo "Installing Docker..."
-          chmod +x "$INSTALL_DIR/install_docker_rocky.sh"
-          bash "$INSTALL_DIR/install_docker_rocky.sh"
-
-          # Verify if Docker is installed after running the install script
-          if ! command -v docker &> /dev/null; then
-            echo "Docker installation failed. Please check the installation process and try again."
-            exit 1
-          else
-            echo "Docker installed successfully."
-          fi
-          break
-          ;;
-        [nN] | [nN][oO] )
-          echo "Docker installation declined. Exiting..."
-          exit 0
-          ;;
-        * )
-          echo "Invalid input. Please enter 'y' for yes or 'n' for no."
-          ;;
-      esac
-    done
-  else
+  # If Docker is already installed, do nothing.
+  if command -v docker &> /dev/null; then
     echo "Docker is already installed."
+    return 0
   fi
+
+  # Docker not found, attempt installation
+  echo "Docker is not installed. Installing..."
+  chmod +x "$INSTALL_DIR/install_docker_rocky.sh" || {
+    echo "Failed to set execute permission on install_docker_rocky.sh."
+    exit 1
+  }
+
+  bash "$INSTALL_DIR/install_docker_rocky.sh" || {
+    echo "Docker install script encountered an error."
+    exit 1
+  }
+
+  # Verify installation
+  if ! command -v docker &> /dev/null; then
+    echo "Docker installation failed. Please check the installation process."
+    exit 1
+  fi
+
+  echo "Docker installed successfully."
 }
 
 tune_system() {
