@@ -522,38 +522,38 @@ deploy_elastiflow_snmp() {
 # Function to download and extract ElastiFlow flow .deb
 extract_elastiflow_flow() {
   # Set variables
-  DEB_URL="https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_\${ELASTIFLOW_FLOW_VERSION}_linux_amd64.deb"
-  DEB_FILE="flow-collector_\${ELASTIFLOW_FLOW_VERSION}_linux_amd64.deb"
+  DEB_URL="https://elastiflow-releases.s3.us-east-2.amazonaws.com/flow-collector/flow-collector_${ELASTIFLOW_FLOW_VERSION}_linux_amd64.deb"
+  DEB_FILE="flow-collector_${ELASTIFLOW_FLOW_VERSION}_linux_amd64.deb"
   TEMP_DIR="/tmp/elastiflow_flow_deb"
   TARGET_DIR="/etc/elastiflow"
 
   # Download the .deb file
-  echo "Downloading \$DEB_URL..."
-  wget -O "\$DEB_FILE" "\$DEB_URL"
+  echo "Downloading $DEB_URL..."
+  wget -O "$DEB_FILE" "$DEB_URL"
 
   # Check if the temporary directory exists; if not, create it
-  if [ ! -d "\$TEMP_DIR" ]; then
-      echo "Creating directory \$TEMP_DIR..."
-      mkdir -p "\$TEMP_DIR"
+  if [ ! -d "$TEMP_DIR" ]; then
+      echo "Creating directory $TEMP_DIR..."
+      mkdir -p "$TEMP_DIR"
   else
-      echo "\$TEMP_DIR already exists, skipping creation."
+      echo "$TEMP_DIR already exists, skipping creation."
   fi
 
   # Extract the .deb file contents
-  echo "Extracting \$DEB_FILE..."
-  dpkg-deb -x "\$DEB_FILE" "\$TEMP_DIR"
+  echo "Extracting $DEB_FILE..."
+  dpkg-deb -x "$DEB_FILE" "$TEMP_DIR"
 
   # Copy /data/etc/elastiflow contents to /etc/elastiflow
-  echo "Copying extracted files to \$TARGET_DIR..."
-  mkdir -p "\$TARGET_DIR"
-  chown -R 1000:1000 "\$TARGET_DIR"
-  chmod -R 755 "\$TARGET_DIR"
+  echo "Copying extracted files to $TARGET_DIR..."
+  mkdir -p "$TARGET_DIR"
+  chown -R 1000:1000 "$TARGET_DIR"
+  chmod -R 755 "$TARGET_DIR"
 
-  cp -r "\$TEMP_DIR/etc/elastiflow/." "\$TARGET_DIR/"
+  cp -r "$TEMP_DIR/etc/elastiflow/." "$TARGET_DIR/"
 
   # Cleanup
   echo "Cleaning up..."
-  rm -rf "\$TEMP_DIR" "\$DEB_FILE"
+  rm -rf "$TEMP_DIR" "$DEB_FILE"
 
   echo "ElastiFlow flow yml files have been extracted!"
 }
