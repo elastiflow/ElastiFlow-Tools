@@ -578,21 +578,21 @@ check_kibana_status() {
   interval=1   # Check every 1 second
   elapsed_time=0
 
-  while [ \$elapsed_time -lt \$timeout ]; do
+  while [ $elapsed_time -lt $timeout ]; do
     # Fetch the status and check if it's 'available'
-    status=\$(curl -s "\$url" | jq -r '.status.overall.level')
-    if [ "\$status" == "available" ]; then
-      echo "[\$(date)] Kibana is ready to be logged in. Status: \$status"
+    status=$(curl -s "$url" | jq -r '.status.overall.level')
+    if [ "$status" = "available" ]; then
+      echo "[ $(date) ] Kibana is ready to be logged in. Status: $status"
       return 0  # Exit with success
     else
-      echo "[\$(date)] Kibana is not ready yet. Status: \$status"
+      echo "[ $(date) ] Kibana is not ready yet. Status: $status"
     fi
 
-    sleep \$interval
-    elapsed_time=\$((elapsed_time + interval))
+    sleep $interval
+    elapsed_time=$((elapsed_time + interval))
   done
 
-  echo "[\$(date)] Kibana not ready within the timeout period"
+  echo "[ $(date) ] Kibana not ready within the timeout period"
   return 1  # Exit with failure
 }
 
