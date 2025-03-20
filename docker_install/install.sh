@@ -35,11 +35,14 @@ check_for_ubuntu() {
 }
 
 check_rw(){
-# Check if /var/lib is mounted read-only
-if findmnt -n -o OPTIONS /var/lib | grep -qw ro; then
-  echo "Error: /var/lib is mounted read-only. Exiting."
-  exit 1
-fi
+  # Attempt to create a temporary file in /var/lib to verify write access
+  test_file="/var/lib/.rw_test"
+  if ! touch "$test_file" 2>/dev/null; then
+    echo "Error: Unable to write to /var/lib. It might be mounted read-only. Exiting."
+    exit 1
+  else
+    rm "$test_file"
+  fi
 }
 
 check_all_containers_up_for_10_seconds() {
