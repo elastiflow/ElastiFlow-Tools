@@ -5,21 +5,6 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-# ----- Only allow Rocky Linux 7 or 8 -----
-if [ ! -f /etc/os-release ]; then
-  echo "Unable to detect OS. This script only works on Rocky Linux 7 or 8."
-  exit 1
-fi
-
-. /etc/os-release
-
-# Check that it's actually Rocky and that VERSION_ID is 7 or 8
-if [ "$ID" != "rocky" ] || { [[ ! "$VERSION_ID" =~ ^7\. ]] && [[ ! "$VERSION_ID" =~ ^8\. ]]; }; then
-  echo "Unsupported OS. This script only works on Rocky Linux 7 or 8."
-  exit 1
-fi
-# -----------------------------------------
-
 # Define Global Variables
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 INSTALL_DIR="$SCRIPT_DIR/elastiflow_install"
@@ -595,8 +580,26 @@ check_kibana_status() {
   return 1  # Exit with failure
 }
 
+check_os() {
+  # Ensure the OS release file exists
+  if [ ! -f /etc/os-release ]; then
+    echo "Unable to detect OS. This script only works on Rocky Linux 7 or 8."
+    exit 1
+  fi
+
+  # Source OS details
+  . /etc/os-release
+
+  # Validate OS and version
+  if [ "$ID" != "rocky" ] || { [[ ! "$VERSION_ID" =~ ^7\. ]] && [[ ! "$VERSION_ID" =~ ^8\. ]]; }; then
+    echo "Unsupported OS. This script only works on Rocky Linux 7 or 8."
+    exit 1
+  fi
+}
+
 # Main script execution
 check_root
+check_os
 check_rw
 install_prerequisites
 download_files
