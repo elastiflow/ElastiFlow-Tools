@@ -132,7 +132,7 @@ check_system_health(){
   # check_elastiflow_readyz
   check_elastiflow_livez
   get_dashboard_status "ElastiFlow (flow): Overview"
-  get_dashboard_status "ElastiFlow (telemetry): Overview"
+  #get_dashboard_status "ElastiFlow (telemetry): Overview"
 }
 
 get_dashboard_status(){
