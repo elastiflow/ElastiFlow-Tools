@@ -32,6 +32,19 @@ check_root() {
   fi
 }
 
+
+check_rw(){
+  # Attempt to create a temporary file in /var/lib to verify write access
+  test_file="/var/lib/.rw_test"
+  if ! touch "$test_file" 2>/dev/null; then
+    echo "Error: Unable to write to /var/lib. It might be mounted read-only. Exiting."
+    exit 1
+  else
+    rm "$test_file"
+  fi
+}
+
+
 check_all_containers_up_for_10_seconds() {
   local check_interval=1  # Check every 1 second
   local required_time=10  # Total check time of 10 seconds
@@ -584,6 +597,7 @@ check_kibana_status() {
 
 # Main script execution
 check_root
+check_rw
 install_prerequisites
 download_files
 edit_env_file
