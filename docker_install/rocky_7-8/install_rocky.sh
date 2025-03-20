@@ -472,7 +472,7 @@ deploy_elastic_kibana() {
   echo "Deploying Elastic and Kibana..."
   tune_system
   cd "$INSTALL_DIR"
-  docker compose -f elasticsearch_kibana_compose.yml up -d
+  docker compose -f elasticsearch_kibana_compose.yml up --remove-orphans -d
   echo "Elastic and Kibana have been deployed successfully!"
 }
 
@@ -490,7 +490,7 @@ deploy_elastiflow_flow() {
   chown -R 1000:1000 /var/lib/elastiflow/flowcoll
   chmod -R 755 /var/lib/elastiflow/flowcoll
 
-  docker compose -f elastiflow_flow_compose.yml up -d
+  docker compose -f elastiflow_flow_compose.yml up --remove-orphans -d
 
   # version, prod_filename, schema, prod_directory
   install_dashboards "$FLOW_DASHBOARDS_VERSION" "flow" "$FLOW_DASHBOARDS_SCHEMA" "flow"
@@ -504,13 +504,13 @@ deploy_elastiflow_snmp() {
   cd /etc/elastiflow
   git clone https://github.com/elastiflow/snmp.git
   cd "$INSTALL_DIR"
-  docker compose -f elastiflow_snmp_compose.yml up -d
+  docker compose -f elastiflow_snmp_compose.yml up --remove-orphans -d
 
   mkdir -p /var/lib/elastiflow/trapcoll
   chown -R 1000:1000 /var/lib/elastiflow/trapcoll
   chmod -R 755 /var/lib/elastiflow/trapcoll
 
-  docker compose -f elastiflow_trap_compose.yml up -d
+  docker compose -f elastiflow_trap_compose.yml up --remove-orphans -d
 
   # version, prod_filename, schema, prod_directory
   install_dashboards "$SNMP_DASHBOARDS_VERSION" "snmp" "$SNMP_DASHBOARDS_SCHEMA" "snmp"
