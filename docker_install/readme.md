@@ -15,12 +15,19 @@ For testing purposes or for small deployments with less than 500 FPS to easily i
   
 - Good copying and pasting skills
 
-- Docker. If you do not have Docker, you can install it with the following convenience script:
-  ```
-  curl -fsSL https://get.docker.com | sudo sh
-  ```
+- Non-snap based Docker. To check if you have a Docker snap installed:
+```
+snap list | grep -q '^docker\s'
+```
+If you have a Docker snap, remove it with
+```
+ sudo snap remove --purge docker
+```
+You can install Docker with the following convenience script:
 
-
+```bash
+curl -fsSL https://get.docker.com | sudo sh
+```
 ### Instructions:
 
 #### 1) Add the following recommended kernel tuning parameters to /etc/sysctl.conf
