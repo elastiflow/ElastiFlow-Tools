@@ -20,6 +20,17 @@ check_root() {
 
 #!/bin/bash
 
+remove_docker_snap() {
+  # Check if the Docker Snap is present
+  if snap list | grep -q '^docker\s'; then
+    echo "Docker Snap is installed. Removing with --purge..."
+    sudo snap remove --purge docker
+    echo "Docker Snap has been removed."
+  else
+    echo "Docker Snap is not installed; nothing to remove."
+  fi
+}
+
 check_for_ubuntu() {
   if [ -f /etc/os-release ]; then
     # Source the OS release info
@@ -651,6 +662,7 @@ install_prerequisites
 download_files
 edit_env_file
 load_env_vars
+remove_docker_snap
 check_docker
 ask_deploy_elastic_kibana
 ask_deploy_elastiflow_flow
