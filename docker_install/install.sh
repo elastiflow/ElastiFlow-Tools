@@ -18,7 +18,16 @@ check_root() {
   fi
 }
 
-#!/bin/bash
+remove_docker_snap() {
+  # Check if the Docker Snap is present
+  if snap list | grep -q '^docker\s'; then
+    echo "Docker Snap is installed. Removing with --purge..."
+    sudo snap remove --purge docker
+    echo "Docker Snap has been removed."
+  else
+    echo "Docker Snap is not installed; nothing to remove."
+  fi
+}
 
 remove_docker_snap() {
   # Check if the Docker Snap is present
@@ -156,8 +165,9 @@ check_system_health(){
   check_elastiflow_flow_open_ports
   # check_elastiflow_readyz
   check_elastiflow_livez
-  get_dashboard_status "ElastiFlow (flow): Overview"
-  get_dashboard_status "ElastiFlow (telemetry): Overview"
+[ "$INSTALL_FLOWCOLL" = "1" ] && get_dashboard_status "ElastiFlow (flow): Overview"
+[ "$INSTALL_SNMPCOLLTRAP" = "1" ] && get_dashboard_status "ElastiFlow (telemetry): Overview"
+[ "$INSTALL_SNMPCOLLTRAP" = "1" ] && get_dashboard_status "ElastiFlow (log): Log Records"
 }
 
 
@@ -540,11 +550,16 @@ deploy_elastic_kibana() {
 
 # Function to deploy ElastiFlow Flow Collector using Docker Compose
 deploy_elastiflow_flow() {
+  if [ "$INSTALL_FLOWCOLL" != "1" ]; then
+    echo "INSTALL_FLOWCOLL is not set to 1. Skipping deployment of ElastiFlow Flow Collector."
+    return
+  fi
+
   echo "Deploying ElastiFlow Flow Collector..."
   extract_elastiflow_flow
   cd "$INSTALL_DIR"
-  #set up directories
 
+  # Set up directories
   mkdir -p /var/log/elastiflow
   chown -R 1000:1000 /var/log/elastiflow
   chmod -R 755 /var/log/elastiflow
@@ -555,7 +570,7 @@ deploy_elastiflow_flow() {
 
   docker compose -f elastiflow_flow_compose.yml up -d
 
-  #version, prod_filename, schema, prod_directory
+  # version, prod_filename, schema, prod_directory
   install_dashboards "$FLOW_DASHBOARDS_VERSION" "flow" "$FLOW_DASHBOARDS_SCHEMA" "flow" 
 
   echo "ElastiFlow Flow Collector has been deployed successfully!"
@@ -564,10 +579,16 @@ deploy_elastiflow_flow() {
 
 # Function to deploy ElastiFlow SNMP Collector using Docker Compose
 deploy_elastiflow_snmp() {
+  if [ "$INSTALL_SNMPCOLLTRAP" != "1" ]; then
+    echo "INSTALL_SNMPCOLLTRAP is not set to 1. Skipping deployment of ElastiFlow SNMP Collector and Trap Collector."
+    return
+  fi
+
   echo "Deploying ElastiFlow SNMP Collector..."
   cd /etc/elastiflow
   git clone https://github.com/elastiflow/snmp.git
   cd "$INSTALL_DIR"
+
   docker compose -f elastiflow_snmp_compose.yml up -d
 
   mkdir -p /var/lib/elastiflow/trapcoll
@@ -576,7 +597,7 @@ deploy_elastiflow_snmp() {
 
   docker compose -f elastiflow_trap_compose.yml up -d
   
-  #version, prod_filename, schema, prod_directory
+  # version, prod_filename, schema, prod_directory
   install_dashboards "$SNMP_DASHBOARDS_VERSION" "snmp" "$SNMP_DASHBOARDS_SCHEMA" "snmp"  
   install_dashboards "$SNMP_TRAPS_DASHBOARDS_VERSION" "snmp-traps" "$SNMP_TRAPS_DASHBOARDS_SCHEMA" "snmp_traps" 
   
