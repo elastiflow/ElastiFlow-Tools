@@ -30,6 +30,17 @@ curl -fsSL https://get.docker.com | sudo sh
 ```
 ### Instructions:
 
+### Quick Install using shell script
+
+You can complete the whole installation with the following convenience script:
+
+```
+sudo bash -c "$(wget -qLO - https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/docker_install/install.sh)"
+```
+
+Or follow these step by step instructions
+
+
 #### 1) Add the following recommended kernel tuning parameters to /etc/sysctl.conf
   
   ```
