@@ -189,10 +189,10 @@ get_host_ip() {
 
 get_dashboard_url() {
   get_host_ip
-  local kibana_url="http://$ip_address:5601"
+  local kibana_url="https://$ip_address:5601"
   local dashboard_title="$1"
   local encoded_title=$(echo "$dashboard_title" | sed 's/ /%20/g' | sed 's/:/%3A/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
-  local response=$(curl -s -u "elastic:$ELASTIC_PASSWORD" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
+  local response=$(curl -k -s -u "elastic:$ELASTIC_PASSWORD" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
   local dashboard_id=$(echo "$response" | jq -r '.saved_objects[] | select(.attributes.title=="'"$dashboard_title"'") | .id')
   if [ -z "$dashboard_id" ]; then
     dashboard_url="Dashboard not found"
@@ -260,7 +260,7 @@ check_elastic_ready(){
 
 
 check_kibana_ready(){
-  response=$(curl -s -X GET "http://localhost:5601/api/status")
+  response=$(curl -k -s -X GET "https://localhost:5601/api/status")
     
     if [[ $response == *'"status":{"overall":{"level":"available"}}'* ]]; then
         print_message "Kibana is ready. Used curl." "$GREEN"
@@ -410,12 +410,15 @@ install_dashboards() {
 
   # Path to the downloaded JSON file
   json_file="/etc/elastiflow_for_elasticsearch/kibana/$directory/kibana-$version-$filename-$schema.ndjson"
-  if [ -e $json_file ]; then
-    response=$(curl --silent --show-error --fail --connect-timeout 10 -X POST -u "elastic:$ELASTIC_PASSWORD" \
-      "localhost:5601/api/saved_objects/_import?overwrite=true" \
-      -H "kbn-xsrf: true" \
-      --form file=@"$json_file" \
-      -H 'kbn-xsrf: true')
+  if [ -e "$json_file" ]; then
+    response=$(
+      curl --insecure --silent --show-error --fail --connect-timeout 10 \
+        -X POST \
+        -u "elastic:$ELASTIC_PASSWORD" \
+        "https://localhost:5601/api/saved_objects/_import?overwrite=true" \
+        -H "kbn-xsrf: true" \
+        --form file=@"$json_file"
+    )
 
     dashboards_success=$(echo "$response" | jq -r '.success')
 
@@ -429,8 +432,11 @@ install_dashboards() {
   else
     echo "'$json_file' does not exist"
   fi
+
+  # Clean up
   rm -rf "/etc/elastiflow_for_elasticsearch/"
 }
+
 
 
 # Function to download the required files (overwriting existing files)
@@ -636,14 +642,14 @@ extract_elastiflow_flow() {
 
 
 check_kibana_status() {
-    url="http://localhost:5601/api/status"
+    url="https://localhost:5601/api/status"
     timeout=120  # 2 minutes
     interval=1  # Check every 1 second
     elapsed_time=0
 
     while [ $elapsed_time -lt $timeout ]; do
         # Fetch the status and check if it's 'available'
-        status=$(curl -s "$url" | jq -r '.status.overall.level')
+        status=$(curl -k -s "$url" | jq -r '.status.overall.level')
         
         if [ "$status" == "available" ]; then
             echo "[$(date)] Kibana is ready to be logged in. Status: $status"
