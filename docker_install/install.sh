@@ -20,7 +20,7 @@ check_root() {
 
 remove_docker_snap() {
   # Check if the Docker Snap is present
-  if snap list | grep -q '^docker\s'; then
+  if snap list | grep docker; then
     echo "Docker Snap is installed. Removing with --purge..."
     sudo snap remove --purge docker
     echo "Docker Snap has been removed."

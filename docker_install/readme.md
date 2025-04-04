@@ -17,7 +17,7 @@ For testing purposes or for small deployments with less than 500 FPS to easily i
 
 - Non-snap based Docker. To check if you have a Docker snap installed:
 ```
-snap list | grep -q '^docker\s'
+snap list | grep docker
 ```
 If you have a Docker snap, remove it with
 ```
