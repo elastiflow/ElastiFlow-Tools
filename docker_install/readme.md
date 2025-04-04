@@ -176,7 +176,7 @@ From the directory where you downloaded the yml and .env files,
   ```
 #### 7) Log in to Kibana 
 
-After a few minutes, browse to `http://IP_of_your_host:5601`.
+After a few minutes, browse to `https://IP_of_your_host:5601`.
 
 Log in with:
 Username: `elastic` 
