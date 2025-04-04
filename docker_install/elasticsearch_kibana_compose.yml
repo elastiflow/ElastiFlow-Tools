@@ -28,8 +28,18 @@ services:
           "      - localhost\n"\
           "    ip:\n"\
           "      - 127.0.0.1\n"\
+          "  - name: kibana\n"\
+          "    dns:\n"\
+          "      - kibana\n"\
+          "      - localhost\n"\
+          "    ip:\n"\
+          "      - 127.0.0.1\n"\
           > config/certs/instances.yml;
-          bin/elasticsearch-certutil cert --silent --pem -out config/certs/certs.zip --in config/certs/instances.yml --ca-cert config/certs/ca/ca.crt --ca-key config/certs/ca/ca.key;
+          bin/elasticsearch-certutil cert --silent --pem \
+              -out config/certs/certs.zip \
+              --in config/certs/instances.yml \
+              --ca-cert config/certs/ca/ca.crt \
+              --ca-key config/certs/ca/ca.key;
           unzip config/certs/certs.zip -d config/certs;
         fi;
         echo "Setting file permissions"
@@ -63,8 +73,7 @@ services:
       - node.name=es01
       - cluster.name=${CLUSTER_NAME}
       - cluster.initial_master_nodes=es01
-      # disabled unless there is more than 1 node in the cluster
-      #- discovery.seed_hosts=es01
+      #- discovery.seed_hosts=es01  # Use if adding more ES nodes
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - bootstrap.memory_lock=true
       - xpack.security.enabled=true
@@ -78,12 +87,8 @@ services:
       - xpack.security.transport.ssl.certificate_authorities=certs/ca/ca.crt
       - xpack.security.transport.ssl.verification_mode=certificate
       - xpack.license.self_generated.type=${LICENSE}
-
-      # to enable stack monitoring without metricbeats
       - xpack.monitoring.collection.enabled=true
-      
       - ES_JAVA_OPTS=-Xms${JVM_HEAP_SIZE}g -Xmx${JVM_HEAP_SIZE}g
-
     mem_limit: ${MEM_LIMIT_ELASTIC}
     ulimits:
       memlock:
@@ -98,6 +103,7 @@ services:
       interval: 10s
       timeout: 10s
       retries: 120
+
   kibana:
     depends_on:
       es01:
@@ -110,19 +116,33 @@ services:
     ports:
       - ${KIBANA_PORT}:5601
     environment:
-      - SERVERNAME=kibana
+      # The environment variable "SERVER_NAME" maps to Kibana's "server.name" setting
+      - SERVER_NAME=kibana
+
+      # Force Kibana to serve HTTPS
+      - SERVER_SSL_ENABLED=true
+      - SERVER_SSL_KEY=config/certs/kibana/kibana.key
+      - SERVER_SSL_CERTIFICATE=config/certs/kibana/kibana.crt
+
+      # By default, it will redirect from http to https, so point "server.publicBaseUrl" to https
+      - SERVER_PUBLICBASEURL=https://kibana.example.com:5601
+
       - ELASTICSEARCH_HOSTS=https://es01:9200
       - ELASTICSEARCH_USERNAME=kibana_system
       - ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD}
       - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=config/certs/ca/ca.crt
-      - SERVER_PUBLICBASEURL=http://kibana.example.com:5601
+      - ELASTICSEARCH_SSL_VERIFICATIONMODE=certificate
+
+      # Example encryption key for encrypted saved objects
       - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=ElastiFlow_0123456789_0123456789_0123456789
+
     mem_limit: ${MEM_LIMIT_KIBANA}
     healthcheck:
+      # Use HTTPS for the healthcheck; curl -k to skip certificate validation if using self-signed
       test:
         [
           "CMD-SHELL",
-          "curl -s -I http://localhost:5601 | grep -q 'HTTP/1.1 302 Found'",
+          "curl -k -s -I https://localhost:5601 | grep -q 'HTTP/1.1 302 Found'",
         ]
       interval: 10s
       timeout: 10s
