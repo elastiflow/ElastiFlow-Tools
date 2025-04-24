@@ -1,0 +1,103 @@
+
+NetFlow v5 Exporter for Windows
+
+
+
+This guide provides a basic implementation of a NetFlow v5 exporter for Windows. The script captures packets using Npcap, aggregates them into flows based on the 5-tuple, and sends NetFlow v5 records to a specified collector.
+
+1. Install Python (if not already installed)
+
+Download and install the latest Python 3.x version from python.org.
+During installation, check "Add Python to PATH".
+If needed, manually add Python to PATH:
+
+
+Example: 
+C:\Users\Administrator\AppData\Local\Programs\Python\Python313\;
+
+C:\Users\Administrator\AppData\Local\Programs\Python\Python313\Scripts\;
+
+Restart your Command Prompt (cmd).
+Verify Python installation:
+python --version
+You should see a version response like: Python 3.x.x.
+
+
+
+
+
+
+2. Install Npcap
+
+Download and install Npcap from:
+ Npcap Official Download
+Choose the option "Install WinPcap API compatibility mode" during installation.
+
+
+
+
+
+
+3. Install Required Python Packages
+
+Open Command Prompt (cmd) as Administrator and run:
+
+
+
+pip install pyinstaller scapy
+
+
+
+
+
+
+
+
+
+4. Find Your Network Interface Name
+
+To identify your network interface
+
+at a command line type "ipconfig"
+
+
+
+Look for your active network adapter’s name (e.g., Ethernet, Wi-Fi, or Ethernet 2).
+
+
+
+
+
+
+
+5. Modify netflow_gen5.py Script
+
+Open the provided netflow_gen5.py file and update the following lines:
+
+
+
+COLLECTOR_IP = "10.101.2.148"  # Set your NetFlow collector IP
+
+COLLECTOR_PORT = 2055  # Default NetFlow UDP port
+
+INTERFACE = "Ethernet"  # Change this to match your Windows interface name
+
+
+
+Replace "10.101.2.148" with the ElastiFlow IP.
+Replace "Ethernet" with the correct interface name from the ipconfig output.
+
+
+
+
+
+
+6. Run the NetFlow Exporter
+
+Execute the script at the command line using:
+
+python netflow_gen.py
+
+
+
+This will start capturing packets, aggregating them into NetFlow v5 records, and sending them to your specified collector.
