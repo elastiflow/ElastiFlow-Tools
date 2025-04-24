@@ -15,8 +15,11 @@ DOMAIN_ID = config.get("DOMAIN_ID", 1234)
 INTERFACE = config.get("INTERFACE", "eth0")
 ACTIVE_TIMEOUT = config.get("ACTIVE_TIMEOUT", 60)
 INACTIVE_TIMEOUT = config.get("INACTIVE_TIMEOUT", 30)
+EXPORTER_PORT = config.get("EXPORTER_PORT", 4739)  # fixed source port for uniform behavior
+TEMPLATE_INTERVAL = config.get("TEMPLATE_INTERVAL", 300)  # seconds
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.bind(("0.0.0.0", EXPORTER_PORT))
 
 TEMPLATE_FIELDS = [
     (8, 4),   # sourceIPv4Address
@@ -31,6 +34,7 @@ TEMPLATE_FIELDS = [
 
 flows = {}
 flow_sequence = 1
+last_template_time = 0
 
 MAX_IPFIX_PAYLOAD_SIZE = 65400  # safe limit under 65535 to avoid overflow
 MAX_RECORDS_PER_PACKET = 50     # ElastiFlow may enforce this limit
@@ -45,13 +49,15 @@ def create_template_record():
     return header + fields
 
 def send_template(sequence_number):
+    global last_template_time
     export_time = int(time.time())
     template_record = create_template_record()
     template_set_header = struct.pack("!HH", 2, len(template_record) + 4)
     payload = template_set_header + template_record
     ipfix_msg = ipfix_header(len(payload) + 16, export_time, sequence_number) + payload
     sock.sendto(ipfix_msg, (COLLECTOR_IP, COLLECTOR_PORT))
-    print(f"[+] Template sent, sequence={sequence_number}")
+    last_template_time = time.time()
+    print(f"[+] Template sent, sequence={sequence_number} at {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(last_template_time))}")
 
 def create_data_record(flow):
     src_ip = socket.inet_aton(flow['src_ip'])
@@ -94,6 +100,7 @@ def send_data_records(sequence_number):
         ipfix_msg = ipfix_header(len(payload) + 16, export_time, sequence_number) + payload
         sock.sendto(ipfix_msg, (COLLECTOR_IP, COLLECTOR_PORT))
         print(f"[+] Exported final batch of {record_count} IPFIX records, sequence={sequence_number}")
+    print(f"[i] Template last sent at {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(last_template_time))}")
 
     flows.clear()
 
@@ -135,12 +142,15 @@ def packet_handler(packet):
 
 def main():
     global flow_sequence
-    print(f"[+] Starting IPFIX exporter on interface: {INTERFACE}")
+    print(f"[+] Starting IPFIX exporter on interface: {INTERFACE} from source port {EXPORTER_PORT}")
     send_template(flow_sequence)
     flow_sequence += 1
     try:
         while True:
             sniff(iface=INTERFACE, filter="ip", prn=packet_handler, store=0, timeout=ACTIVE_TIMEOUT)
+            if time.time() - last_template_time > TEMPLATE_INTERVAL:
+                send_template(flow_sequence)
+                flow_sequence += 1
             flow_sequence += 1
             send_data_records(flow_sequence)
     except KeyboardInterrupt:
@@ -149,4 +159,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
