@@ -110,3 +110,7 @@ Linux install
 1. sudo apt update
 2. sudo apt install python3-scapy
 3. make config changes for the local interface to listen on and flow collector 
+
+
+
+This will start capturing packets, aggregating them into NetFlow v5 records, and sending them to your specified collector.
