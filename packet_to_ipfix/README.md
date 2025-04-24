@@ -95,6 +95,14 @@ sudo netflow-env/bin/python packet_to_ipfix.py
 - Use Wireshark/tcpdump to confirm IPFIX packets are being sent from your system.
 - If the collector logs `template not yet received`, increase the frequency of template refresh or verify source ports match.
 
+
+---
+## To run in background
+
+nohup sudo python3 packet_to_ipfix.py > ipfix.log 2>&1 &
+
+
+
 ---
 
 ## Compatible Collectors
