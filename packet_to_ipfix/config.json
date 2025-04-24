@@ -1,0 +1,10 @@
+{
+    "COLLECTOR_IP": "10.101.2.148",
+    "COLLECTOR_PORT": 2055,
+    "TEMPLATE_ID": 256,
+    "DOMAIN_ID": 1234,
+    "INTERFACE": "ens18",
+    "ACTIVE_TIMEOUT": 60,
+    "INACTIVE_TIMEOUT": 30
+  }
+  
