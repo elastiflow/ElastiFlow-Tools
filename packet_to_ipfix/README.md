@@ -102,6 +102,6 @@ sudo netflow-env/bin/python packet_to_ipfix.py
 
 ---
 
-## 🙋 Author
+## Author
 Built by @eric with clarity, compatibility, and cross-platform support in mind.
 
