@@ -1,9 +1,11 @@
 
-NetFlow v5 Exporter for Windows
+NetFlow v5 Exporter for Windows and Linux
 
 
 
-This guide provides a basic implementation of a NetFlow v5 exporter for Windows. The script captures packets using Npcap, aggregates them into flows based on the 5-tuple, and sends NetFlow v5 records to a specified collector.
+This guide provides a basic implementation of a NetFlow v5 exporter for Windows and linux based OSs. The script captures packets using Npcap, aggregates them into flows based on the 5-tuple, and sends NetFlow v5 records to a specified collector.
+
+Windows install
 
 1. Install Python (if not already installed)
 
@@ -97,6 +99,17 @@ Replace "Ethernet" with the correct interface name from the ipconfig output.
 Execute the script at the command line using:
 
 python netflow_gen.py
+
+
+
+This will start capturing packets, aggregating them into NetFlow v5 records, and sending them to your specified collector.
+
+
+Linux install
+
+1. sudo apt update
+2. sudo apt install python3-scapy
+3. make config changes for the local interface to listen on and flow collector 
 
 
 

@@ -1,0 +1,8 @@
+{
+    "COLLECTOR_IP": "10.101.2.148",
+    "COLLECTOR_PORT": 2055,
+    "INTERFACE": "eth0", 
+    "ACTIVE_TIMEOUT": 60,
+    "INACTIVE_TIMEOUT": 30
+  }
+  
