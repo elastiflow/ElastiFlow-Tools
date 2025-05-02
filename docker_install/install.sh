@@ -641,6 +641,52 @@ extract_elastiflow_flow() {
 }
 
 
+get_physical_cores() {
+  if command -v lscpu >/dev/null 2>&1; then
+    # Use lscpu output to calculate: Sockets × Cores per Socket
+    sockets=$(lscpu | awk -F: '/Socket\(s\)/ {gsub(/ /, "", $2); print $2}')
+    cores_per_socket=$(lscpu | awk -F: '/Core\(s\) per socket/ {gsub(/ /, "", $2); print $2}')
+    if [[ "$sockets" =~ ^[0-9]+$ && "$cores_per_socket" =~ ^[0-9]+$ ]]; then
+      echo $((sockets * cores_per_socket))
+      return 0
+    fi
+  fi
+
+  # Fallback: Use /proc/cpuinfo to count unique physical ID + core ID pairs
+  if [ -f /proc/cpuinfo ]; then
+    awk '
+      /^physical id/ {pid=$4}
+      /^core id/ {cid=$4; cores[pid ":" cid]=1}
+      END {print length(cores)}
+    ' /proc/cpuinfo
+    return 0
+  fi
+
+  echo "Unable to determine physical CPU core count" >&2
+  return 1
+}
+
+
+get_total_ram() {
+  if [ -f /proc/meminfo ]; then
+    awk '/^MemTotal:/ {printf "%.2f\n", $2 / 1024 / 1024}' /proc/meminfo
+  else
+    echo "Unable to determine total RAM" >&2
+    return 1
+  fi
+}
+
+get_free_disk_space() {
+  df -h --output=avail / | tail -n 1
+}
+
+check_hardware()
+{
+  cores=$(get_physical_cores)
+  total_ram=$(get_total_ram)
+  free_space=$(get_free_disk_space)
+}
+
 check_kibana_status() {
     url="https://localhost:5601/api/status"
     timeout=120  # 2 minutes
