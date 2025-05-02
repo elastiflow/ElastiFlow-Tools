@@ -115,7 +115,7 @@ edit_env_file() {
   local answer
 
   while true; do
-    echo "Would you like to edit the .env file before proceeding? (y/n) [Default: no in 20 seconds]"
+    echo "Would you like to edit the .env file before proceeding? This is not required if you are using 16GB of RAM. Otherwise, adjustments need to be made to this file. (y/n) [Default: no in 20 seconds]"
 
     # Read user input with a timeout of 20 seconds
     read -t 20 -p "Enter your choice (y/n): " answer
@@ -405,8 +405,21 @@ install_dashboards() {
 
   # Clone the repository
   git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
-  
-  check_kibana_status
+
+  # Loop until Kibana is healthy or user chooses to abort
+  while true; do
+    check_kibana_status
+    if [ $? -eq 0 ]; then
+      break
+    fi
+
+    echo "⚠️ Kibana is not reachable or not healthy."
+    read -p "Do you want to retry? (y/N): " retry_choice
+    case "$retry_choice" in
+      y|Y ) echo "Retrying..."; sleep 2 ;;
+      * ) echo "Aborting dashboard installation."; rm -rf "/etc/elastiflow_for_elasticsearch/"; exit 1 ;;
+    esac
+  done
 
   # Path to the downloaded JSON file
   json_file="/etc/elastiflow_for_elasticsearch/kibana/$directory/kibana-$version-$filename-$schema.ndjson"
@@ -436,7 +449,6 @@ install_dashboards() {
   # Clean up
   rm -rf "/etc/elastiflow_for_elasticsearch/"
 }
-
 
 
 # Function to download the required files (overwriting existing files)
@@ -536,7 +548,6 @@ EOF
 deploy_elastic_kibana() {
   echo "Deploying Elastic and Kibana..."
   tune_system
-  #generate_saved_objects_enc_key
   cd "$INSTALL_DIR"
   docker compose -f elasticsearch_kibana_compose.yml up -d
   echo "Elastic and Kibana have been deployed successfully!"
@@ -683,22 +694,24 @@ get_free_disk_space() {
 check_hardware()
 {
   cores=$(get_physical_cores)
-  total_ram=$(get_total_ram)          # Expected in GB
-  free_space=$(get_free_disk_space)   # Expected in GB
+  total_ram=$(get_total_ram)          # Expected in GB (float)
+  free_space=$(get_free_disk_space)   # Expected in GB (float)
 
   warn=false
   problems=""
 
-  if [ "$total_ram" -lt 16 ]; then
+  # Use bc for floating-point comparison
+  if (( $(echo "$total_ram < 16" | bc -l) )); then
     problems+="  - Installed RAM is less than 16 GB (detected: ${total_ram} GB)\n"
     warn=true
   fi
 
-  if [ "$free_space" -lt 400 ]; then
+  if (( $(echo "$free_space < 400" | bc -l) )); then
     problems+="  - Free disk space is less than 400 GB (detected: ${free_space} GB)\n"
     warn=true
   fi
 
+  # Cores are integer — safe with [ ]
   if [ "$cores" -lt 8 ]; then
     problems+="  - Physical CPU cores are less than 8 (detected: ${cores})\n"
     warn=true
@@ -713,6 +726,7 @@ check_hardware()
     esac
   fi
 }
+
 
 
 check_kibana_status() {
@@ -747,9 +761,9 @@ check_kibana_status() {
 # Main script execution
 check_for_ubuntu
 check_root
+install_prerequisites #before check_hardware since it requires bc
 check_hardware
 check_rw
-install_prerequisites
 download_files
 edit_env_file
 load_env_vars
