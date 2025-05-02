@@ -18,8 +18,18 @@ check_root() {
   fi
 }
 
+check_flow_blocker_health() {
+  local service="flow_blocker.service"
 
-flow_blocker_monitor() {
+  if systemctl is-active --quiet "$service"; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+
+install_flow_blocker() {
   local script_path="/usr/local/bin/flow_blocker.sh"
   local service_path="/etc/systemd/system/flow_blocker.service"
   local log_file="/var/log/flow_blocker.log"
@@ -198,17 +208,15 @@ fi
 }
 
 check_all_containers_up() {
-  local check_interval=1  # Check every 1 second
-  local required_time=10  # Total check time of 10 seconds
+  local check_interval=1
+  local required_time=10
   local elapsed_time=0
-  declare -A container_status_summary  # Associative array to store status of each container
+  declare -A container_status_summary
 
-  # Define color codes
   local GREEN='\033[0;32m'
   local RED='\033[0;31m'
-  local NC='\033[0m' # No Color
+  local NC='\033[0m'
 
-  # Get a list of all running Docker containers' IDs and Names
   local containers=($(docker ps --format "{{.ID}}:{{.Names}}"))
 
   if [ ${#containers[@]} -eq 0 ]; then
@@ -216,25 +224,20 @@ check_all_containers_up() {
     return 1
   fi
 
-  echo "Checking if all Docker containers remain 'Up' for at least 10 seconds..."
+  echo "Checking if all Docker containers remain 'Up' for at least $required_time seconds..."
 
-  # Initialize the summary array with "stable" for each container
   for container in "${containers[@]}"; do
-    container_id=$(echo "$container" | cut -d':' -f1)
-    container_name=$(echo "$container" | cut -d':' -f2)
+    local container_name=$(echo "$container" | cut -d':' -f2)
     container_status_summary["$container_name"]="stable"
   done
 
-  # Check each container every second
   while [ $elapsed_time -lt $required_time ]; do
     for container in "${containers[@]}"; do
-      container_id=$(echo "$container" | cut -d':' -f1)
-      container_name=$(echo "$container" | cut -d':' -f2)
+      local container_id=$(echo "$container" | cut -d':' -f1)
+      local container_name=$(echo "$container" | cut -d':' -f2)
 
-      # Check the status of the container using docker ps
-      status=$(docker ps --filter "id=$container_id" --format "{{.Status}}")
+      local status=$(docker ps --filter "id=$container_id" --format "{{.Status}}")
 
-      # If the container is not "Up", mark it as "not stable"
       if [[ "$status" != Up* ]]; then
         container_status_summary["$container_name"]="not stable"
       fi
@@ -244,16 +247,24 @@ check_all_containers_up() {
     elapsed_time=$((elapsed_time + check_interval))
   done
 
-  # Output the summary of all containers (without duplicates)
   echo -e "\nSummary of Docker container statuses after $required_time seconds:"
+  local all_stable=true
   for container_name in "${!container_status_summary[@]}"; do
     if [ "${container_status_summary[$container_name]}" == "stable" ]; then
       print_message "Container '$container_name' is stable." "$GREEN"
     else
       print_message "Container '$container_name' is not stable." "$RED"
+      all_stable=false
     fi
   done
+
+  if [ "$all_stable" = true ]; then
+    return 0
+  else
+    return 1
+  fi
 }
+
 
 
 edit_env_file() {
@@ -291,18 +302,61 @@ edit_env_file() {
 }
 
 
-check_system_health(){
+check_system_health() {
   printf "\n\n*********************************"
   printf "*********************************\n"
+
   check_all_containers_up
+  local containers_ok=$?
+
   check_elastic_ready
+  local elastic_ok=$?
+
   check_kibana_ready
+  local kibana_ok=$?
+
   check_elastiflow_flow_open_ports
-  # check_elastiflow_readyz
+  local ports_ok=$?
+
   check_elastiflow_livez
-[ "$INSTALL_FLOWCOLL" = "1" ] && get_dashboard_status "ElastiFlow (flow): Overview"
-[ "$INSTALL_SNMPCOLLTRAP" = "1" ] && get_dashboard_status "ElastiFlow (telemetry): Overview"
-[ "$INSTALL_SNMPCOLLTRAP" = "1" ] && get_dashboard_status "ElastiFlow (log): Log Records"
+  local livez_ok=$?
+
+  check_flow_blocker_health
+  local blocker_ok=$?
+
+  if [ "$INSTALL_FLOWCOLL" = "1" ]; then
+    get_dashboard_status "ElastiFlow (flow): Overview"
+    local dashboard_flow_ok=$?
+  else
+    local dashboard_flow_ok=0
+  fi
+
+  if [ "$INSTALL_SNMPCOLLTRAP" = "1" ]; then
+    get_dashboard_status "ElastiFlow (telemetry): Overview"
+    local dashboard_telemetry_ok=$?
+    get_dashboard_status "ElastiFlow (log): Log Records"
+    local dashboard_log_ok=$?
+  else
+    local dashboard_telemetry_ok=0
+    local dashboard_log_ok=0
+  fi
+
+  # Final result check
+  if [ "$containers_ok" -eq 0 ] &&
+     [ "$elastic_ok" -eq 0 ] &&
+     [ "$kibana_ok" -eq 0 ] &&
+     [ "$ports_ok" -eq 0 ] &&
+     [ "$livez_ok" -eq 0 ] &&
+     [ "$blocker_ok" -eq 0 ] &&
+     [ "$dashboard_flow_ok" -eq 0 ] &&
+     [ "$dashboard_telemetry_ok" -eq 0 ] &&
+     [ "$dashboard_log_ok" -eq 0 ]; then
+    echo "✅ All system health checks passed."
+    return 0
+  else
+    echo "❌ One or more system health checks failed."
+    return 1
+  fi
 }
 
 
@@ -310,8 +364,10 @@ get_dashboard_status(){
  get_dashboard_url "$1"
     if [ "$dashboard_url" == "Dashboard not found" ]; then
       print_message "Dashboard $1: URL: $dashboard_url" "$RED"
+      return 1
     else
       print_message "Dashboard $1: URL: $dashboard_url" "$GREEN"
+      return 0
     fi
 }
 
@@ -358,39 +414,46 @@ get_dashboard_url() {
   }
 
 
-check_elastiflow_livez(){
+check_elastiflow_livez() {
   response=$(curl -s http://localhost:8080/livez)
-    if echo "$response" | grep -q "200"; then
-      print_message "ElastiFlow Flow Collector is $response" "$GREEN"
-    else
-      print_message "ElastiFlow Flow Collector Livez: $response" "$RED"
-    fi
+  if echo "$response" | grep -q "200"; then
+    print_message "ElastiFlow Flow Collector is $response" "$GREEN"
+    return 0
+  else
+    print_message "ElastiFlow Flow Collector Livez: $response" "$RED"
+    return 1
+  fi
 }
 
 
 check_elastiflow_flow_open_ports() {
-  # Path to the .env file (you can adjust the path if necessary)
   local env_file="$INSTALL_DIR/elastiflow_flow_compose.yml"
 
-  # Extract the EF_FLOW_SERVER_UDP_PORT variable from the .env file (ignoring commented lines)
   local port_list=$(grep -v '^#' "$env_file" | grep 'EF_FLOW_SERVER_UDP_PORT' | cut -d ':' -f2 | tr -d ' ')
 
-  # Check if the variable is empty
   if [ -z "$port_list" ]; then
     echo "No ports found in the EF_FLOW_SERVER_UDP_PORT variable."
-    return
+    return 1
   fi
 
-  # Split the port list by commas and check each port
+  local found_open=false
   IFS=',' read -ra ports <<< "$port_list"
   for port in "${ports[@]}"; do
     if netstat -tuln | grep -q ":$port"; then
       print_message "ElastiFlow Flow Collector port $port is open." "$GREEN"
+      found_open=true
     else
       print_message "ElastiFlow Flow Collector is not ready for flow on $port." "$RED"
     fi
   done
+
+  if [ "$found_open" = true ]; then
+    return 0
+  else
+    return 1
+  fi
 }
+
 
 
 check_elastic_ready(){
@@ -398,9 +461,11 @@ check_elastic_ready(){
      search_text='"tagline" : "You Know, for Search"'
      if echo "$curl_result" | grep -q "$search_text"; then
        print_message "Elastic is ready. Used authenticated curl." "$GREEN"
+       return 0
      else
        print_message "Elastic is not ready." "$RED"
        echo "$curl_result"
+       return 1
      fi
 }
 
@@ -410,9 +475,11 @@ check_kibana_ready(){
     
     if [[ $response == *'"status":{"overall":{"level":"available"}}'* ]]; then
         print_message "Kibana is ready. Used curl." "$GREEN"
+        return 0
     else
         print_message "Kibana is not ready" "$RED"
         echo "$response"
+        return 1
     fi
 }
 
@@ -918,4 +985,10 @@ check_docker
 ask_deploy_elastic_kibana
 ask_deploy_elastiflow_flow
 ask_deploy_elastiflow_snmp
-check_system_health
+install_flow_blocker
+if check_system_health; then
+  echo "System is healthy."
+else
+  echo "System is NOT healthy."
+fi
+
