@@ -417,7 +417,7 @@ install_dashboards() {
     read -p "Do you want to retry? (y/N): " retry_choice
     case "$retry_choice" in
       y|Y ) echo "Retrying..."; sleep 2 ;;
-      * ) echo "Aborting dashboard installation."; rm -rf "/etc/elastiflow_for_elasticsearch/"; exit 1 ;;
+      * ) echo "Aborting installation."; rm -rf "/etc/elastiflow_for_elasticsearch/"; exit 1 ;;
     esac
   done
 
