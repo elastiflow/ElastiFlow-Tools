@@ -36,7 +36,7 @@ interval=30
 restart_policy="unless-stopped"
 
 es_url="https://localhost:9200"
-es_auth=""  # Example: "-u elastic:password"
+es_auth=""  # Example: "-u elastic:$ELASTIC_PASSWORD"
 es_curl_opts="-k -s"
 
 log_file="/var/log/flow_blocker.log"
@@ -197,7 +197,7 @@ if findmnt -n -o OPTIONS /var/lib | grep -qw ro; then
 fi
 }
 
-check_all_containers_up_for_10_seconds() {
+check_all_containers_up() {
   local check_interval=1  # Check every 1 second
   local required_time=10  # Total check time of 10 seconds
   local elapsed_time=0
@@ -294,7 +294,7 @@ edit_env_file() {
 check_system_health(){
   printf "\n\n*********************************"
   printf "*********************************\n"
-  check_all_containers_up_for_10_seconds
+  check_all_containers_up
   check_elastic_ready
   check_kibana_ready
   check_elastiflow_flow_open_ports
