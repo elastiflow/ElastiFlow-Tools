@@ -18,6 +18,152 @@ check_root() {
   fi
 }
 
+
+flow_blocker_monitor() {
+  local script_path="/usr/local/bin/flow_blocker.sh"
+  local service_path="/etc/systemd/system/flow_blocker.service"
+  local log_file="/var/log/flow_blocker.log"
+  local logrotate_conf="/etc/logrotate.d/flow_blocker"
+
+  echo "Creating flow_blocker script at $script_path..."
+
+  sudo tee "$script_path" > /dev/null << 'EOF'
+#!/bin/bash
+
+threshold_block=20
+threshold_unblock=25
+interval=30
+restart_policy="unless-stopped"
+
+es_url="https://localhost:9200"
+es_auth=""  # Example: "-u elastic:password"
+es_curl_opts="-k -s"
+
+log_file="/var/log/flow_blocker.log"
+
+log() {
+  echo "[$(date)] $*" | tee -a "$log_file"
+}
+
+log "Starting flow_blocker (monitoring Docker and flowcoll.service)..."
+
+while true; do
+  disk_json=$(curl $es_curl_opts $es_auth "$es_url/_nodes/stats/fs?filter_path=nodes.*.fs.total")
+
+  available_bytes=$(echo "$disk_json" | jq '[.nodes[].fs.total.available_in_bytes] | min')
+  total_bytes=$(echo "$disk_json" | jq '[.nodes[].fs.total.total_in_bytes] | max')
+
+  if [[ -z "$available_bytes" || -z "$total_bytes" || "$available_bytes" == "null" || "$total_bytes" == "null" ]]; then
+    log "❌ Failed to get valid disk space metrics from Elasticsearch."
+    sleep "$interval"
+    continue
+  fi
+
+  free_pct=$(echo "scale=2; 100 * $available_bytes / $total_bytes" | bc -l)
+  log "Free disk space (via ES): ${free_pct}%"
+
+  # --- Docker container ---
+  container_info=$(docker ps -a --format '{{.ID}} {{.Names}}' | grep "flow-collector" | head -n 1)
+  container_id=$(echo "$container_info" | awk '{print $1}')
+  container_name=$(echo "$container_info" | awk '{print $2}')
+  if [ -n "$container_id" ]; then
+    is_running=$(docker inspect -f '{{.State.Running}}' "$container_id")
+  else
+    is_running="unknown"
+  fi
+
+  if (( $(echo "$free_pct <= $threshold_block" | bc -l) )); then
+    if [ "$is_running" = "true" ]; then
+      log "❌ Low disk space. Stopping Docker container: $container_name"
+      docker update --restart=no "$container_id"
+      docker stop "$container_id"
+      wall <<EOFMSG
+⚠️  DOCKER STOPPED: Elasticsearch reports low disk space on $(hostname).
+Container '$container_name' has been stopped and disabled.
+EOFMSG
+    fi
+
+    if systemctl is-active --quiet flowcoll.service; then
+      log "❌ Low disk space. Stopping systemd service: flowcoll.service"
+      systemctl stop flowcoll.service
+      systemctl disable flowcoll.service
+      wall <<EOFMSG
+⚠️  SERVICE STOPPED: Elasticsearch reports low disk space on $(hostname).
+Systemd service 'flowcoll.service' has been stopped and disabled.
+EOFMSG
+    fi
+  fi
+
+  if (( $(echo "$free_pct > $threshold_unblock" | bc -l) )); then
+    if [ "$is_running" = "false" ]; then
+      log "✅ Disk recovered. Starting Docker container: $container_name"
+      docker update --restart=$restart_policy "$container_id"
+      docker start "$container_id"
+      wall <<EOFMSG
+✅ DOCKER RESTARTED: Disk space recovered on $(hostname).
+Container '$container_name' has been restarted.
+EOFMSG
+    fi
+
+    if systemctl is-enabled --quiet flowcoll.service && ! systemctl is-active --quiet flowcoll.service; then
+      log "✅ Disk recovered. Starting systemd service: flowcoll.service"
+      systemctl enable flowcoll.service
+      systemctl start flowcoll.service
+      wall <<EOFMSG
+✅ SERVICE RESTARTED: Disk space recovered on $(hostname).
+Systemd service 'flowcoll.service' has been re-enabled and started.
+EOFMSG
+    fi
+  fi
+
+  sleep "$interval"
+done
+EOF
+
+  sudo chmod +x "$script_path"
+  echo "✅ Script written to $script_path"
+
+  echo "Creating systemd service at $service_path..."
+
+  sudo tee "$service_path" > /dev/null << EOF
+[Unit]
+Description=Flow Collector Disk Monitor
+After=network.target docker.service elasticsearch.service
+Requires=docker.service elasticsearch.service
+
+[Service]
+Type=simple
+ExecStart=$script_path
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+  echo "Creating logrotate configuration at $logrotate_conf..."
+
+  sudo tee "$logrotate_conf" > /dev/null << EOF
+/var/log/flow_blocker.log {
+  daily
+  rotate 30
+  compress
+  missingok
+  notifempty
+  create 640 root adm
+}
+EOF
+
+  echo "Reloading systemd and starting flow_blocker..."
+
+  sudo systemctl daemon-reexec
+  sudo systemctl daemon-reload
+  sudo systemctl enable --now flow_blocker.service
+
+  echo "✅ flow_blocker.service is active and logs will be rotated (30 days retained)"
+}
+
+
+
 remove_docker_snap() {
   # Check if the Docker Snap is present
   if snap list | grep docker; then
