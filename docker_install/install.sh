@@ -683,9 +683,37 @@ get_free_disk_space() {
 check_hardware()
 {
   cores=$(get_physical_cores)
-  total_ram=$(get_total_ram)
-  free_space=$(get_free_disk_space)
+  total_ram=$(get_total_ram)          # Expected in GB
+  free_space=$(get_free_disk_space)   # Expected in GB
+
+  warn=false
+  problems=""
+
+  if [ "$total_ram" -lt 16 ]; then
+    problems+="  - Installed RAM is less than 16 GB (detected: ${total_ram} GB)\n"
+    warn=true
+  fi
+
+  if [ "$free_space" -lt 400 ]; then
+    problems+="  - Free disk space is less than 400 GB (detected: ${free_space} GB)\n"
+    warn=true
+  fi
+
+  if [ "$cores" -lt 8 ]; then
+    problems+="  - Physical CPU cores are less than 8 (detected: ${cores})\n"
+    warn=true
+  fi
+
+  if [ "$warn" = true ]; then
+    echo -e "⚠️ Hardware requirements check failed:\n$problems"
+    read -p "Do you want to continue anyway? (y/N): " choice
+    case "$choice" in
+      y|Y ) echo "Continuing...";;
+      * ) echo "Aborting."; exit 1;;
+    esac
+  fi
 }
+
 
 check_kibana_status() {
     url="https://localhost:5601/api/status"
@@ -719,6 +747,7 @@ check_kibana_status() {
 # Main script execution
 check_for_ubuntu
 check_root
+check_hardware
 check_rw
 install_prerequisites
 download_files
