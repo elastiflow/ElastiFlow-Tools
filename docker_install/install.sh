@@ -138,8 +138,8 @@ EOF
   sudo tee "$service_path" > /dev/null << EOF
 [Unit]
 Description=Flow Collector Disk Monitor
-After=network.target docker.service elasticsearch.service
-Requires=docker.service elasticsearch.service
+After=network.target
+Requires=
 
 [Service]
 Type=simple
