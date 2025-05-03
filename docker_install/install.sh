@@ -22,8 +22,10 @@ check_flow_blocker_health() {
   local service="flow_blocker.service"
 
   if systemctl is-active --quiet "$service"; then
+    print_message "$service is healthy." "$GREEN"
     return 0
   else
+    print_message "$service is not healthy." "$RED"
     return 1
   fi
 }
