@@ -46,7 +46,7 @@ interval=30
 restart_policy="unless-stopped"
 
 es_url="https://localhost:9200"
-es_auth=""  # Example: "-u elastic:$ELASTIC_PASSWORD"
+es_auth="-u elastic:$ELASTIC_PASSWORD"
 es_curl_opts="-k -s"
 
 log_file="/var/log/flow_blocker.log"
@@ -272,7 +272,7 @@ edit_env_file() {
   local answer
 
   while true; do
-    echo "Would you like to edit the .env file before proceeding? This is not required if you are using 16GB of RAM. Otherwise, adjustments need to be made to this file. (y/n) [Default: no in 20 seconds]"
+    echo "Would you like to edit the .env file before proceeding? This is not required if you are using 64GB of RAM. Otherwise, adjustments need to be made to this file. (y/n) [Default: no in 20 seconds]"
 
     # Read user input with a timeout of 20 seconds
     read -t 20 -p "Enter your choice (y/n): " answer
