@@ -36,7 +36,7 @@ install_flow_blocker() {
 
   echo "\n📦 Installing dependencies..."
   sudo apt-get update -qq
-  sudo apt-get install -y iptables iptables-persistent curl jq bc
+  sudo apt-get install -y iptables iptables-persistent
 
   echo "\n🔧 Creating flow_blocker script at $script_path..."
 
@@ -46,7 +46,7 @@ install_flow_blocker() {
 threshold_free_space_low=20
 threshold_free_space_ok=25
 interval=30
-ports="9995 9996"
+ports="9995 2055 4739 6343"
 es_url="https://localhost:9200"
 es_curl_opts="-k -s"
 es_auth=""
