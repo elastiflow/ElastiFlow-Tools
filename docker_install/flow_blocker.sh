@@ -1,4 +1,4 @@
-
+#!/bin/bash
 
 
 install_flow_blocker() {
@@ -14,8 +14,8 @@ install_flow_blocker() {
   sudo tee "$script_path" > /dev/null << 'EOF'
 #!/bin/bash
 
-threshold_free_space_low=20
-threshold_free_space_ok=25
+threshold_free_space_low=70
+threshold_free_space_ok=75
 interval=30
 ports="9995 2055 4739 6343"
 es_url="https://localhost:9200"
