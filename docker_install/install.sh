@@ -30,23 +30,6 @@ check_flow_blocker_health() {
   fi
 }
 
-
-# install_flow_blocker
-# ------------------
-# This function sets up a disk-space-based traffic blocking system on Ubuntu servers.
-# It creates a script and installs a systemd service that monitors Elasticsearch-reported disk usage,
-# and if that fails, falls back to checking free disk space at the OS level.
-# When disk space drops below a critical threshold, it uses iptables to block outbound UDP traffic
-# from host-mode Docker containers to specific localhost ports (e.g. 9995, 9996).
-#
-# Key behaviors:
-# - Automatically installs necessary packages (iptables, jq, curl, etc.)
-# - Creates a script at /usr/local/bin/flow_blocker.sh
-# - The script polls Elasticsearch every 30s via _nodes/stats/fs, with OS fallback
-# - It blocks or unblocks UDP ports depending on free disk percentage
-# - Rules are persisted across reboots via iptables-persistent
-# - The script runs as a background service (flow_blocker.service)
-
 install_flow_blocker() {
   local script_path="/usr/local/bin/flow_blocker.sh"
   local service_path="/etc/systemd/system/flow_blocker.service"
@@ -67,9 +50,16 @@ ports="9995 9996"
 es_url="https://localhost:9200"
 es_curl_opts="-k -s"
 es_auth=""
+log_file="/var/log/flow_blocker.log"
 
 log() {
-  echo "[$(date)] $*" | tee -a /var/log/flow_blocker.log
+  msg="[$(date)] $*"
+  echo "$msg" | tee -a "$log_file"
+}
+
+broadcast() {
+  msg="[$(date)] $*"
+  echo "$msg" | tee -a "$log_file" | wall -n
 }
 
 ensure_firewall_ready() {
@@ -91,8 +81,7 @@ enable_flow_block() {
   for port in $ports; do
     if ! iptables -C OUTPUT -p udp -d 127.0.0.1 --dport "$port" -m comment --comment "flow_block_$port" -j DROP 2>/dev/null; then
       iptables -A OUTPUT -p udp -d 127.0.0.1 --dport "$port" -m comment --comment "flow_block_$port" -j DROP
-      log "Flow block ENABLED: Blocking UDP to 127.0.0.1:$port"
-      wall "⚠️ Blocked UDP traffic to 127.0.0.1:$port due to low disk space"
+      broadcast "⚠️ Flow block ENABLED: Blocking UDP to 127.0.0.1:$port due to low disk space"
       changed=true
     fi
   done
@@ -110,15 +99,14 @@ disable_flow_block() {
   for port in $ports; do
     if iptables -C OUTPUT -p udp -d 127.0.0.1 --dport "$port" -m comment --comment "flow_block_$port" -j DROP 2>/dev/null; then
       iptables -D OUTPUT -p udp -d 127.0.0.1 --dport "$port" -m comment --comment "flow_block_$port" -j DROP
-      log "Flow block DISABLED: Unblocked UDP to 127.0.0.1:$port"
-      wall "✅ Unblocked UDP traffic to 127.0.0.1:$port (disk space recovered)"
+      broadcast "✅ Flow block DISABLED: Unblocked UDP to 127.0.0.1:$port (disk space recovered)"
       changed=true
     fi
   done
 
   if [ "$changed" = true ]; then
     iptables-save > /etc/iptables/rules.v4
-    log "🔓 Persisted unblock to /etc/iptables/rules.v4"
+    log "🔓 Persisted unblock rules to /etc/iptables/rules.v4"
   fi
 }
 
@@ -135,13 +123,13 @@ while true; do
   total=$(echo "$disk_json" | jq '[.nodes[].fs.total.total_in_bytes] | max')
 
   if [[ -z "$available" || -z "$total" || "$available" == "null" || "$total" == "null" ]]; then
-    log "❌ Elasticsearch stats failed. Falling back to OS-level disk check."
+    broadcast "❌ Could not retrieve Elasticsearch stats. Using OS-level fallback."
     free_pct=$(get_free_disk_pct_fallback)
   else
     free_pct=$(echo "scale=2; 100 * $available / $total" | bc -l)
   fi
 
-  log "Free disk: ${free_pct}%"
+  log "🧮 Free disk space: ${free_pct}%"
 
   if (( $(echo "$free_pct <= $threshold_free_space_low" | bc -l) )); then
     enable_flow_block
