@@ -24,7 +24,7 @@ interval=30
 ports="9995 2055 4739 6343"
 es_url="https://localhost:9200"
 es_curl_opts="-k -s"
-es_auth=""
+es_auth="elastic:elastic"
 log_file="/var/log/flow_blocker.log"
 
 log() {
