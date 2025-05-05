@@ -1,15 +1,19 @@
 #!/bin/bash
 
-
 install_flow_blocker() {
   local script_path="/usr/local/bin/flow_blocker.sh"
   local service_path="/etc/systemd/system/flow_blocker.service"
 
-  echo "\n📦 Installing dependencies..."
+  echo -e "\n📦 Installing dependencies..."
   sudo apt-get update -qq
+
+  # Suppress iptables-persistent install prompts
+  echo iptables-persistent iptables-persistent/autosave_v4 boolean true | sudo debconf-set-selections
+  echo iptables-persistent iptables-persistent/autosave_v6 boolean false | sudo debconf-set-selections
+
   sudo apt-get install -y iptables iptables-persistent
 
-  echo "\n🔧 Creating flow_blocker script at $script_path..."
+  echo -e "\n🔧 Creating flow_blocker script at $script_path..."
 
   sudo tee "$script_path" > /dev/null << 'EOF'
 #!/bin/bash
@@ -114,7 +118,7 @@ EOF
 
   sudo chmod +x "$script_path"
 
-  echo "\n🧷 Creating systemd service at $service_path..."
+  echo -e "\n🧷 Creating systemd service at $service_path..."
 
   sudo tee "$service_path" > /dev/null << EOF
 [Unit]
@@ -133,13 +137,13 @@ StandardError=journal
 WantedBy=multi-user.target
 EOF
 
-  echo "\n🔄 Reloading and enabling service..."
+  echo -e "\n🔄 Reloading and enabling service..."
 
   sudo systemctl daemon-reexec
   sudo systemctl daemon-reload
   sudo systemctl enable --now flow_blocker.service
 
-  echo "\n✅ flow_blocker.service is active and will start on boot."
+  echo -e "\n✅ flow_blocker.service is active and will start on boot."
 }
 
 install_flow_blocker
