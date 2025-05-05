@@ -31,7 +31,7 @@ check_flow_blocker_health() {
 }
 
 
-# setup_flow_blocker
+# install_flow_blocker
 # ------------------
 # This function sets up a disk-space-based traffic blocking system on Ubuntu servers.
 # It creates a script and installs a systemd service that monitors Elasticsearch-reported disk usage,
@@ -47,7 +47,7 @@ check_flow_blocker_health() {
 # - Rules are persisted across reboots via iptables-persistent
 # - The script runs as a background service (flow_blocker.service)
 
-setup_flow_blocker() {
+install_flow_blocker() {
   local script_path="/usr/local/bin/flow_blocker.sh"
   local service_path="/etc/systemd/system/flow_blocker.service"
 
