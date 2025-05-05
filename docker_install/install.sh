@@ -31,117 +31,88 @@ check_flow_blocker_health() {
 }
 
 
-install_flow_blocker() {
+setup_flow_blocker() {
   local script_path="/usr/local/bin/flow_blocker.sh"
   local service_path="/etc/systemd/system/flow_blocker.service"
-  local log_file="/var/log/flow_blocker.log"
-  local logrotate_conf="/etc/logrotate.d/flow_blocker"
+  local threshold_block_freespace=20
+  local threshold_unblock_freespace=25
+  local interval=30
+  local ports="9995 9996"
+  local es_url="https://localhost:9200"
+  local es_curl_opts="-k -s"
+  local es_auth=""  # e.g., "-u elastic:changeme"
 
-  echo "Creating flow_blocker script at $script_path..."
+  echo "📦 Creating flow_blocker script at $script_path..."
 
-  sudo tee "$script_path" > /dev/null << 'EOF'
+  sudo tee "$script_path" > /dev/null << EOF
 #!/bin/bash
 
-threshold_block=20
-threshold_unblock=25
-interval=30
-restart_policy="unless-stopped"
-
-es_url="https://localhost:9200"
-es_auth="-u elastic:$ELASTIC_PASSWORD"
-es_curl_opts="-k -s"
-
-log_file="/var/log/flow_blocker.log"
+threshold_block_freespace=$threshold_block_freespace
+threshold_unblock_freespace=$threshold_unblock_freespace
+interval=$interval
+ports="$ports"
+es_url="$es_url"
+es_curl_opts="$es_curl_opts"
+es_auth="$es_auth"
 
 log() {
-  echo "[$(date)] $*" | tee -a "$log_file"
+  echo "[$(date)] \$*" | tee -a /var/log/flow_blocker.log
 }
 
-log "Starting flow_blocker (monitoring Docker and flowcoll.service)..."
+enable_flow_block() {
+  for port in \$ports; do
+    if ! iptables -C OUTPUT -p udp -d 127.0.0.1 --dport "\$port" -m comment --comment "flow_block_\$port" -j DROP 2>/dev/null; then
+      iptables -A OUTPUT -p udp -d 127.0.0.1 --dport "\$port" -m comment --comment "flow_block_\$port" -j DROP
+      log "Flow block ENABLED: Blocking UDP to 127.0.0.1:\$port"
+      wall "⚠️ Blocked UDP traffic to 127.0.0.1:\$port due to low disk space"
+    fi
+  done
+}
+
+disable_flow_block() {
+  for port in \$ports; do
+    if iptables -C OUTPUT -p udp -d 127.0.0.1 --dport "\$port" -m comment --comment "flow_block_\$port" -j DROP 2>/dev/null; then
+      iptables -D OUTPUT -p udp -d 127.0.0.1 --dport "\$port" -m comment --comment "flow_block_\$port" -j DROP
+      log "Flow block DISABLED: Unblocked UDP to 127.0.0.1:\$port"
+      wall "✅ Unblocked UDP traffic to 127.0.0.1:\$port (disk space recovered)"
+    fi
+  done
+}
 
 while true; do
-  disk_json=$(curl $es_curl_opts $es_auth "$es_url/_nodes/stats/fs?filter_path=nodes.*.fs.total")
+  disk_json=\$(curl \$es_curl_opts \$es_auth "\$es_url/_nodes/stats/fs?filter_path=nodes.*.fs.total")
+  available=\$(echo "\$disk_json" | jq '[.nodes[].fs.total.available_in_bytes] | min')
+  total=\$(echo "\$disk_json" | jq '[.nodes[].fs.total.total_in_bytes] | max')
 
-  available_bytes=$(echo "$disk_json" | jq '[.nodes[].fs.total.available_in_bytes] | min')
-  total_bytes=$(echo "$disk_json" | jq '[.nodes[].fs.total.total_in_bytes] | max')
-
-  if [[ -z "$available_bytes" || -z "$total_bytes" || "$available_bytes" == "null" || "$total_bytes" == "null" ]]; then
-    log "❌ Failed to get valid disk space metrics from Elasticsearch."
-    sleep "$interval"
+  if [[ -z "\$available" || -z "\$total" || "\$available" == "null" || "\$total" == "null" ]]; then
+    log "❌ Failed to get disk stats from Elasticsearch."
+    sleep \$interval
     continue
   fi
 
-  free_pct=$(echo "scale=2; 100 * $available_bytes / $total_bytes" | bc -l)
-  log "Free disk space (via ES): ${free_pct}%"
+  free_pct=\$(echo "scale=2; 100 * \$available / \$total" | bc -l)
+  log "Free disk: \${free_pct}%"
 
-  # --- Docker container ---
-  container_info=$(docker ps -a --format '{{.ID}} {{.Names}}' | grep "flow-collector" | head -n 1)
-  container_id=$(echo "$container_info" | awk '{print $1}')
-  container_name=$(echo "$container_info" | awk '{print $2}')
-  if [ -n "$container_id" ]; then
-    is_running=$(docker inspect -f '{{.State.Running}}' "$container_id")
-  else
-    is_running="unknown"
+  if (( \$(echo "\$free_pct <= \$threshold_block_freespace" | bc -l) )); then
+    enable_flow_block
+  elif (( \$(echo "\$free_pct > \$threshold_unblock_freespace" | bc -l) )); then
+    disable_flow_block
   fi
 
-  if (( $(echo "$free_pct <= $threshold_block" | bc -l) )); then
-    if [ "$is_running" = "true" ]; then
-      log "❌ Low disk space. Stopping Docker container: $container_name"
-      docker update --restart=no "$container_id"
-      docker stop "$container_id"
-      wall <<EOFMSG
-⚠️  DOCKER STOPPED: Elasticsearch reports low disk space on $(hostname).
-Container '$container_name' has been stopped and disabled.
-EOFMSG
-    fi
-
-    if systemctl is-active --quiet flowcoll.service; then
-      log "❌ Low disk space. Stopping systemd service: flowcoll.service"
-      systemctl stop flowcoll.service
-      systemctl disable flowcoll.service
-      wall <<EOFMSG
-⚠️  SERVICE STOPPED: Elasticsearch reports low disk space on $(hostname).
-Systemd service 'flowcoll.service' has been stopped and disabled.
-EOFMSG
-    fi
-  fi
-
-  if (( $(echo "$free_pct > $threshold_unblock" | bc -l) )); then
-    if [ "$is_running" = "false" ]; then
-      log "✅ Disk recovered. Starting Docker container: $container_name"
-      docker update --restart=$restart_policy "$container_id"
-      docker start "$container_id"
-      wall <<EOFMSG
-✅ DOCKER RESTARTED: Disk space recovered on $(hostname).
-Container '$container_name' has been restarted.
-EOFMSG
-    fi
-
-    if systemctl is-enabled --quiet flowcoll.service && ! systemctl is-active --quiet flowcoll.service; then
-      log "✅ Disk recovered. Starting systemd service: flowcoll.service"
-      systemctl enable flowcoll.service
-      systemctl start flowcoll.service
-      wall <<EOFMSG
-✅ SERVICE RESTARTED: Disk space recovered on $(hostname).
-Systemd service 'flowcoll.service' has been re-enabled and started.
-EOFMSG
-    fi
-  fi
-
-  sleep "$interval"
+  sleep \$interval
 done
 EOF
 
   sudo chmod +x "$script_path"
-  echo "✅ Script written to $script_path"
+  echo "✅ Script installed at $script_path"
 
-  echo "Creating systemd service at $service_path..."
+  echo "🛠️ Creating systemd service at $service_path..."
 
   sudo tee "$service_path" > /dev/null << EOF
 [Unit]
-Description=Flow Collector Disk Monitor
-After=network.target
-Requires=
+Description=Flow Blocker Service
+After=network.target docker.service
+Requires=docker.service
 
 [Service]
 Type=simple
@@ -152,26 +123,13 @@ Restart=always
 WantedBy=multi-user.target
 EOF
 
-  echo "Creating logrotate configuration at $logrotate_conf..."
-
-  sudo tee "$logrotate_conf" > /dev/null << EOF
-/var/log/flow_blocker.log {
-  daily
-  rotate 30
-  compress
-  missingok
-  notifempty
-  create 640 root adm
-}
-EOF
-
-  echo "Reloading systemd and starting flow_blocker..."
+  echo "🔄 Reloading systemd and enabling service..."
 
   sudo systemctl daemon-reexec
   sudo systemctl daemon-reload
   sudo systemctl enable --now flow_blocker.service
 
-  echo "✅ flow_blocker.service is active and logs will be rotated (30 days retained)"
+  echo "✅ flow_blocker.service is active and will start on boot."
 }
 
 
