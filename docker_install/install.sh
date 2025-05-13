@@ -984,7 +984,6 @@ check_docker
 ask_deploy_elastic_kibana
 ask_deploy_elastiflow_flow
 ask_deploy_elastiflow_snmp
-install_flow_blocker
 if check_system_health; then
   echo "System is healthy."
 else
