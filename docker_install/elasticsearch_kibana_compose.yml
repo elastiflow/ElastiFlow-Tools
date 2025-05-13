@@ -136,6 +136,10 @@ services:
       # Example encryption key for encrypted saved objects
       - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=ElastiFlow_0123456789_0123456789_0123456789
 
+      # Prevent autocomplete dropdowns from timing out
+      - UNIFIEDSEARCH_AUTOCOMPLETE_VALUESUGGESTIONS_TIMEOUT=4000
+      - UNIFIEDSEARCH_AUTOCOMPLETE_VALUESUGGESTIONS_TERMINATEAFTER=100000
+
     mem_limit: ${MEM_LIMIT_KIBANA}
     healthcheck:
       # Use HTTPS for the healthcheck; curl -k to skip certificate validation if using self-signed
