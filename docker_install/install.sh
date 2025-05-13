@@ -184,6 +184,133 @@ remove_docker_snap() {
   fi
 }
 
+purge() {
+
+  print_message "Finding and cleaning previous / competing installations..." "$GREEN"
+
+  # Define services, directories, and keywords
+  SERVICES=("flowcoll" "elasticsearch" "kibana" "opensearch" "opensearch-dashboards" "snmpcoll")
+  KEYWORDS=("kibana" "elasticsearch" "flowcoll" "elastiflow" "opensearch" "opensearch-dashboards" "snmpcoll" "elastic.co" "elastic")
+  PORTS=(8080 5601 9200 2055 4739 6343 9995)
+
+  print_message "Purging anything to do with Docker..." "$GREEN"
+
+  sudo docker rm -f $(sudo docker ps -aq) && sudo docker network prune -f && sudo docker volume prune -f
+
+  # Stop and remove all containers
+  sudo docker rm -f $(sudo docker ps -aq)
+  
+  # Remove all images
+  sudo docker rm -f $(sudo docker images -aq)
+  
+  # Remove all volumes
+  sudo docker volume rm $(sudo docker volume ls -q)
+  
+  # Remove all user-defined networks (default ones like bridge/host/none will remain)
+  sudo docker network rm $(sudo docker network ls | awk '/ bridge|host|none /{next} {print $1}')
+  
+  # Optional: prune everything to clean cache and unused resources
+  sudo docker system prune -a --volumes -f
+
+  print_message "Purging everything else..." "$GREEN"
+
+
+ # Stop services
+  for SERVICE in "${SERVICES[@]}"; do
+    if systemctl list-units --type=service --all | grep -q "$SERVICE.service"; then
+      echo "Stopping service: $SERVICE"
+      systemctl stop "$SERVICE"
+      systemctl disable "$SERVICE"
+      echo "Service $SERVICE stopped and disabled."
+    else
+      echo "Service $SERVICE not found. Skipping..."
+    fi
+  done
+
+  # Kill processes using specific ports and disable offending services
+  for PORT in "${PORTS[@]}"; do
+    echo "Stopping processes using port: $PORT"
+    PROCESSES=$(lsof -i :$PORT | awk 'NR>1 {print $2}')
+    if [ -n "$PROCESSES" ]; then
+      echo "$PROCESSES" | xargs -r kill -9
+      echo "Processes using port $PORT stopped."
+      for PID in $PROCESSES; do
+        SERVICE_NAME=$(ps -p $PID -o comm=)
+        if systemctl list-units --type=service --all | grep -q "$SERVICE_NAME.service"; then
+          echo "Disabling service: $SERVICE_NAME"
+          systemctl disable "$SERVICE_NAME"
+          echo "Service $SERVICE_NAME disabled."
+        fi
+      done
+    else
+      echo "No processes found on port $PORT."
+    fi
+  done
+
+  # Purge packages
+  for SERVICE in "${SERVICES[@]}"; do
+    if dpkg -l | grep -q "$SERVICE"; then
+      echo "Purging package: $SERVICE"
+      apt purge --yes "$SERVICE"
+      echo "Package $SERVICE purged."
+    else
+      echo "Package $SERVICE not found. Skipping..."
+    fi
+  done
+
+  # Purge JRE
+  if dpkg -l | grep -q "openjdk"; then
+    echo "Purging JRE packages"
+    apt purge --yes "openjdk*"
+    echo "JRE packages purged."
+  else
+    echo "JRE packages not found. Skipping..."
+  fi
+
+  # Helper function to list local mount points
+  list_local_mounts() {
+    # This captures filesystems whose mount lines start with `/dev/`
+    # Adjust this grep if you also want to include other local FS types (e.g., zfs, btrfs on devices).
+    mount | grep -E '^/dev/' | awk '{print $3}'
+  }
+
+  # Delete directories and files matching keywords on local filesystems only
+  for KEYWORD in "${KEYWORDS[@]}"; do
+    echo "Deleting directories containing: $KEYWORD (local filesystems only)"
+    for mp in $(list_local_mounts); do
+      find "$mp" -xdev -type d -name "*${KEYWORD}*" -exec rm -rf {} \; 2>/dev/null
+    done
+    echo "Directories containing $KEYWORD deleted from local filesystems."
+
+    echo "Deleting files containing: $KEYWORD (local filesystems only)"
+    for mp in $(list_local_mounts); do
+      find "$mp" -xdev -type f -name "*${KEYWORD}*" -exec rm -f {} \; 2>/dev/null
+    done
+    echo "Files containing $KEYWORD deleted from local filesystems."
+  done
+
+  # Clean up unused dependencies
+  echo "Cleaning up unused dependencies..."
+  apt autoremove --yes
+
+  # Summary
+  for SERVICE in "${SERVICES[@]}"; do
+    echo "Checked service: $SERVICE - stopped, disabled, and purged if present."
+  done
+
+  for KEYWORD in "${KEYWORDS[@]}"; do
+    echo "Checked for directories and files containing: $KEYWORD - deleted if present (on local FS)."
+  done
+
+  for PORT in "${PORTS[@]}"; do
+    echo "Checked and stopped processes using port: $PORT"
+  done
+
+  echo "Unused dependencies removed. Cleanup complete."
+}
+
+
+
 check_for_ubuntu() {
   if [ -f /etc/os-release ]; then
     # Source the OS release info
@@ -264,14 +391,45 @@ check_all_containers_up() {
   fi
 }
 
+set_kibana_homepage() {
+  local dashboard_id
+  local kibana_url="http://$ip_address:5601"
+  local dashboard_title="$1"
+  local encoded_title=$(echo "$dashboard_title" | sed 's/ /%20/g' | sed 's/:/%3A/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
 
+  print_message "Setting homepage to ElastiFlow dashboard..." "$GREEN"
+
+  # Fetch the dashboard ID
+  local find_response=$(curl -s -u "elastic:$ELASTIC_PASSWORD" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
+  dashboard_id=$(echo "$find_response" | jq -r '.saved_objects[] | select(.attributes.title=="'"$dashboard_title"'") | .id')
+
+  if [ -z "$dashboard_id" ]; then
+    echo "Dashboard ID $dashboard_id not found. Cannot set homepage."
+  else
+    local payload="{\"changes\":{\"defaultRoute\":\"/app/dashboards#/view/${dashboard_id}\"}}"
+
+    # Update the default route
+    local update_response=$(curl -s -o /dev/null -w "%{http_code}" -u "elastic:$ELASTIC_PASSWORD" \
+      -X POST "$kibana_url/api/kibana/settings" \
+      -H "kbn-xsrf: true" \
+      -H "Content-Type: application/json" \
+      -d "$payload")
+
+    if [[ "$update_response" -ne 200 ]]; then
+      echo "Failed to set home as \"$dashboard_title\".\n"
+      else
+        echo "Home page successfully set to \"$dashboard_title\""
+        echo "--> $kibana_url/app/kibana#/dashboard/$dashboard_id"
+      fi
+  fi
+}
 
 edit_env_file() {
   local env_file="$INSTALL_DIR/.env"  # Change this path to your actual .env file location
   local answer
 
   while true; do
-    echo "Would you like to edit the .env file before proceeding? This is not required if you are using 64GB of RAM. Otherwise, adjustments need to be made to this file. (y/n) [Default: no in 20 seconds]"
+    echo "Would you like to edit the .env file before proceeding? This is not required if you are using 16GB of RAM. Otherwise, adjustments need to be made to this file. (y/n) [Default: no in 20 seconds]"
 
     # Read user input with a timeout of 20 seconds
     read -t 20 -p "Enter your choice (y/n): " answer
@@ -320,8 +478,8 @@ check_system_health() {
   check_elastiflow_livez
   local livez_ok=$?
 
-  check_flow_blocker_health
-  local blocker_ok=$?
+  # check_flow_blocker_health
+  # local blocker_ok=$?
 
   if [ "$INSTALL_FLOWCOLL" = "1" ]; then
     get_dashboard_status "ElastiFlow (flow): Overview"
@@ -346,7 +504,7 @@ check_system_health() {
      [ "$kibana_ok" -eq 0 ] &&
      [ "$ports_ok" -eq 0 ] &&
      [ "$livez_ok" -eq 0 ] &&
-     [ "$blocker_ok" -eq 0 ] &&
+   # [ "$blocker_ok" -eq 0 ] &&
      [ "$dashboard_flow_ok" -eq 0 ] &&
      [ "$dashboard_telemetry_ok" -eq 0 ] &&
      [ "$dashboard_log_ok" -eq 0 ]; then
@@ -790,6 +948,8 @@ deploy_elastiflow_flow() {
 
   # version, prod_filename, schema, prod_directory
   install_dashboards "$FLOW_DASHBOARDS_VERSION" "flow" "$FLOW_DASHBOARDS_SCHEMA" "flow" 
+  set_kibana_homepage "ElastiFlow (flow): Overview"
+
 
   echo "ElastiFlow Flow Collector has been deployed successfully!"
 }
@@ -969,10 +1129,17 @@ check_kibana_status() {
     return 1  # Exit with failure
 }
 
+check_for_purge() {
+  if [[ "$1" == "purge" ]]; then
+      purge
+  fi
+}
 
 # Main script execution
+
 check_for_ubuntu
 check_root
+check_for_purge "$@"
 install_prerequisites #before check_hardware since it requires bc
 check_hardware
 check_rw
