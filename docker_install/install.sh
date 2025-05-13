@@ -18,6 +18,161 @@ check_root() {
   fi
 }
 
+check_flow_blocker_health() {
+  local service="flow_blocker.service"
+
+  if systemctl is-active --quiet "$service"; then
+    print_message "$service is healthy." "$GREEN"
+    return 0
+  else
+    print_message "$service is not healthy." "$RED"
+    return 1
+  fi
+}
+
+install_flow_blocker() {
+  local script_path="/usr/local/bin/flow_blocker.sh"
+  local service_path="/etc/systemd/system/flow_blocker.service"
+
+  echo "\n📦 Installing dependencies..."
+  sudo apt-get update -qq
+  sudo apt-get install -y iptables iptables-persistent
+
+  echo "\n🔧 Creating flow_blocker script at $script_path..."
+
+  sudo tee "$script_path" > /dev/null << 'EOF'
+#!/bin/bash
+
+threshold_free_space_low=20
+threshold_free_space_ok=25
+interval=30
+ports="9995 2055 4739 6343"
+es_url="https://localhost:9200"
+es_curl_opts="-k -s"
+es_auth=""
+log_file="/var/log/flow_blocker.log"
+
+log() {
+  msg="[$(date)] $*"
+  echo "$msg" | tee -a "$log_file"
+}
+
+broadcast() {
+  msg="[$(date)] $*"
+  echo "$msg" | tee -a "$log_file" | wall -n
+}
+
+ensure_firewall_ready() {
+  if ! command -v iptables &>/dev/null; then
+    log "Installing iptables..."
+    apt-get update -qq && apt-get install -y iptables
+  fi
+
+  if ! lsmod | grep -q '^ip_tables'; then
+    log "Loading ip_tables kernel module..."
+    modprobe ip_tables
+  fi
+}
+
+enable_flow_block() {
+  ensure_firewall_ready
+  local changed=false
+
+  for port in $ports; do
+    if ! iptables -C OUTPUT -p udp -d 127.0.0.1 --dport "$port" -m comment --comment "flow_block_$port" -j DROP 2>/dev/null; then
+      iptables -A OUTPUT -p udp -d 127.0.0.1 --dport "$port" -m comment --comment "flow_block_$port" -j DROP
+      broadcast "⚠️ Flow block ENABLED: Blocking UDP to 127.0.0.1:$port due to low disk space"
+      changed=true
+    fi
+  done
+
+  if [ "$changed" = true ]; then
+    iptables-save > /etc/iptables/rules.v4
+    log "🔒 Persisted block rules to /etc/iptables/rules.v4"
+  fi
+}
+
+disable_flow_block() {
+  ensure_firewall_ready
+  local changed=false
+
+  for port in $ports; do
+    if iptables -C OUTPUT -p udp -d 127.0.0.1 --dport "$port" -m comment --comment "flow_block_$port" -j DROP 2>/dev/null; then
+      iptables -D OUTPUT -p udp -d 127.0.0.1 --dport "$port" -m comment --comment "flow_block_$port" -j DROP
+      broadcast "✅ Flow block DISABLED: Unblocked UDP to 127.0.0.1:$port (disk space recovered)"
+      changed=true
+    fi
+  done
+
+  if [ "$changed" = true ]; then
+    iptables-save > /etc/iptables/rules.v4
+    log "🔓 Persisted unblock rules to /etc/iptables/rules.v4"
+  fi
+}
+
+get_free_disk_pct_fallback() {
+  df_output=$(df --output=avail,size -B1 / | tail -n1)
+  avail_bytes=$(echo $df_output | awk '{print $1}')
+  total_bytes=$(echo $df_output | awk '{print $2}')
+  echo $(echo "scale=2; 100 * $avail_bytes / $total_bytes" | bc -l)
+}
+
+while true; do
+  disk_json=$(curl $es_curl_opts $es_auth "$es_url/_nodes/stats/fs?filter_path=nodes.*.fs.total")
+  available=$(echo "$disk_json" | jq '[.nodes[].fs.total.available_in_bytes] | min')
+  total=$(echo "$disk_json" | jq '[.nodes[].fs.total.total_in_bytes] | max')
+
+  if [[ -z "$available" || -z "$total" || "$available" == "null" || "$total" == "null" ]]; then
+    broadcast "❌ Could not retrieve Elasticsearch stats. Using OS-level fallback."
+    free_pct=$(get_free_disk_pct_fallback)
+  else
+    free_pct=$(echo "scale=2; 100 * $available / $total" | bc -l)
+  fi
+
+  log "🧮 Free disk space: ${free_pct}%"
+
+  if (( $(echo "$free_pct <= $threshold_free_space_low" | bc -l) )); then
+    enable_flow_block
+  elif (( $(echo "$free_pct > $threshold_free_space_ok" | bc -l) )); then
+    disable_flow_block
+  fi
+
+  sleep $interval
+done
+EOF
+
+  sudo chmod +x "$script_path"
+
+  echo "\n🧷 Creating systemd service at $service_path..."
+
+  sudo tee "$service_path" > /dev/null << EOF
+[Unit]
+Description=Flow Blocker (based on Elasticsearch disk space)
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+ExecStart=$script_path
+Restart=always
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+  echo "\n🔄 Reloading and enabling service..."
+
+  sudo systemctl daemon-reexec
+  sudo systemctl daemon-reload
+  sudo systemctl enable --now flow_blocker.service
+
+  echo "\n✅ flow_blocker.service is active and will start on boot."
+}
+
+
+
 remove_docker_snap() {
   # Check if the Docker Snap is present
   if snap list | grep docker; then
@@ -46,7 +201,7 @@ purge() {
   sudo docker rm -f $(sudo docker ps -aq)
   
   # Remove all images
-  sudo docker rmi -f $(sudo docker images -aq)
+  sudo docker rm -f $(sudo docker images -aq)
   
   # Remove all volumes
   sudo docker volume rm $(sudo docker volume ls -q)
@@ -57,7 +212,10 @@ purge() {
   # Optional: prune everything to clean cache and unused resources
   sudo docker system prune -a --volumes -f
 
-  # Stop services
+  print_message "Purging everything else..." "$GREEN"
+
+
+ # Stop services
   for SERVICE in "${SERVICES[@]}"; do
     if systemctl list-units --type=service --all | grep -q "$SERVICE.service"; then
       echo "Stopping service: $SERVICE"
@@ -175,18 +333,16 @@ if findmnt -n -o OPTIONS /var/lib | grep -qw ro; then
 fi
 }
 
-check_all_containers_up_for_10_seconds() {
-  local check_interval=1  # Check every 1 second
-  local required_time=10  # Total check time of 10 seconds
+check_all_containers_up() {
+  local check_interval=1
+  local required_time=10
   local elapsed_time=0
-  declare -A container_status_summary  # Associative array to store status of each container
+  declare -A container_status_summary
 
-  # Define color codes
   local GREEN='\033[0;32m'
   local RED='\033[0;31m'
-  local NC='\033[0m' # No Color
+  local NC='\033[0m'
 
-  # Get a list of all running Docker containers' IDs and Names
   local containers=($(docker ps --format "{{.ID}}:{{.Names}}"))
 
   if [ ${#containers[@]} -eq 0 ]; then
@@ -194,25 +350,20 @@ check_all_containers_up_for_10_seconds() {
     return 1
   fi
 
-  echo "Checking if all Docker containers remain 'Up' for at least 10 seconds..."
+  echo "Checking if all Docker containers remain 'Up' for at least $required_time seconds..."
 
-  # Initialize the summary array with "stable" for each container
   for container in "${containers[@]}"; do
-    container_id=$(echo "$container" | cut -d':' -f1)
-    container_name=$(echo "$container" | cut -d':' -f2)
+    local container_name=$(echo "$container" | cut -d':' -f2)
     container_status_summary["$container_name"]="stable"
   done
 
-  # Check each container every second
   while [ $elapsed_time -lt $required_time ]; do
     for container in "${containers[@]}"; do
-      container_id=$(echo "$container" | cut -d':' -f1)
-      container_name=$(echo "$container" | cut -d':' -f2)
+      local container_id=$(echo "$container" | cut -d':' -f1)
+      local container_name=$(echo "$container" | cut -d':' -f2)
 
-      # Check the status of the container using docker ps
-      status=$(docker ps --filter "id=$container_id" --format "{{.Status}}")
+      local status=$(docker ps --filter "id=$container_id" --format "{{.Status}}")
 
-      # If the container is not "Up", mark it as "not stable"
       if [[ "$status" != Up* ]]; then
         container_status_summary["$container_name"]="not stable"
       fi
@@ -222,24 +373,63 @@ check_all_containers_up_for_10_seconds() {
     elapsed_time=$((elapsed_time + check_interval))
   done
 
-  # Output the summary of all containers (without duplicates)
   echo -e "\nSummary of Docker container statuses after $required_time seconds:"
+  local all_stable=true
   for container_name in "${!container_status_summary[@]}"; do
     if [ "${container_status_summary[$container_name]}" == "stable" ]; then
       print_message "Container '$container_name' is stable." "$GREEN"
     else
       print_message "Container '$container_name' is not stable." "$RED"
+      all_stable=false
     fi
   done
+
+  if [ "$all_stable" = true ]; then
+    return 0
+  else
+    return 1
+  fi
 }
 
+set_kibana_homepage() {
+  local dashboard_id
+  local kibana_url="http://$ip_address:5601"
+  local dashboard_title="$1"
+  local encoded_title=$(echo "$dashboard_title" | sed 's/ /%20/g' | sed 's/:/%3A/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
+
+  print_message "Setting homepage to ElastiFlow dashboard..." "$GREEN"
+
+  # Fetch the dashboard ID
+  local find_response=$(curl -s -u "elastic:$ELASTIC_PASSWORD" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
+  dashboard_id=$(echo "$find_response" | jq -r '.saved_objects[] | select(.attributes.title=="'"$dashboard_title"'") | .id')
+
+  if [ -z "$dashboard_id" ]; then
+    echo "Dashboard ID $dashboard_id not found. Cannot set homepage."
+  else
+    local payload="{\"changes\":{\"defaultRoute\":\"/app/dashboards#/view/${dashboard_id}\"}}"
+
+    # Update the default route
+    local update_response=$(curl -s -o /dev/null -w "%{http_code}" -u "elastic:$ELASTIC_PASSWORD" \
+      -X POST "$kibana_url/api/kibana/settings" \
+      -H "kbn-xsrf: true" \
+      -H "Content-Type: application/json" \
+      -d "$payload")
+
+    if [[ "$update_response" -ne 200 ]]; then
+      echo "Failed to set home as \"$dashboard_title\".\n"
+      else
+        echo "Home page successfully set to \"$dashboard_title\""
+        echo "--> $kibana_url/app/kibana#/dashboard/$dashboard_id"
+      fi
+  fi
+}
 
 edit_env_file() {
   local env_file="$INSTALL_DIR/.env"  # Change this path to your actual .env file location
   local answer
 
   while true; do
-    echo "Would you like to edit the .env file before proceeding? (y/n) [Default: no in 20 seconds]"
+    echo "Would you like to edit the .env file before proceeding? This is not required if you are using 16GB of RAM. Otherwise, adjustments need to be made to this file. (y/n) [Default: no in 20 seconds]"
 
     # Read user input with a timeout of 20 seconds
     read -t 20 -p "Enter your choice (y/n): " answer
@@ -269,18 +459,61 @@ edit_env_file() {
 }
 
 
-check_system_health(){
+check_system_health() {
   printf "\n\n*********************************"
   printf "*********************************\n"
-  check_all_containers_up_for_10_seconds
+
+  check_all_containers_up
+  local containers_ok=$?
+
   check_elastic_ready
+  local elastic_ok=$?
+
   check_kibana_ready
+  local kibana_ok=$?
+
   check_elastiflow_flow_open_ports
-  # check_elastiflow_readyz
+  local ports_ok=$?
+
   check_elastiflow_livez
-[ "$INSTALL_FLOWCOLL" = "1" ] && get_dashboard_status "ElastiFlow (flow): Overview"
-[ "$INSTALL_SNMPCOLLTRAP" = "1" ] && get_dashboard_status "ElastiFlow (telemetry): Overview"
-[ "$INSTALL_SNMPCOLLTRAP" = "1" ] && get_dashboard_status "ElastiFlow (log): Log Records"
+  local livez_ok=$?
+
+  # check_flow_blocker_health
+  # local blocker_ok=$?
+
+  if [ "$INSTALL_FLOWCOLL" = "1" ]; then
+    get_dashboard_status "ElastiFlow (flow): Overview"
+    local dashboard_flow_ok=$?
+  else
+    local dashboard_flow_ok=0
+  fi
+
+  if [ "$INSTALL_SNMPCOLLTRAP" = "1" ]; then
+    get_dashboard_status "ElastiFlow (telemetry): Overview"
+    local dashboard_telemetry_ok=$?
+    get_dashboard_status "ElastiFlow (log): Log Records"
+    local dashboard_log_ok=$?
+  else
+    local dashboard_telemetry_ok=0
+    local dashboard_log_ok=0
+  fi
+
+  # Final result check
+  if [ "$containers_ok" -eq 0 ] &&
+     [ "$elastic_ok" -eq 0 ] &&
+     [ "$kibana_ok" -eq 0 ] &&
+     [ "$ports_ok" -eq 0 ] &&
+     [ "$livez_ok" -eq 0 ] &&
+   # [ "$blocker_ok" -eq 0 ] &&
+     [ "$dashboard_flow_ok" -eq 0 ] &&
+     [ "$dashboard_telemetry_ok" -eq 0 ] &&
+     [ "$dashboard_log_ok" -eq 0 ]; then
+    echo "✅ All system health checks passed."
+    return 0
+  else
+    echo "❌ One or more system health checks failed."
+    return 1
+  fi
 }
 
 
@@ -288,8 +521,10 @@ get_dashboard_status(){
  get_dashboard_url "$1"
     if [ "$dashboard_url" == "Dashboard not found" ]; then
       print_message "Dashboard $1: URL: $dashboard_url" "$RED"
+      return 1
     else
       print_message "Dashboard $1: URL: $dashboard_url" "$GREEN"
+      return 0
     fi
 }
 
@@ -336,39 +571,46 @@ get_dashboard_url() {
   }
 
 
-check_elastiflow_livez(){
+check_elastiflow_livez() {
   response=$(curl -s http://localhost:8080/livez)
-    if echo "$response" | grep -q "200"; then
-      print_message "ElastiFlow Flow Collector is $response" "$GREEN"
-    else
-      print_message "ElastiFlow Flow Collector Livez: $response" "$RED"
-    fi
+  if echo "$response" | grep -q "200"; then
+    print_message "ElastiFlow Flow Collector is $response" "$GREEN"
+    return 0
+  else
+    print_message "ElastiFlow Flow Collector Livez: $response" "$RED"
+    return 1
+  fi
 }
 
 
 check_elastiflow_flow_open_ports() {
-  # Path to the .env file (you can adjust the path if necessary)
   local env_file="$INSTALL_DIR/elastiflow_flow_compose.yml"
 
-  # Extract the EF_FLOW_SERVER_UDP_PORT variable from the .env file (ignoring commented lines)
   local port_list=$(grep -v '^#' "$env_file" | grep 'EF_FLOW_SERVER_UDP_PORT' | cut -d ':' -f2 | tr -d ' ')
 
-  # Check if the variable is empty
   if [ -z "$port_list" ]; then
     echo "No ports found in the EF_FLOW_SERVER_UDP_PORT variable."
-    return
+    return 1
   fi
 
-  # Split the port list by commas and check each port
+  local found_open=false
   IFS=',' read -ra ports <<< "$port_list"
   for port in "${ports[@]}"; do
     if netstat -tuln | grep -q ":$port"; then
       print_message "ElastiFlow Flow Collector port $port is open." "$GREEN"
+      found_open=true
     else
       print_message "ElastiFlow Flow Collector is not ready for flow on $port." "$RED"
     fi
   done
+
+  if [ "$found_open" = true ]; then
+    return 0
+  else
+    return 1
+  fi
 }
+
 
 
 check_elastic_ready(){
@@ -376,9 +618,11 @@ check_elastic_ready(){
      search_text='"tagline" : "You Know, for Search"'
      if echo "$curl_result" | grep -q "$search_text"; then
        print_message "Elastic is ready. Used authenticated curl." "$GREEN"
+       return 0
      else
        print_message "Elastic is not ready." "$RED"
        echo "$curl_result"
+       return 1
      fi
 }
 
@@ -388,9 +632,11 @@ check_kibana_ready(){
     
     if [[ $response == *'"status":{"overall":{"level":"available"}}'* ]]; then
         print_message "Kibana is ready. Used curl." "$GREEN"
+        return 0
     else
         print_message "Kibana is not ready" "$RED"
         echo "$response"
+        return 1
     fi
 }
 
@@ -529,8 +775,21 @@ install_dashboards() {
 
   # Clone the repository
   git clone https://github.com/elastiflow/elastiflow_for_elasticsearch.git /etc/elastiflow_for_elasticsearch/
-  
-  check_kibana_status
+
+  # Loop until Kibana is healthy or user chooses to abort
+  while true; do
+    check_kibana_status
+    if [ $? -eq 0 ]; then
+      break
+    fi
+
+    echo "⚠️ Kibana is not reachable or not healthy."
+    read -p "Do you want to retry? (y/N): " retry_choice
+    case "$retry_choice" in
+      y|Y ) echo "Retrying..."; sleep 2 ;;
+      * ) echo "Aborting installation."; rm -rf "/etc/elastiflow_for_elasticsearch/"; exit 1 ;;
+    esac
+  done
 
   # Path to the downloaded JSON file
   json_file="/etc/elastiflow_for_elasticsearch/kibana/$directory/kibana-$version-$filename-$schema.ndjson"
@@ -560,7 +819,6 @@ install_dashboards() {
   # Clean up
   rm -rf "/etc/elastiflow_for_elasticsearch/"
 }
-
 
 
 # Function to download the required files (overwriting existing files)
@@ -660,7 +918,6 @@ EOF
 deploy_elastic_kibana() {
   echo "Deploying Elastic and Kibana..."
   tune_system
-  #generate_saved_objects_enc_key
   cd "$INSTALL_DIR"
   docker compose -f elasticsearch_kibana_compose.yml up -d
   echo "Elastic and Kibana have been deployed successfully!"
@@ -691,6 +948,8 @@ deploy_elastiflow_flow() {
 
   # version, prod_filename, schema, prod_directory
   install_dashboards "$FLOW_DASHBOARDS_VERSION" "flow" "$FLOW_DASHBOARDS_SCHEMA" "flow" 
+  set_kibana_homepage "ElastiFlow (flow): Overview"
+
 
   echo "ElastiFlow Flow Collector has been deployed successfully!"
 }
@@ -765,6 +1024,83 @@ extract_elastiflow_flow() {
 }
 
 
+get_physical_cores() {
+  if command -v lscpu >/dev/null 2>&1; then
+    # Use lscpu output to calculate: Sockets × Cores per Socket
+    sockets=$(lscpu | awk -F: '/Socket\(s\)/ {gsub(/ /, "", $2); print $2}')
+    cores_per_socket=$(lscpu | awk -F: '/Core\(s\) per socket/ {gsub(/ /, "", $2); print $2}')
+    if [[ "$sockets" =~ ^[0-9]+$ && "$cores_per_socket" =~ ^[0-9]+$ ]]; then
+      echo $((sockets * cores_per_socket))
+      return 0
+    fi
+  fi
+
+  # Fallback: Use /proc/cpuinfo to count unique physical ID + core ID pairs
+  if [ -f /proc/cpuinfo ]; then
+    awk '
+      /^physical id/ {pid=$4}
+      /^core id/ {cid=$4; cores[pid ":" cid]=1}
+      END {print length(cores)}
+    ' /proc/cpuinfo
+    return 0
+  fi
+
+  echo "Unable to determine physical CPU core count" >&2
+  return 1
+}
+
+
+get_total_ram() {
+  if [ -f /proc/meminfo ]; then
+    awk '/^MemTotal:/ {printf "%.2f\n", $2 / 1024 / 1024}' /proc/meminfo
+  else
+    echo "Unable to determine total RAM" >&2
+    return 1
+  fi
+}
+
+get_free_disk_space() {
+  df -h --output=avail / | tail -n 1
+}
+
+check_hardware()
+{
+  cores=$(get_physical_cores)
+  total_ram=$(get_total_ram)          # Expected in GB (float)
+  free_space=$(get_free_disk_space)   # Expected in GB (float)
+
+  warn=false
+  problems=""
+
+  # Use bc for floating-point comparison
+  if (( $(echo "$total_ram < 16" | bc -l) )); then
+    problems+="  - Installed RAM is less than 16 GB (detected: ${total_ram} GB)\n"
+    warn=true
+  fi
+
+  if (( $(echo "$free_space < 400" | bc -l) )); then
+    problems+="  - Free disk space is less than 400 GB (detected: ${free_space} GB)\n"
+    warn=true
+  fi
+
+  # Cores are integer — safe with [ ]
+  if [ "$cores" -lt 8 ]; then
+    problems+="  - Physical CPU cores are less than 8 (detected: ${cores})\n"
+    warn=true
+  fi
+
+  if [ "$warn" = true ]; then
+    echo -e "⚠️ Hardware requirements check failed:\n$problems"
+    read -p "Do you want to continue anyway? (y/N): " choice
+    case "$choice" in
+      y|Y ) echo "Continuing...";;
+      * ) echo "Aborting."; exit 1;;
+    esac
+  fi
+}
+
+
+
 check_kibana_status() {
     url="https://localhost:5601/api/status"
     timeout=120  # 2 minutes
@@ -803,9 +1139,10 @@ check_for_purge() {
 
 check_for_ubuntu
 check_root
-check_rw
 check_for_purge "$@"
-install_prerequisites
+install_prerequisites #before check_hardware since it requires bc
+check_hardware
+check_rw
 download_files
 edit_env_file
 load_env_vars
@@ -814,4 +1151,9 @@ check_docker
 ask_deploy_elastic_kibana
 ask_deploy_elastiflow_flow
 ask_deploy_elastiflow_snmp
-check_system_health
+if check_system_health; then
+  echo "System is healthy."
+else
+  echo "System is NOT healthy."
+fi
+
