@@ -18,6 +18,18 @@ check_root() {
   fi
 }
 
+wait_for_dpkg_lock() {
+    local LOCK_FILE="/var/lib/dpkg/lock-frontend"
+    echo "Waiting for dpkg lock to be released..."
+
+    while fuser "$LOCK_FILE" > /dev/null 2>&1; do
+        echo "Lock is still held by another process. Retrying in 5 seconds..."
+        sleep 5
+    done
+
+    echo "Lock released. Proceeding..."
+}
+
 check_flow_blocker_health() {
   local service="flow_blocker.service"
 
@@ -186,6 +198,7 @@ remove_docker_snap() {
 
 purge() {
 
+  wait_for_dpkg_lock
   print_message "Finding and cleaning previous / competing installations..." "$GREEN"
 
   # Define services, directories, and keywords
@@ -732,6 +745,7 @@ print_message() {
 install_prerequisites() {
   printf "\n\n\n*********Installing prerequisites...\n\n"
 
+  wait_for_dpkg_lock
   echo "Updating package list..."
   apt-get -qq update > /dev/null 2>&1
 
@@ -848,6 +862,7 @@ check_docker() {
   if [ "$FULL_AUTO" -eq 1 ]; then
     echo "FULL_AUTO is set to 1. Skipping prompt and deploying Docker."
       chmod +x "$INSTALL_DIR/install_docker.sh"
+      wait_for_dpkg_lock
       bash "$INSTALL_DIR/install_docker.sh"
     return 0
   fi
@@ -1153,6 +1168,7 @@ ask_deploy_elastiflow_flow
 ask_deploy_elastiflow_snmp
 if check_system_health; then
   echo "System is healthy."
+  echo "Complete your setup by continuing with step 9 at https://docs.elastiflow.com/docs/flowcoll/install_docker_ubuntu_elastic_stack."
 else
   echo "System is NOT healthy."
 fi
