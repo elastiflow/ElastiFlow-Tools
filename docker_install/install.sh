@@ -1168,7 +1168,7 @@ ask_deploy_elastiflow_flow
 ask_deploy_elastiflow_snmp
 if check_system_health; then
   echo "System is healthy."
-  echo "Complete your setup by continuing with step 9 at https://docs.elastiflow.com/docs/flowcoll/install_docker_ubuntu_elastic_stack."
+  echo "Complete your setup by continuing with step 9 at https://docs.elastiflow.com/docs/flowcoll/install_docker_ubuntu_elastic_stack ."
 else
   echo "System is NOT healthy."
 fi
