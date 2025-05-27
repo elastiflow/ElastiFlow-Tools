@@ -2160,7 +2160,7 @@ while true; do
           echo "1. Daemon reload and restart flowcoll.service, elasticsearch.service, and kibana.service"
           echo "2. Watch elasticsearch.service log"
           echo "3. Watch kibana.service log"
-          echo "4. Reset Elasticsearch passworrd"
+          echo "4. Reset Elasticsearch password"
           echo "5. Back"
           read -p "Enter your choice (1-5): " game_choice
           clear
