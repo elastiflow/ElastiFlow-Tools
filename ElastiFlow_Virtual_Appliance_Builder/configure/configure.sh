@@ -225,7 +225,7 @@ reset_elastic_password() {
 #  fi
 
   echo "Resetting the elastic user password..."
-  sudo /usr/share/elasticsearch/bin/elasticsearch-reset-password --username elastic -i -f
+  sudo /usr/share/elasticsearch/bin/elasticsearch-reset-password --username elastic -i -f --url https://localhost:9200
 
   if [[ $? -ne 0 ]]; then
     echo "Failed to reset the password for user 'elastic'."
