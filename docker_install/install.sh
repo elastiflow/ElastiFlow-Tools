@@ -1155,6 +1155,7 @@ check_for_purge() {
 check_for_ubuntu
 check_root
 check_for_purge "$@"
+purge
 install_prerequisites #before check_hardware since it requires bc
 check_hardware
 check_rw
