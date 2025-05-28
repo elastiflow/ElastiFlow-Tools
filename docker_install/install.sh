@@ -1150,12 +1150,33 @@ check_for_purge() {
   fi
 }
 
+ask_purge() {
+    local reply
+    while true; do
+        read -r -p "Do you want to proceed with purging all traces of conflicting software? [y/n]: " reply
+        case "${reply,,}" in     # ,, => lowercase the answer
+            y|yes )
+                purge
+                break
+                ;;
+            n|no )
+                echo "Not purging. Exiting."
+                break
+                ;;
+            * )
+                echo "Please answer y/yes or n/no."
+                ;;
+        esac
+    done
+}
+
+
 # Main script execution
 
 check_for_ubuntu
 check_root
 check_for_purge "$@"
-purge
+ask_purge
 install_prerequisites #before check_hardware since it requires bc
 check_hardware
 check_rw
