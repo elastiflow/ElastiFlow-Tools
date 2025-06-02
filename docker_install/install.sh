@@ -229,6 +229,8 @@ purge() {
 
 
  # Stop services
+  print_message "Removing conflicting services..." "$GREEN"
+
   for SERVICE in "${SERVICES[@]}"; do
     if systemctl list-units --type=service --all | grep -q "$SERVICE.service"; then
       echo "Stopping service: $SERVICE"
@@ -239,6 +241,8 @@ purge() {
       echo "Service $SERVICE not found. Skipping..."
     fi
   done
+
+  print_message "Removing processes conflicting with ports..." "$GREEN"
 
   # Kill processes using specific ports and disable offending services
   for PORT in "${PORTS[@]}"; do
@@ -260,6 +264,8 @@ purge() {
     fi
   done
 
+  print_message "Removing conflicting services..." "$GREEN"
+
   # Purge packages
   for SERVICE in "${SERVICES[@]}"; do
     if dpkg -l | grep -q "$SERVICE"; then
@@ -270,6 +276,9 @@ purge() {
       echo "Package $SERVICE not found. Skipping..."
     fi
   done
+
+  print_message "Removing JRE..." "$GREEN"
+
 
   # Purge JRE
   if dpkg -l | grep -q "openjdk"; then
@@ -287,6 +296,8 @@ purge() {
     mount | grep -E '^/dev/' | awk '{print $3}'
   }
 
+  print_message "Cleaning up files..." "$GREEN"
+
   # Delete directories and files matching keywords on local filesystems only
   for KEYWORD in "${KEYWORDS[@]}"; do
     echo "Deleting directories containing: $KEYWORD (local filesystems only)"
@@ -301,6 +312,8 @@ purge() {
     done
     echo "Files containing $KEYWORD deleted from local filesystems."
   done
+
+  print_message "Cleaning up dependencies..." "$GREEN"
 
   # Clean up unused dependencies
   echo "Cleaning up unused dependencies..."
@@ -405,15 +418,22 @@ check_all_containers_up() {
 }
 
 set_kibana_homepage() {
+  
+  get_host_ip
+  
   local dashboard_id
-  local kibana_url="http://$ip_address:5601"
+  echo "dashboard id: $dashboard_id"
+  
+  local kibana_url="https://$ip_address:5601"
+  echo "kibana_url: $kibana_url"
+  
   local dashboard_title="$1"
   local encoded_title=$(echo "$dashboard_title" | sed 's/ /%20/g' | sed 's/:/%3A/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
-
   print_message "Setting homepage to ElastiFlow dashboard..." "$GREEN"
 
   # Fetch the dashboard ID
-  local find_response=$(curl -s -u "elastic:$ELASTIC_PASSWORD" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
+  local find_response=$(curl -k -s -u "elastic:$ELASTIC_PASSWORD" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
+
   dashboard_id=$(echo "$find_response" | jq -r '.saved_objects[] | select(.attributes.title=="'"$dashboard_title"'") | .id')
 
   if [ -z "$dashboard_id" ]; then
@@ -422,7 +442,7 @@ set_kibana_homepage() {
     local payload="{\"changes\":{\"defaultRoute\":\"/app/dashboards#/view/${dashboard_id}\"}}"
 
     # Update the default route
-    local update_response=$(curl -s -o /dev/null -w "%{http_code}" -u "elastic:$ELASTIC_PASSWORD" \
+    local update_response=$(curl -k -s -o /dev/null -w "%{http_code}" -u "elastic:$ELASTIC_PASSWORD" \
       -X POST "$kibana_url/api/kibana/settings" \
       -H "kbn-xsrf: true" \
       -H "Content-Type: application/json" \
@@ -491,6 +511,9 @@ check_system_health() {
   check_elastiflow_livez
   local livez_ok=$?
 
+  #check_elastiflow_readyz
+  #local readyz_ok=$?
+  
   # check_flow_blocker_health
   # local blocker_ok=$?
 
@@ -574,15 +597,16 @@ get_dashboard_url() {
 }
 
 
- check_elastiflow_readyz(){
-   response=$(curl -s http://localhost:8080/readyz)
-      if echo "$response" | grep -q "200"; then
-        print_message "ElastiFlow Flow Collector is $response" "$GREEN"
-      else
-        print_message "ElastiFlow Flow Collector Readyz: $response" "$RED"
-      fi
-  }
-
+check_elastiflow_readyz() {
+  response=$(curl -s http://localhost:8080/readyz)
+  if echo "$response" | grep -q "200"; then
+    print_message "ElastiFlow Flow Collector is $response" "$GREEN"
+    return 0
+  else
+    print_message "ElastiFlow Flow Collector Readyz: $response" "$RED"
+    return 1
+  fi
+}
 
 check_elastiflow_livez() {
   response=$(curl -s http://localhost:8080/livez)
