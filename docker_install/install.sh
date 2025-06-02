@@ -30,6 +30,48 @@ wait_for_dpkg_lock() {
     echo "Lock released. Proceeding..."
 }
 
+update_mem_limits() {
+    local env_file="$INSTALL_DIR/.env"
+    local total_kb heap_gb mem_limit_bytes
+
+    # 1. Get total memory in KB (Ubuntu)
+    total_kb=$(awk '/^MemTotal:/ {print $2}' /proc/meminfo)
+    if [[ -z "$total_kb" ]]; then
+        echo "❌ Could not read total memory."
+        return 1
+    fi
+
+    # 2. Convert to GB and calculate 1/3 (rounded up)
+    local total_gb=$(( (total_kb + 1024 * 1024 - 1) / (1024 * 1024) ))
+    heap_gb=$(( (total_gb + 2) / 3 ))
+
+    # 3. Cap heap size at 31 GB
+    if (( heap_gb > 31 )); then
+        heap_gb=31
+    fi
+
+    # 4. Compute MEM_LIMIT_ELASTIC in bytes (2 × heap GB)
+    mem_limit_bytes=$(( heap_gb * 2 * 1024 * 1024 * 1024 ))
+
+    # 5. Set or update JVM_HEAP_SIZE
+    if grep -q '^JVM_HEAP_SIZE=' "$env_file"; then
+        sed -i "s/^JVM_HEAP_SIZE=.*/JVM_HEAP_SIZE=${heap_gb}/" "$env_file"
+    else
+        echo "JVM_HEAP_SIZE=${heap_gb}" >> "$env_file"
+    fi
+
+    # 6. Set or update MEM_LIMIT_ELASTIC
+    if grep -q '^MEM_LIMIT_ELASTIC=' "$env_file"; then
+        sed -i "s/^MEM_LIMIT_ELASTIC=.*/MEM_LIMIT_ELASTIC=${mem_limit_bytes}/" "$env_file"
+    else
+        echo "MEM_LIMIT_ELASTIC=${mem_limit_bytes}" >> "$env_file"
+    fi
+
+    echo "✅ JVM_HEAP_SIZE set to ${heap_gb}"
+    echo "✅ MEM_LIMIT_ELASTIC set to ${mem_limit_bytes} bytes"
+}
+
+
 check_flow_blocker_health() {
   local service="flow_blocker.service"
 
@@ -462,14 +504,14 @@ edit_env_file() {
   local answer
 
   while true; do
-    echo "Would you like to edit the .env file before proceeding? This is not required if you are using 16GB of RAM. Otherwise, adjustments need to be made to this file. (y/n) [Default: no in 20 seconds]"
+    echo "Would you like to edit the .env file before proceeding?"
 
-    # Read user input with a timeout of 20 seconds
-    read -t 20 -p "Enter your choice (y/n): " answer
+    # Read user input with a timeout of 5 seconds
+    read -t 5 -p "Enter your choice (y/n): " answer
 
     # If the user doesn't respond in time
     if [ $? -ne 0 ]; then
-      echo "No response. Proceeding after 20 seconds."
+      echo "No response. Proceeding after 5 seconds."
       return 0  # Proceed without editing
     fi
 
@@ -1129,12 +1171,8 @@ check_hardware()
   fi
 
   if [ "$warn" = true ]; then
-    echo -e "⚠️ Hardware requirements check failed:\n$problems"
-    read -p "Do you want to continue anyway? (y/N): " choice
-    case "$choice" in
-      y|Y ) echo "Continuing...";;
-      * ) echo "Aborting."; exit 1;;
-    esac
+    print_message "⚠️ Hardware requirements check failed:\n$problems"  "$RED"
+    sleep 5
   fi
 }
 
@@ -1151,7 +1189,7 @@ check_kibana_status() {
         status=$(curl -k -s "$url" | jq -r '.status.overall.level')
         
         if [ "$status" == "available" ]; then
-            echo "[$(date)] Kibana is ready to be logged in. Status: $status"
+            echo "[$(date)] Kibana is ready to be logged in to. Status: $status"
             return 0  # Exit with success
         else
             echo "[$(date)] Kibana is not ready yet. Status: $status"
@@ -1176,35 +1214,45 @@ check_for_purge() {
 
 ask_purge() {
     local reply
+
     while true; do
-        read -r -p "Do you want to proceed with purging all traces of conflicting software? [y/n]: " reply
-        case "${reply,,}" in     # ,, => lowercase the answer
+        echo -n "Do you want to proceed with purging all traces of conflicting software? [y/n] (auto-continue with no in 5s): "
+        read -r -t 5 reply
+
+        # If no input, proceed without purging
+        if [[ -z "$reply" ]]; then
+            echo -e "\n⏳ No input received. Proceeding without purging."
+            return
+        fi
+
+        case "${reply,,}" in  # Lowercase the response
             y|yes )
                 purge
-                break
+                return
                 ;;
             n|no )
                 echo "Not purging. Exiting."
-                break
+                return
                 ;;
             * )
-                echo "Please answer y/yes or n/no."
+                echo "❌ Invalid input. Please enter y/yes or n/no."
                 ;;
         esac
     done
 }
 
 
+
 # Main script execution
 
 check_for_ubuntu
 check_root
-check_for_purge "$@"
 ask_purge
 install_prerequisites #before check_hardware since it requires bc
 check_hardware
 check_rw
 download_files
+update_mem_limits
 edit_env_file
 load_env_vars
 remove_docker_snap
@@ -1214,7 +1262,7 @@ ask_deploy_elastiflow_flow
 ask_deploy_elastiflow_snmp
 if check_system_health; then
   echo "System is healthy."
-  echo "Complete your setup by continuing with step 9 at https://docs.elastiflow.com/docs/flowcoll/install_docker_ubuntu_elastic_stack ."
+  echo "Complete setup by continuing with step 9 at https://docs.elastiflow.com/docs/flowcoll/install_docker_ubuntu_elastic_stack ."
 else
   echo "System is NOT healthy."
 fi
