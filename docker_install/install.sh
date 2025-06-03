@@ -464,10 +464,8 @@ set_kibana_homepage() {
   get_host_ip
   
   local dashboard_id
-  echo "dashboard id: $dashboard_id"
-  
+ 
   local kibana_url="https://$ip_address:5601"
-  echo "kibana_url: $kibana_url"
   
   local dashboard_title="$1"
   local encoded_title=$(echo "$dashboard_title" | sed 's/ /%20/g' | sed 's/:/%3A/g' | sed 's/(/%28/g' | sed 's/)/%29/g')
