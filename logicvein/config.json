@@ -1,0 +1,14 @@
+{
+    "logicvein_url": "your_logicvein_url",
+    "logicvein_username": "your_username",
+    "logicvein_password": "your_password",
+    "logicvein_network": "Default",
+    "snmp_version": "2c",
+    "snmp_community": "public",
+    "snmpv3": {
+      "authentication_protocol": "sha",
+      "authentication_passphrase": "efauthpassword",
+      "privacy_protocol": "des",
+      "privacy_passphrase": "efprivpassword"
+    }
+  }
