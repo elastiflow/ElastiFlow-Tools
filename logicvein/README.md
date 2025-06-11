@@ -4,6 +4,11 @@ This script automates the discovery and classification of network devices using 
 
 Features
 
+<<<<<<< HEAD
+Two versions of this script are available - one that uses the Logicvein jsonrpc library (get_devices_jsonrpc.py) and one that uses curl (get_devices_curl.py). If you use the Logicvein jsonrpc library you also need the jsonrpc.py in the same directory you run the script in. 
+
+=======
+>>>>>>> origin/main
 Authenticates to LogicVein portal via API login using provided credentials
 
 Queries device inventory in a specified Logicvein defined "network"
