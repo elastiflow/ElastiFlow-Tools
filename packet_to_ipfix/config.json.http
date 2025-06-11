@@ -1,0 +1,18 @@
+{
+  "COLLECTOR_IP": "10.101.2.148",
+  "COLLECTOR_PORT": 2055,
+  "TEMPLATE_ID": 256,
+  "DOMAIN_ID": 1234,
+  "INTERFACE": "en0",
+  "ACTIVE_TIMEOUT": 30,
+  "INACTIVE_TIMEOUT": 30,
+  "EXPORTER_PORT": 15555,
+  "TEMPLATE_INTERVAL": 60,
+  "ENTERPRISE_FIELDS": {
+    "PEN": 35632,
+    "http_url": { "id": 100, "length": 128 },
+    "http_ua": { "id": 101, "length": 128 },
+    "http_site": { "id": 102, "length": 64 }
+  }
+}
+  
