@@ -225,7 +225,7 @@ reset_elastic_password() {
 #  fi
 
   echo "Resetting the elastic user password..."
-  sudo /usr/share/elasticsearch/bin/elasticsearch-reset-password --username elastic -i -f
+  sudo /usr/share/elasticsearch/bin/elasticsearch-reset-password --username elastic -i -f --url https://localhost:9200
 
   if [[ $? -ne 0 ]]; then
     echo "Failed to reset the password for user 'elastic'."
@@ -2160,7 +2160,7 @@ while true; do
           echo "1. Daemon reload and restart flowcoll.service, elasticsearch.service, and kibana.service"
           echo "2. Watch elasticsearch.service log"
           echo "3. Watch kibana.service log"
-          echo "4. Reset Elasticsearch passworrd"
+          echo "4. Reset Elasticsearch password"
           echo "5. Back"
           read -p "Enter your choice (1-5): " game_choice
           clear

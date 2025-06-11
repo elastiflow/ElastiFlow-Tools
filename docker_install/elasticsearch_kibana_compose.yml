@@ -86,7 +86,7 @@ services:
       - xpack.security.transport.ssl.certificate=certs/es01/es01.crt
       - xpack.security.transport.ssl.certificate_authorities=certs/ca/ca.crt
       - xpack.security.transport.ssl.verification_mode=certificate
-      - xpack.license.self_generated.type=${LICENSE}
+      #- xpack.license.self_generated.type=${LICENSE}
       - xpack.monitoring.collection.enabled=true
       - ES_JAVA_OPTS=-Xms${JVM_HEAP_SIZE}g -Xmx${JVM_HEAP_SIZE}g
     mem_limit: ${MEM_LIMIT_ELASTIC}
@@ -135,6 +135,10 @@ services:
 
       # Example encryption key for encrypted saved objects
       - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=ElastiFlow_0123456789_0123456789_0123456789
+
+      # Prevent autocomplete dropdowns from timing out
+      - UNIFIEDSEARCH_AUTOCOMPLETE_VALUESUGGESTIONS_TIMEOUT=4000
+      - UNIFIEDSEARCH_AUTOCOMPLETE_VALUESUGGESTIONS_TERMINATEAFTER=100000
 
     mem_limit: ${MEM_LIMIT_KIBANA}
     healthcheck:
