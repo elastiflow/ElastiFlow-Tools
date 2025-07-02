@@ -14,7 +14,7 @@ Downloads, installs, and configures (Elasticsearch, Kibana) or (Opensearch, Open
 
 Requirements:
 ----------------
-Ubuntu Server 22 or greater
+Clean, unused Ubuntu Server 22 or greater
 
 Instructions:
 ----------------
