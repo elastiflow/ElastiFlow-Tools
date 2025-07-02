@@ -1615,7 +1615,7 @@ main() {
   download_aux_files
   check_all_services
   check_dashboards_status
-  resize_part_to_max
+  #resize_part_to_max
   display_info
   display_dashboard_url
   create_banner
