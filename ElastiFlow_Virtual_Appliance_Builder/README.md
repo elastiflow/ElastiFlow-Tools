@@ -37,21 +37,20 @@ sudo ./install.sh --unattended
 
 The following are optional variable assignments that you can make in the script. If you would like to customize the variables in the script, download the shell scripts, and edit the key value pairs. If you are unsure of what these variables mean, please leave them as they are.
 
-```elastiflow_account_id=""
-elastiflow_flow_license_key=""
-flowcoll_version="7.5.3"
-
+```
 # Note: Elastic 8.16.3 is the last version to have free TSDS
+### ElastiFlow parameters
+flow_dashboards_version="8.14.x"
+flow_dashboards_codex_ecs="codex"
+flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
+elastiflow_account_id=""
+elastiflow_flow_license_key=""
+
 ### Elastic parameters
 elasticsearch_version="8.16.3"
 kibana_version="8.16.13"
 elastic_username="elastic"
 elastic_password2="elastic"
-
-### ElastiFlow parameters
-flow_dashboards_version="8.14.x"
-flow_dashboards_codex_ecs="codex"
-flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
 
 ### Opensearch parameters
 opensearch_version=2.18.0
