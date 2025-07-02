@@ -6,35 +6,38 @@ if [[ "$1" == "--unattended" ]]; then
   UNATTENDED=true
 fi
 
-# Version: 3.0.4.6
+# Version: 3.0.4.7
 
 ########################################################
-# ELASTIFLOW_CONFIGURATION
+# CONFIGURATION
 ########################################################
-flowcoll_version="7.7.2"
-# If you do not have an ElastiFlow Account ID and License Key, please go here: https://elastiflow.com/get-started
+
+### ElastiFlow parameters
+flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
 ef_license_key=""
 ef_account_id=""
 frps="16000"
 
-########################################################
-# DATA PLATFORM CONFIGURATION
-########################################################
-#note: Elastic 8.16.4 is the last version to have free TSDS
-elastic_tsds="true"
+### Elasticsearch parameters
+# Note: Elasticsearch 8.16.4 is the last version to have free TSDS
 elasticsearch_version="8.16.4"
+elastic_tsds="true"
 kibana_version="8.16.4"
-flow_dashboards_version="8.14.x"
-#If you are using codex schema, this should be set to "codex". Otherwise set to "ecs"
-flow_dashboards_codex_ecs="codex"
-#If you are using codex schema, this should be set to "false". Otherwise, set to "true", for ecs.
-ecs_enable="false"
 elastic_username="elastic"
 elastic_password="elastic"
+flow_dashboards_version="8.14.x"
+# If you are using CODEX schema, this should be set to "codex". Otherwise set to "ecs"
+flow_dashboards_codex_ecs="codex"
+# If you are using CODEX schema, this should be set to "false". Otherwise, set to "true", for ECS.
+ecs_enable="false"
+
+### OpenSearch parameters
 opensearch_version=2.19.0
 opensearch_username="admin"
-opensearch_password="yourStrongPassword123!"
+opensearch_password2="yourStrongPassword123!"
 osd_flow_dashboards_version="2.14.x"
+
+
 ########################################################
 
 # Create a timestamped log file in the current directory
@@ -78,7 +81,7 @@ install_os_updates() {
   print_message "Updates installed successfully." "$GREEN"
 }
 
-select_search_engine(){
+select_data_platform(){
   if $UNATTENDED; then
     echo "Unattended mode: defaulting to Elasticsearch."
     DATA_PLATFORM='Elastic'
@@ -88,7 +91,7 @@ select_search_engine(){
   # Define the options
   options=(
       "Elasticsearch"
-      "Opensearch"
+      "OpenSearch"
       "Exit install script"
   )
   # Function to display options
@@ -116,7 +119,7 @@ select_search_engine(){
           DATA_PLATFORM='Elastic'
           ;;
       2)
-          DATA_PLATFORM='Opensearch'
+          DATA_PLATFORM='OpenSearch'
           ;;
       3)
           echo "Exiting..."
@@ -494,7 +497,7 @@ confirm_and_proceed() {
       return
     fi
 
-    printf "This script converts Ubuntu server installations to an ElastiFlow Virtual Appliance. \nPrevious installations, remnants, and information related to the following will be purged from this system: \n\n-Opensearch \n-Opensearch dashboards \n-Kibana \n-Elasticsearch \n-ElastiFlow Unified Flow Collector \n-ElastiFlow Unified SNMP Collector \n-Other related products\n\n"
+    printf "This script converts Ubuntu server installations to an ElastiFlow Virtual Appliance. \nPrevious installations, remnants, and information related to the following will be purged from this system: \n\n-OpenSearch \n-OpenSearch dashboards \n-Kibana \n-Elasticsearch \n-ElastiFlow Unified Flow Collector \n-ElastiFlow Unified SNMP Collector \n-Other related products\n\n"
     printf "Please ensure that you are only running this script on a clean, freshly installed instance of Ubuntu Server 22+ that is going to only be used for ElastiFlow.\n"
     printf "This script could be destructive to the contents or configuration of your server. \n\nProceed? (yes/no or y/n):"
 
@@ -626,7 +629,7 @@ get_dashboard_url() {
     "Elastic")
       local response=$(curl -s -u "$elastic_username:$elastic_password" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'kbn-xsrf: true')
       ;;
-    "Opensearch")
+    "OpenSearch")
       local response=$(curl -s -u "$opensearch_username:$opensearch_password" -X GET "$kibana_url/api/saved_objects/_find?type=dashboard&search_fields=title&search=$encoded_title" -H 'osd-xsrf: true')
       ;;
   esac
@@ -638,7 +641,7 @@ get_dashboard_url() {
     "Elastic")
       echo "$kibana_url/app/kibana#/dashboard/$dashboard_id"
       ;;
-    "Opensearch")
+    "OpenSearch")
       echo "$kibana_url/app/dashboard#/view/$dashboard_id"
       ;;
     esac
@@ -824,7 +827,7 @@ configure_jvm_memory_opensearch() {
   fi
   jvm_options="-Xms${jvm_mem_gb}g\n-Xmx${jvm_mem_gb}g"
   echo -e "$jvm_options" | tee /etc/opensearch/jvm.options > /dev/null
-  echo "Opensearch JVM options set to use $jvm_mem_gb GB for both -Xms and -Xmx."
+  echo "OpenSearch JVM options set to use $jvm_mem_gb GB for both -Xms and -Xmx."
 }
 
 start_elasticsearch() {
@@ -947,7 +950,7 @@ install_elastiflow() {
       "EF_OUTPUT_ELASTICSEARCH_INDEX_TEMPLATE_REPLICAS" "EF_OUTPUT_ELASTICSEARCH_INDEX_TEMPLATE_REPLICAS: 0"
       )
       ;;
-    "Opensearch")
+    "OpenSearch")
       elastiflow_config_strings=(
       "EF_LICENSE_KEY" "EF_LICENSE_KEY: '${ef_license_key}'"
       "EF_LICENSE_FLOW_RECORDS_PER_SECOND" "EF_LICENSE_FLOW_RECORDS_PER_SECOND: $frps"
@@ -1090,7 +1093,7 @@ check_all_services() {
     "Elastic")
       SERVICES=("elasticsearch.service" "kibana.service" "flowcoll.service")
       ;;
-    "Opensearch")
+    "OpenSearch")
       SERVICES=("opensearch.service" "opensearch-dashboards.service" "flowcoll.service")
       ;;
   esac
@@ -1121,11 +1124,11 @@ display_info() {
       version=$(/usr/share/elasticsearch/bin/elasticsearch --version | grep -oP 'Version: \K[\d.]+')
       echo -e "Installed Elasticsearch version: $version"
       ;;
-    "Opensearch")
+    "OpenSearch")
       version=$(grep -oP 'version: \K[\d.]+' /usr/share/opensearch-dashboards/manifest.yml )
-      echo -e "Installed Opensearch Dashboards version: $version\n"
+      echo -e "Installed OpenSearch Dashboards version: $version\n"
       version=$(/usr/share/opensearch/bin/opensearch --version | grep -oP 'Version: \K[\d.]+')
-      echo -e "Installed Opensearch version: $version"
+      echo -e "Installed OpenSearch version: $version"
       ;;
   esac
 
@@ -1147,7 +1150,7 @@ display_dashboard_url() {
       printf "For further configuration options, run sudo ./configure\n"
       printf "*********************************************\n"
       ;;
-    "Opensearch")
+    "OpenSearch")
       printf "*********************************************\n"
       printf "\033[32m\nGo to %s (%s / %s)\n\033[0m" "$dashboard_url" "$opensearch_username" "$opensearch_password"
       printf "DO NOT CHANGE THIS PASSWORD VIA OPENSEARCH DASHBOARDS. ONLY CHANGE IT VIA sudo ./configure\n"
@@ -1433,10 +1436,10 @@ install_latest_elastiflow_flow_collector() {
     echo "ElastiFlow Installation completed successfully."
 }
 
-pick_search_engine() {
+pick_data_platform() {
   options=(
       "Elasticsearch + Kibana"
-      "Opensearch + Opensearch Dashboards"
+      "OpenSearch + OpenSearch Dashboards"
       "Exit Install script"
   )
 
@@ -1478,31 +1481,31 @@ pick_search_engine() {
 }
 
 install_opensearch() {
-  print_message "Installing Opensearch...\n" "$GREEN"
-  curl -o- https://artifacts.opensearch.org/publickeys/opensearch.pgp | gpg --dearmor --batch --yes -o /usr/share/keyrings/opensearch-keyring || handle_error "Failed to add Opensearch GPG key." "${LINENO}"
-  echo "deb [signed-by=/usr/share/keyrings/opensearch-keyring] https://artifacts.opensearch.org/releases/bundle/opensearch/2.x/apt stable main" | tee /etc/apt/sources.list.d/opensearch-2.x.list || handle_error "Failed to add Opensearch repository." "${LINENO}"
-  opensearch_install_log=$(apt-get -q update &&  env OPENSEARCH_INITIAL_ADMIN_PASSWORD=$opensearch_password apt-get install opensearch=$opensearch_version | stdbuf -oL tee /dev/console) || handle_error "Failed to install Opensearch." "${LINENO}"
-  print_message "Configuring Opensearch...\n" "$GREEN"
+  print_message "Installing OpenSearch...\n" "$GREEN"
+  curl -o- https://artifacts.opensearch.org/publickeys/opensearch.pgp | gpg --dearmor --batch --yes -o /usr/share/keyrings/opensearch-keyring || handle_error "Failed to add OpenSearch GPG key." "${LINENO}"
+  echo "deb [signed-by=/usr/share/keyrings/opensearch-keyring] https://artifacts.opensearch.org/releases/bundle/opensearch/2.x/apt stable main" | tee /etc/apt/sources.list.d/opensearch-2.x.list || handle_error "Failed to add OpenSearch repository." "${LINENO}"
+  opensearch_install_log=$(apt-get -q update &&  env OPENSEARCH_INITIAL_ADMIN_PASSWORD=$opensearch_password apt-get install opensearch=$opensearch_version | stdbuf -oL tee /dev/console) || handle_error "Failed to install OpenSearch." "${LINENO}"
+  print_message "Configuring OpenSearch...\n" "$GREEN"
   configure_opensearch
 }
 
 start_opensearch() {
-  print_message "Enabling and starting Opensearch service..." "$GREEN"
+  print_message "Enabling and starting OpenSearch service..." "$GREEN"
   systemctl daemon-reload && systemctl enable opensearch.service && systemctl start opensearch.service
-  sleep_message "Giving Opensearch service time to stabilize" 10
-  print_message "Checking if Opensearch service is running..." "$GREEN"
+  sleep_message "Giving OpenSearch service time to stabilize" 10
+  print_message "Checking if OpenSearch service is running..." "$GREEN"
   if systemctl is-active --quiet opensearch.service; then
-    printf "Opensearch service is running.\n"
+    printf "OpenSearch service is running.\n"
   else
-    echo "Opensearch is not running.\n"
+    echo "OpenSearch is not running.\n"
   fi
-  print_message "Checking if Opensearch server is up..." "$GREEN"
+  print_message "Checking if OpenSearch server is up..." "$GREEN"
   curl_result=$(curl -s -k -u $opensearch_username:"$opensearch_password" https://localhost:9200)
   search_text='cluster_name" : "opensearch'
   if echo "$curl_result" | grep -q "$search_text"; then
-      echo -e "Opensearch is up! Used authenticated curl.\n"
+      echo -e "OpenSearch is up! Used authenticated curl.\n"
   else
-    echo -e "Something's wrong with Opensearch...\n"
+    echo -e "Something's wrong with OpenSearch...\n"
   fi
 }
 
@@ -1517,13 +1520,13 @@ configure_opensearch() {
 }
 
 install_opensearch_dashboards() {
-  echo -e "Downloading and installing Opensearch Dashboards...\n"
-  echo "deb [signed-by=/usr/share/keyrings/opensearch-keyring] https://artifacts.opensearch.org/releases/bundle/opensearch-dashboards/2.x/apt stable main" | tee /etc/apt/sources.list.d/opensearch-dashboards-2.x.list || handle_error "Failed to add Opensearch-dashboards repository." "${LINENO}"
+  echo -e "Downloading and installing OpenSearch Dashboards...\n"
+  echo "deb [signed-by=/usr/share/keyrings/opensearch-keyring] https://artifacts.opensearch.org/releases/bundle/opensearch-dashboards/2.x/apt stable main" | tee /etc/apt/sources.list.d/opensearch-dashboards-2.x.list || handle_error "Failed to add OpenSearch-dashboards repository." "${LINENO}"
   apt-get -q update && apt-get -q install opensearch-dashboards=$opensearch_version
 }
 
 configure_opensearch_dashboards() {
-#   echo -e "Generating Opensearch Dashboards saved objects encryption key...\n"
+#   echo -e "Generating OpenSearch Dashboards saved objects encryption key...\n"
 #   output=$(/usr/share/kibana/bin/kibana-encryption-keys generate -q)
 #   key_line=$(echo "$output" | grep '^xpack.encryptedSavedObjects.encryptionKey')
 #   if [[ -n "$key_line" ]]; then
@@ -1532,18 +1535,18 @@ configure_opensearch_dashboards() {
 #       echo "No encryption key line found."
 #   fi
 
-  echo -e "Enabling and starting Opensearch Dashboards service...\n"
+  echo -e "Enabling and starting OpenSearch Dashboards service...\n"
   systemctl daemon-reload && systemctl enable opensearch-dashboards.service && systemctl start opensearch-dashboards.service
-  sleep_message "Giving Opensearch Dashboards service time to stabilize" 20
-  echo -e "Configuring Opensearch Dashboards - set 0.0.0.0 as server.host\n"
+  sleep_message "Giving OpenSearch Dashboards service time to stabilize" 20
+  echo -e "Configuring OpenSearch Dashboards - set 0.0.0.0 as server.host\n"
   replace_text "/etc/opensearch-dashboards/opensearch_dashboards.yml" "# server.host: \"localhost\"" "server.host: \"0.0.0.0\"" "${LINENO}"
-  echo -e "Configuring Opensearch Dashboards - set opensearch.hosts to localhost instead of interface IP...\n"
+  echo -e "Configuring OpenSearch Dashboards - set opensearch.hosts to localhost instead of interface IP...\n"
   replace_text "/etc/opensearch-dashboards/opensearch_dashboards.yml" "opensearch.hosts: \['https:\/\/[^']*'\]" "opensearch.hosts: \['https:\/\/localhost:9200'\]" "${LINENO}"
   replace_text "/etc/opensearch-dashboards/opensearch_dashboards.yml" "opensearch.username: kibanaserver" "opensearch.username: admin" "${LINENO}"
   replace_text "/etc/opensearch-dashboards/opensearch_dashboards.yml" "opensearch.password: kibanaserver" "opensearch.password: $opensearch_password" "${LINENO}"
   systemctl daemon-reload
   systemctl restart opensearch-dashboards.service
-  sleep_message "Giving Opensearch Dashboards service time to stabilize" 20
+  sleep_message "Giving OpenSearch Dashboards service time to stabilize" 20
 
 }
 
@@ -1554,7 +1557,7 @@ install_data_platform() {
       configure_jvm_memory_elastic
       start_elasticsearch
       ;;
-    "Opensearch")
+    "OpenSearch")
       install_opensearch
       configure_jvm_memory_opensearch
       start_opensearch
@@ -1569,7 +1572,7 @@ install_data_playtform_ui() {
       configure_kibana
       change_elasticsearch_password
       ;;
-    "Opensearch")
+    "OpenSearch")
       install_opensearch_dashboards
       configure_opensearch_dashboards
       ;;
@@ -1582,7 +1585,7 @@ install_data_playtform_ui() {
       install_kibana_dashboards
       set_kibana_homepage "ElastiFlow (flow): Overview"
       ;;
-    "Opensearch")
+    "OpenSearch")
       install_osd_dashboards
       ;;
   esac
@@ -1591,7 +1594,7 @@ install_data_playtform_ui() {
 main() {
   check_for_script_updates
   confirm_and_proceed
-  select_search_engine
+  select_data_platform
   print_startup_message
   check_for_root
   sanitize_system
