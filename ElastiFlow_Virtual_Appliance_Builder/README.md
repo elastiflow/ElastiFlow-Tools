@@ -60,7 +60,7 @@ ecs_enable="false"
 ### OpenSearch parameters
 opensearch_version=2.19.0
 opensearch_username="admin"
-opensearch_password2="yourStrongPassword123!"
+opensearch_password="yourStrongPassword123!"
 osd_flow_dashboards_version="2.14.x"
 ```
 
