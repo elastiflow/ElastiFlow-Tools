@@ -41,7 +41,7 @@ osd_flow_dashboards_version="2.14.x"
 ########################################################
 
 # Create a timestamped log file in the current directory
-LOG_FILE="$PWD/elastiflow_install_$(date +'%Y%m%d_%H%M%S').log"
+LOG_FILE="$PWD/install_log-$(date +'%Y%m%d_%H%M%S').log"
 
 # Redirect all output to the log file
 exec > >(tee -a "$LOG_FILE") 2>&1
