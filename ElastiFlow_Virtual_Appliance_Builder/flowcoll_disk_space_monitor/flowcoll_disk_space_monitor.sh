@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PARTITION="/"           # filesystem to watch
-THRESHOLD=80            # % full at which we pause Flowcoll
+PARTITION="/"                     # Filesystem to watch
+THRESHOLD=80                      # % full at which we pause Flowcoll
 LOG_FILE="/var/log/flowcoll_disk_space_monitor.log"
-GRACE_PERIOD=10         # seconds to wait for a clean stop before kill
+GRACE_PERIOD=10                   # Seconds to wait for a clean stop before kill
+SERVICE_NAME="flowcoll.service"  # Service to manage
 
 log() {
   # log "message" [broadcast=true|false]
@@ -15,52 +16,73 @@ log() {
   [[ "${broadcast}" == "true" ]] && wall -n "${ts} $1" 2>/dev/null || true
 }
 
-stop_flowcoll_hard() {
-  log "Above threshold — stopping flowcoll.service" true
-  systemctl stop flowcoll.service || true
+service_exists() {
+  systemctl list-units --full --all | grep -q "^${SERVICE_NAME}"
+}
 
-  # Wait up to GRACE_PERIOD seconds for graceful shutdown
+gather_disk_stats() {
+  usage_pct=$(df --output=pcent "$PARTITION" | tail -1 | tr -dc '0-9')
+  read used_gib free_gib < <(
+    df -BG --output=used,avail "$PARTITION" |
+    tail -1 | awk '{ sub(/G/,"",$1); sub(/G/,"",$2); print $1, $2 }'
+  )
+}
+
+stop_flowcoll_hard() {
+  log "Above threshold — stopping ${SERVICE_NAME}" true
+  systemctl stop "${SERVICE_NAME}" || true
+
   for (( i=0; i<GRACE_PERIOD; i++ )); do
-    if ! systemctl is-active --quiet flowcoll.service; then
-      log "flowcoll.service stopped gracefully" true
+    if ! systemctl is-active --quiet "${SERVICE_NAME}"; then
+      log "${SERVICE_NAME} stopped gracefully" true
       return
     fi
     sleep 1
   done
 
-  # Still running → kill it hard
-  log "flowcoll.service did not stop within ${GRACE_PERIOD}s — killing now" true
-  systemctl kill flowcoll.service || true
+  log "${SERVICE_NAME} did not stop within ${GRACE_PERIOD}s — killing now" true
+  systemctl kill "${SERVICE_NAME}" || true
 }
 
-# ─── Gather disk stats ────────────────────────────────────────────────────────
-usage_pct=$(df --output=pcent "$PARTITION" | tail -1 | tr -dc '0-9')
-read used_gib free_gib < <(
-  df -BG --output=used,avail "$PARTITION" |
-  tail -1 | awk '{ sub(/G/,"",$1); sub(/G/,"",$2); print $1, $2 }'
-)
+handle_below_threshold() {
+  if ! systemctl is-enabled --quiet "${SERVICE_NAME}"; then
+    log "Below threshold — enabling ${SERVICE_NAME}"
+    systemctl enable "${SERVICE_NAME}"
+  fi
+  if ! systemctl is-active --quiet "${SERVICE_NAME}"; then
+    log "Below threshold — starting ${SERVICE_NAME}"
+    systemctl start "${SERVICE_NAME}"
+  fi
+}
 
-log "Disk check: ${usage_pct}% used (${used_gib} GiB used / ${free_gib} GiB free) on ${PARTITION} (threshold ${THRESHOLD}%)" \
-    $([[ "${usage_pct}" -ge "${THRESHOLD}" ]] && echo true || echo false)
-# ──────────────────────────────────────────────────────────────────────────────
-
-if [[ "${usage_pct}" -lt "${THRESHOLD}" ]]; then
-  # Below threshold – keep Flowcoll up
-  if ! systemctl is-enabled --quiet flowcoll.service; then
-    log "Below threshold — enabling flowcoll.service"
-    systemctl enable flowcoll.service
+handle_above_threshold() {
+  if systemctl is-enabled --quiet "${SERVICE_NAME}"; then
+    log "Above threshold — disabling ${SERVICE_NAME}" true
+    systemctl disable "${SERVICE_NAME}"
   fi
-  if ! systemctl is-active --quiet flowcoll.service; then
-    log "Below threshold — starting flowcoll.service"
-    systemctl start flowcoll.service
-  fi
-else
-  # Above threshold – shut Flowcoll down, killing if needed
-  if systemctl is-enabled --quiet flowcoll.service; then
-    log "Above threshold — disabling flowcoll.service" true
-    systemctl disable flowcoll.service
-  fi
-  if systemctl is-active --quiet flowcoll.service; then
+  if systemctl is-active --quiet "${SERVICE_NAME}"; then
     stop_flowcoll_hard
   fi
-fi
+}
+
+main() {
+  if ! service_exists; then
+    log "${SERVICE_NAME} not found on system — exiting."
+    exit 0
+  fi
+
+  gather_disk_stats
+
+  local should_broadcast
+  should_broadcast=$([[ "${usage_pct}" -ge "${THRESHOLD}" ]] && echo true || echo false)
+
+  log "Disk check: ${usage_pct}% used (${used_gib} GiB used / ${free_gib} GiB free) on ${PARTITION} (threshold ${THRESHOLD}%)" "${should_broadcast}"
+
+  if [[ "${usage_pct}" -lt "${THRESHOLD}" ]]; then
+    handle_below_threshold
+  else
+    handle_above_threshold
+  fi
+}
+
+main "$@"
