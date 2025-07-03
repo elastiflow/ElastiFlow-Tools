@@ -45,13 +45,22 @@ stop_flowcoll_hard() {
 }
 
 handle_below_threshold() {
-  if ! systemctl is-enabled --quiet "${SERVICE_NAME}"; then
-    log "Below disk space usage threshold — enabling ${SERVICE_NAME}"
-    systemctl enable "${SERVICE_NAME}"
+
+log "Below disk space usage threshold — enabling and starting ${SERVICE_NAME}"
+
+if ! systemctl is-enabled --quiet "${SERVICE_NAME}"; then
+  log "Enabling ${SERVICE_NAME}"
+  if systemctl enable "${SERVICE_NAME}"; then
+    log "${SERVICE_NAME} enabled successfully"
+  else
+    log "ERROR: Failed to enable ${SERVICE_NAME}" true
   fi
+else
+  log "${SERVICE_NAME} is already enabled"
+fi
 
   if ! systemctl is-active --quiet "${SERVICE_NAME}"; then
-    log "Below disk space usage threshold — starting ${SERVICE_NAME}"
+    log "Starting ${SERVICE_NAME}"
     if systemctl start "${SERVICE_NAME}"; then
       log "${SERVICE_NAME} started successfully"
     else
@@ -64,27 +73,41 @@ handle_below_threshold() {
 
 
 handle_above_threshold() {
-  if systemctl is-enabled --quiet "${SERVICE_NAME}"; then
-    log "Above disk space usage threshold — disabling ${SERVICE_NAME}" true
-    systemctl disable "${SERVICE_NAME}"
+
+log "Above disk space usage threshold — disabling and stopping ${SERVICE_NAME}"
+
+if systemctl is-enabled --quiet "${SERVICE_NAME}"; then
+  log "Disabling ${SERVICE_NAME}" true
+  if systemctl disable "${SERVICE_NAME}"; then
+    log "${SERVICE_NAME} disabled successfully"
+  else
+    log "ERROR: Failed to disable ${SERVICE_NAME}" true
   fi
+else
+  log "${SERVICE_NAME} is already disabled"
+fi
+
+if systemctl is-active --quiet "${SERVICE_NAME}"; then
+  log "Stopping ${SERVICE_NAME}" true
+  stop_flowcoll_hard
   if systemctl is-active --quiet "${SERVICE_NAME}"; then
-    stop_flowcoll_hard
+    log "ERROR: ${SERVICE_NAME} is still running after stop attempt" true
+  else
+    log "${SERVICE_NAME} stopped successfully"
   fi
+else
+  log "${SERVICE_NAME} is already stopped"
+fi
 }
 
 main() {
-  if ! service_exists; then
-    log "${SERVICE_NAME} not found on system — exiting."
-    exit 0
-  fi
 
   gather_disk_stats
 
   local should_broadcast
   should_broadcast=$([[ "${usage_pct}" -ge "${THRESHOLD}" ]] && echo true || echo false)
 
-  log "Disk check: ${usage_pct}% used (${used_gib} GiB used / ${free_gib} GiB free) on ${PARTITION} (threshold ${THRESHOLD}%)" "${should_broadcast}"
+  log "Disk space check: ${usage_pct}% used (${used_gib} GiB used / ${free_gib} GiB free) on ${PARTITION} (threshold ${THRESHOLD}%)" "${should_broadcast}"
 
   if [[ "${usage_pct}" -lt "${THRESHOLD}" ]]; then
     handle_below_threshold
