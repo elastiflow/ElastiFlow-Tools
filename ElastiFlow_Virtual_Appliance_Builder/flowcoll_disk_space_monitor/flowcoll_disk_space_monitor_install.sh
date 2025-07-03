@@ -46,4 +46,32 @@ EOF
   echo "Log output will appear in: ${log_file}"
 }
 
+setup_flowcoll_logrotate() {
+  local logrotate_config="/etc/logrotate.d/flowcoll"
+
+  # Check if logrotate is installed, install if not
+  if ! dpkg -s logrotate >/dev/null 2>&1; then
+    echo "logrotate not found — installing..."
+    sudo apt-get update && sudo apt-get install -y logrotate
+  else
+    echo "logrotate is already installed."
+  fi
+
+  # Create the logrotate config
+  sudo tee "${logrotate_config}" > /dev/null <<EOF
+/var/log/flowcoll_disk_space_monitor.log {
+    daily
+    rotate 7
+    compress
+    missingok
+    notifempty
+    copytruncate
+}
+EOF
+
+  echo "Logrotate config created at ${logrotate_config}"
+}
+
+
 install_flowcoll_disk_space_monitor
+setup_flowcoll_logrotate
