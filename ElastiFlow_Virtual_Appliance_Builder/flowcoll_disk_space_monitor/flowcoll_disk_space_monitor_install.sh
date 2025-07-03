@@ -16,7 +16,7 @@ install_flowcoll_disk_space_monitor() {
   # Create systemd service
   cat <<EOF > "/etc/systemd/system/${service_name}.service"
 [Unit]
-Description=Flowcoll Disk Monitor
+Description=Flowcoll Disk Space Monitor
 After=network.target
 
 [Service]
@@ -31,7 +31,7 @@ Description=Run Flowcoll Disk Space Monitor every 5 minutes
 
 [Timer]
 OnBootSec=2min
-OnUnitActiveSec=5min
+OnUnitActiveSec=30sec
 Persistent=true
 
 [Install]
