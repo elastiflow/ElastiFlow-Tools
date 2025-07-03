@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-install_flowcoll_monitor() {
+install_flowcoll_disk_space_monitor() {
   local script_path="/home/user/flowcoll_disk_space_monitor.sh"
   local service_name="flowcoll_disk_space_monitor"
   local log_file="/var/log/flowcoll_disk_space_monitor.log"
@@ -27,7 +27,7 @@ EOF
   # Create systemd timer
   cat <<EOF > "/etc/systemd/system/${service_name}.timer"
 [Unit]
-Description=Run Flowcoll Disk Monitor every 5 minutes
+Description=Run Flowcoll Disk Space Monitor every 5 minutes
 
 [Timer]
 OnBootSec=2min
@@ -46,4 +46,4 @@ EOF
   echo "Log output will appear in: ${log_file}"
 }
 
-install_flowcoll_monitor
+install_flowcoll_disk_space_monitor
