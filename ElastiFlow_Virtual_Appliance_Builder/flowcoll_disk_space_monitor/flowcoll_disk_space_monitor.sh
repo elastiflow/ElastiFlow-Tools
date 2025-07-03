@@ -17,7 +17,7 @@ log() {
 }
 
 service_exists() {
-  systemctl list-units --full --all | grep -q "^${SERVICE_NAME}"
+  systemctl list-units --full --all | grep "${SERVICE_NAME}"
 }
 
 gather_disk_stats() {
