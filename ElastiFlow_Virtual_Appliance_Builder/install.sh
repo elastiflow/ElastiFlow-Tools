@@ -6,7 +6,7 @@ if [[ "$1" == "--unattended" ]]; then
   UNATTENDED=true
 fi
 
-# Version: 3.0.4.7
+# Version: 3.0.4.8
 
 ########################################################
 # CONFIGURATION
@@ -1091,10 +1091,10 @@ resize_part_to_max() {
 check_all_services() {
   case "$DATA_PLATFORM" in
     "Elastic")
-      SERVICES=("elasticsearch.service" "kibana.service" "flowcoll.service")
+      SERVICES=("elasticsearch.service" "kibana.service" "flowcoll.service" "flowcoll_disk_space_monitor.service")
       ;;
     "OpenSearch")
-      SERVICES=("opensearch.service" "opensearch-dashboards.service" "flowcoll.service")
+      SERVICES=("opensearch.service" "opensearch-dashboards.service" "flowcoll.service" "flowcoll_disk_space_monitor.service")
       ;;
   esac
   for SERVICE_NAME in "${SERVICES[@]}"; do
@@ -1190,7 +1190,19 @@ cleanup (){
 
 }
 
-download_aux_files() {
+install_disk_space_monitor() {
+  local current_dir="$(pwd)"
+  download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/ElastiFlow_Virtual_Appliance_Builder/flowcoll_disk_space_monitor/flowcoll_disk_space_monitor.sh" "$current_dir/flowcoll_disk_space_monitor.sh"
+  download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/ElastiFlow_Virtual_Appliance_Builder/flowcoll_disk_space_monitor/flowcoll_disk_space_monitor_install.sh" "$current_dir/flowcoll_disk_space_monitor_install.sh"
+
+  chmod +x "$current_dir/flowcoll_disk_space_monitor.sh"
+  chmod +x "$current_dir/flowcoll_disk_space_monitor_install.sh"
+
+  wait_for_dpkg_lock
+  bash "$current_dir/flowcoll_disk_space_monitor_install.sh"
+}
+
+download_configure_script() {
   local current_dir="$(pwd)"
   download_file "https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/ElastiFlow_Virtual_Appliance_Builder/configure/configure.sh" "$current_dir/configure.sh"
 }
@@ -1612,7 +1624,8 @@ main() {
   install_data_playtform_ui
   install_elastiflow
   install_dashboards
-  download_aux_files
+  download_configure_script
+  install_disk_space_monitor
   check_all_services
   check_dashboards_status
   #resize_part_to_max
