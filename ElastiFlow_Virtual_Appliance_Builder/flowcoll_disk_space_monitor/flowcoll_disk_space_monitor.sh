@@ -67,7 +67,7 @@ fi
       log "ERROR: Failed to start ${SERVICE_NAME}" true
     fi
   else
-    log "${SERVICE_NAME} is already running"
+    log "${SERVICE_NAME} is already started"
   fi
 }
 
