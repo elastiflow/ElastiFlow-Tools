@@ -81,6 +81,18 @@ install_os_updates() {
   print_message "Updates installed successfully." "$GREEN"
 }
 
+wait_for_dpkg_lock() {
+    local LOCK_FILE="/var/lib/dpkg/lock-frontend"
+    echo "Waiting for dpkg lock to be released..."
+
+    while fuser "$LOCK_FILE" > /dev/null 2>&1; do
+        echo "Lock is still held by another process. Retrying in 5 seconds..."
+        sleep 5
+    done
+
+    echo "Lock released. Proceeding..."
+}
+
 select_data_platform(){
   if $UNATTENDED; then
     echo "Unattended mode: defaulting to Elasticsearch."
