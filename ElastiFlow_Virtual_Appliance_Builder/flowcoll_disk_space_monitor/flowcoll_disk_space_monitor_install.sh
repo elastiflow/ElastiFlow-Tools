@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 install_flowcoll_monitor() {
   local script_path="/home/user/flowcoll_disk_space_monitor.sh"
   local service_name="flowcoll_disk_space_monitor"
@@ -43,3 +45,5 @@ EOF
   echo "Installed and started ${service_name}.timer"
   echo "Log output will appear in: ${log_file}"
 }
+
+install_flowcoll_monitor
