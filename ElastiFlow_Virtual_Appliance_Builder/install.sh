@@ -1103,10 +1103,10 @@ resize_part_to_max() {
 check_all_services() {
   case "$DATA_PLATFORM" in
     "Elastic")
-      SERVICES=("elasticsearch.service" "kibana.service" "flowcoll.service" "flowcoll_disk_space_monitor.service")
+      SERVICES=("elasticsearch.service" "kibana.service" "flowcoll.service" "flowcoll_disk_space_monitor.timer")
       ;;
     "OpenSearch")
-      SERVICES=("opensearch.service" "opensearch-dashboards.service" "flowcoll.service" "flowcoll_disk_space_monitor.service")
+      SERVICES=("opensearch.service" "opensearch-dashboards.service" "flowcoll.service" "flowcoll_disk_space_monitor.timer")
       ;;
   esac
   for SERVICE_NAME in "${SERVICES[@]}"; do
