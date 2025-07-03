@@ -5,7 +5,7 @@ PARTITION="/"                     # Filesystem to watch
 THRESHOLD=80                      # % full at which we pause Flowcoll
 LOG_FILE="/var/log/flowcoll_disk_space_monitor.log"
 GRACE_PERIOD=10                   # Seconds to wait for a clean stop before kill
-SERVICE_NAME="flowcoll.service"  # Service to manage
+SERVICE_NAME="flowcoll.service"   # Service to manage
 
 log() {
   # log "message" [broadcast=true|false]
@@ -29,7 +29,7 @@ gather_disk_stats() {
 }
 
 stop_flowcoll_hard() {
-  log "Above threshold — stopping ${SERVICE_NAME}" true
+  log "Above disk space usage threshold — stopping ${SERVICE_NAME}" true
   systemctl stop "${SERVICE_NAME}" || true
 
   for (( i=0; i<GRACE_PERIOD; i++ )); do
@@ -46,18 +46,26 @@ stop_flowcoll_hard() {
 
 handle_below_threshold() {
   if ! systemctl is-enabled --quiet "${SERVICE_NAME}"; then
-    log "Below threshold — enabling ${SERVICE_NAME}"
+    log "Below disk space usage threshold — enabling ${SERVICE_NAME}"
     systemctl enable "${SERVICE_NAME}"
   fi
+
   if ! systemctl is-active --quiet "${SERVICE_NAME}"; then
-    log "Below threshold — starting ${SERVICE_NAME}"
-    systemctl start "${SERVICE_NAME}"
+    log "Below disk space usage threshold — starting ${SERVICE_NAME}"
+    if systemctl start "${SERVICE_NAME}"; then
+      log "${SERVICE_NAME} started successfully"
+    else
+      log "ERROR: Failed to start ${SERVICE_NAME}" true
+    fi
+  else
+    log "${SERVICE_NAME} is already running"
   fi
 }
 
+
 handle_above_threshold() {
   if systemctl is-enabled --quiet "${SERVICE_NAME}"; then
-    log "Above threshold — disabling ${SERVICE_NAME}" true
+    log "Above disk space usage threshold — disabling ${SERVICE_NAME}" true
     systemctl disable "${SERVICE_NAME}"
   fi
   if systemctl is-active --quiet "${SERVICE_NAME}"; then
