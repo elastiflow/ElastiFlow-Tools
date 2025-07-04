@@ -27,7 +27,7 @@ EOF
   # Create systemd timer
   cat <<EOF > "/etc/systemd/system/${service_name}.timer"
 [Unit]
-Description=Run Flowcoll Disk Space Monitor every 5 minutes
+Description=Run Flowcoll Disk Space Monitor every 30 seconds
 
 [Timer]
 OnBootSec=2min
