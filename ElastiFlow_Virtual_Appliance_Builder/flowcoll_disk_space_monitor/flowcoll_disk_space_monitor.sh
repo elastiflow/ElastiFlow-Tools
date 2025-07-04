@@ -46,7 +46,7 @@ stop_flowcoll_hard() {
 
 handle_below_threshold() {
 
-log "Below disk space usage threshold — enabling and starting ${SERVICE_NAME}"
+log "You have enough free disk space. Below disk space usage threshold — enabling and starting ${SERVICE_NAME}"
 
 if ! systemctl is-enabled --quiet "${SERVICE_NAME}"; then
   log "Enabling ${SERVICE_NAME}"
@@ -74,7 +74,7 @@ fi
 
 handle_above_threshold() {
 
-log "Above disk space usage threshold — disabling and stopping ${SERVICE_NAME}"
+log "Not enough free disk space - Above disk space usage threshold — disabling and stopping ${SERVICE_NAME}"
 
 if systemctl is-enabled --quiet "${SERVICE_NAME}"; then
   log "Disabling ${SERVICE_NAME}" true
