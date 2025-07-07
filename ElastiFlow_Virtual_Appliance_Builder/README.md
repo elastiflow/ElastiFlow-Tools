@@ -14,11 +14,11 @@ Downloads, installs, and configures (Elasticsearch, Kibana) or (Opensearch, Open
 
 Requirements:
 ----------------
-Ubuntu Server 22 or greater
+Clean, unused Ubuntu Server 22 or greater
 
 Instructions:
 ----------------
-1) Please review prerequisites [here](https://docs.google.com/document/d/18XOxnAdxAW5bcqRRGEEKayJf_ViwYRAG/edit#heading=h.e87xs5ntz4yk). Since you are installing everything from scratch (as opposed to importing a virtual appliance) some instructions will not apply).
+1) Please review prerequisites [here](https://docs.google.com/document/d/18XOxnAdxAW5bcqRRGEEKayJf_ViwYRAG/edit#heading=h.e87xs5ntz4yk). Since you are installing everything from scratch (as opposed to importing a virtual appliance) some instructions will not apply.
 2) When ready, run the following command in a terminal shell
 ```
 sudo bash -c "$(wget -qLO - https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/ElastiFlow_Virtual_Appliance_Builder/install.sh)"
@@ -27,28 +27,43 @@ sudo bash -c "$(wget -qLO - https://raw.githubusercontent.com/elastiflow/ElastiF
 
 Options:
 ----------------
-The following are optional variable assignments that you can make in the script. If you would like to customize the variables in the script, download the shell scripts, edit the key value pairs. as If you are unsure of what these variables mean, please leave them as they are.
-```elastiflow_account_id=""
-elastiflow_flow_license_key=""
-flowcoll_version="7.5.3"
 
-#note: Elastic 8.16.3 is the last version to have free TSDS
-elasticsearch_version="8.16.3"
-opensearch_version=2.18.0
+To run this script unattended (Elasticsearch will be the default data platform in this case) you can do this:
+```
+wget -qO install.sh https://raw.githubusercontent.com/elastiflow/ElastiFlow-Tools/main/ElastiFlow_Virtual_Appliance_Builder/install.sh
+chmod +x install.sh
+sudo ./install.sh --unattended
+```
 
-kibana_version="8.16.13"
+The following are optional variable assignments that you can make in the script. If you would like to customize the variables in the script, download the shell scripts, and edit the key value pairs. If you are unsure of what these variables mean, please leave them as they are.
 
-flow_dashboards_version="8.14.x"
-flow_dashboards_codex_ecs="codex"
-osd_flow_dashboards_version="2.14.x"
+```
+### ElastiFlow parameters
 flowcoll_config_path="/etc/elastiflow/flowcoll.yml"
-elastic_username="elastic"
-elastic_password2="elastic"
-opensearch_username="admin"
-opensearch_password2="yourStrongPassword123!"
+ef_license_key=""
+ef_account_id=""
+frps="16000"
 
-# vm specs 64 gigs ram, 16 vcpus, 2 TB disk, license for up to 64k FPS, fpus 4 - so there's a 16k FPS limit, 1 week retention
-fpus="4"
+### Elasticsearch parameters
+# Note: Elasticsearch 8.16.4 is the last version to have free TSDS
+elasticsearch_version="8.16.4"
+elastic_tsds="true"
+kibana_version="8.16.4"
+elastic_username="elastic"
+elastic_password="elastic"
+flow_dashboards_version="8.14.x"
+# If you are using CODEX schema, this should be set to "codex". Otherwise set to "ecs"
+flow_dashboards_codex_ecs="codex"
+# If you are using CODEX schema, this should be set to "false". Otherwise, set to "true", for ECS.
+ecs_enable="false"
+
+### OpenSearch parameters
+opensearch_version=2.19.0
+opensearch_username="admin"
+opensearch_password="yourStrongPassword123!"
+osd_flow_dashboards_version="2.14.x"
+```
+
 ```
 Opensearch:
 --------
