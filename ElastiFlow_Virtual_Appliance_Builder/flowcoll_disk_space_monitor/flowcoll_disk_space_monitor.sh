@@ -9,6 +9,10 @@ SERVICE_NAME="flowcoll.service"         # Service to manage
 DATA_PLATFORM=""
 FLOW_CONFIG_PATH="/etc/elastiflow/flowcoll.yml"
 USAGE_PERCENT=""
+USAGE_INDICES=""
+USAGE_GB=""
+DISK_FREE_GB=""
+DISK_TOTAL_GB=""
 
 
 
@@ -23,16 +27,14 @@ if [[ "$DATA_PLATFORM" == "elasticsearch.service" ]]; then
   fi
 
   # Attempt to get the disk usage percent
-  USAGE_PERCENT=$(curl -s -f -u elastic:"$elastic_password" https://localhost:9200/_cat/allocation?v --insecure | awk 'NR==2 {print $9}')
-
-  # Check if curl or awk failed or if output is empty/non-numeric
-  if [[ $? -ne 0 || -z "$USAGE_PERCENT" || ! "$USAGE_PERCENT" =~ ^[0-9]+$ ]]; then
-    echo "ERROR: Failed to retrieve disk usage percent from Elasticsearch." >&2
+  output=$(curl -s -f -u admin:"$elasticsearch_password" https://localhost:9200/_cat/allocation?v --insecure) || {
+    echo "ERROR: Failed to retrieve allocation data" >&2
     exit 1
-  fi
+  }
 
+  read -r USAGE_INDICES USAGE_GB DISK_FREE_GB DISK_TOTAL_GB USAGE_PERCENT <<< $(echo "$output" | awk 'NR==2 {print $2, $3, $4, $5, $6}')
   echo "Disk usage is $USAGE_PERCENT%"
-
+  
 elif [[ "$DATA_PLATFORM" == "opensearch.service" ]]; then
 
   # Extract opensearch password from flowcoll config
@@ -44,14 +46,12 @@ elif [[ "$DATA_PLATFORM" == "opensearch.service" ]]; then
   fi
 
   # Attempt to get the disk usage percent
-  USAGE_PERCENT=$(curl -s -f -u admin:"$opensearch_password" https://localhost:9200/_cat/allocation?v --insecure | awk 'NR==2 {print $6}')
-
-  # Check if curl or awk failed or if output is empty/non-numeric
-  if [[ $? -ne 0 || -z "$USAGE_PERCENT" || ! "$USAGE_PERCENT" =~ ^[0-9]+$ ]]; then
-    echo "ERROR: Failed to retrieve disk usage percent from OpenSearch." >&2
+  output=$(curl -s -f -u admin:"$opensearch_password" https://localhost:9200/_cat/allocation?v --insecure) || {
+    echo "ERROR: Failed to retrieve allocation data" >&2
     exit 1
-  fi
+  }
 
+  read -r USAGE_INDICES USAGE_GB DISK_FREE_GB DISK_TOTAL_GB USAGE_PERCENT <<< $(echo "$output" | awk 'NR==2 {print $2, $3, $4, $5, $6}')
   echo "Disk usage is $USAGE_PERCENT%"
 fi
 
@@ -162,7 +162,7 @@ main() {
   
   should_broadcast=$([[ "${USAGE_PERCENT}" -ge "${THRESHOLD}" ]] && echo true || echo false)
 
-  log "Disk space check: ${USAGE_PERCENT}% used (${used_gib} GiB used / ${free_gib} GiB free) on ${PARTITION} (threshold ${THRESHOLD}%)" "${should_broadcast}"
+  log "Disk space check: ${USAGE_PERCENT}% used (${USAGE_GB} GiB used / ${DISK_FREE_GB} GiB free) (threshold ${THRESHOLD}%)" "${should_broadcast}"
 
   if [[ "${USAGE_PERCENT}" -lt "${THRESHOLD}" ]]; then
     handle_below_threshold
