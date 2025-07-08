@@ -3,7 +3,7 @@ set -euo pipefail
 
 PARTITION="/"                           # Filesystem to watch
 THRESHOLD=80                            # % full at which we pause Flowcoll
-LOG_FILE="/var/log/flowcoll_disk_space_monitor.log"
+LOG_FILE="/var/log/flowcoll_disk_space_monitor/flowcoll_disk_space_monitor.log"
 GRACE_PERIOD=10                         # Seconds to wait for a clean stop before kill
 SERVICE_NAME=""                        # Service to manage
 
