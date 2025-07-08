@@ -69,9 +69,9 @@ log() {
 }
 
 detect_data_platform() {
-  if systemctl list-unit-files | grep -q '^elasticsearch\.service'; then
+  if systemctl list-unit-files | grep 'elasticsearch.service'; then
     DATA_PLATFORM="elasticsearch.service"
-  elif systemctl list-unit-files | grep -q '^opensearch\.service'; then
+  elif systemctl list-unit-files | grep 'opensearch.service'; then
     DATA_PLATFORM="opensearch.service"
   else
     DATA_PLATFORM=""
