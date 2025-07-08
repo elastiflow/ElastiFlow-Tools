@@ -49,7 +49,7 @@ EOF
 }
 
 setup_flowcoll_logrotate() {
-  local logrotate_config="/etc/logrotate.d/flowcoll"
+  local logrotate_config="/etc/logrotate.d/flowcoll_disk_space_monitor"
 
   # Check if logrotate is installed, install if not
   if ! dpkg -s logrotate >/dev/null 2>&1; then
