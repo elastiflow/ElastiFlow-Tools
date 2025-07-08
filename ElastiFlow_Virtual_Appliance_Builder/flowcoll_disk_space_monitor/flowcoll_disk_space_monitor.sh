@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PARTITION="/"                     # Filesystem to watch
-THRESHOLD=80                      # % full at which we pause Flowcoll
+PARTITION="/"                           # Filesystem to watch
+THRESHOLD=80                            # % full at which we pause Flowcoll
 LOG_FILE="/var/log/flowcoll_disk_space_monitor.log"
-GRACE_PERIOD=10                   # Seconds to wait for a clean stop before kill
-SERVICE_NAME="flowcoll.service"   # Service to manage
+GRACE_PERIOD=10                         # Seconds to wait for a clean stop before kill
+SERVICE_NAME=$(detect_search_service)   # Service to manage
+
 
 log() {
   # log "message" [broadcast=true|false]
@@ -16,8 +17,15 @@ log() {
   [[ "${broadcast}" == "true" ]] && wall -n "${ts} $1" 2>/dev/null || true
 }
 
-service_exists() {
-  systemctl list-units --full --all | grep "${SERVICE_NAME}"
+detect_search_service() {
+  if systemctl list-units --full --all | grep -Fq "elasticsearch.service"; then
+    echo "elasticsearch.service"
+  elif systemctl list-units --full --all | grep -Fq "opensearch.service"; then
+    echo "opensearch.service"
+  else
+    echo "ERROR: Neither elasticsearch.service nor opensearch.service found on this system." >&2
+    exit 1
+  fi
 }
 
 gather_disk_stats() {
