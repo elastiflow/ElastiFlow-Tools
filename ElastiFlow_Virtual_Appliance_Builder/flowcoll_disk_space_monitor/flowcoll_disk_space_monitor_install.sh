@@ -61,7 +61,7 @@ setup_flowcoll_logrotate() {
 
   # Create the logrotate config
   sudo tee "${logrotate_config}" > /dev/null <<EOF
-/var/log/flowcoll_disk_space_monitor.log {
+/var/log/flowcoll_disk_space_monitor/flowcoll_disk_space_monitor.log {
     daily
     rotate 7
     compress
