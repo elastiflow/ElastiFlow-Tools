@@ -14,39 +14,40 @@ USAGE_GB=""
 DISK_FREE_GB=""
 DISK_TOTAL_GB=""
 
+get_elasticsearch_info(){
 
 
-get_disk_usage(){
+  # Extract elasticsearch password from flowcoll config
+  password=$(grep "^EF_OUTPUT_ELASTICSEARCH_PASSWORD: '" "$FLOW_CONFIG_PATH" | awk -F"'" '{print $2}')
 
-if [[ "$DATA_PLATFORM" == "elasticsearch.service" ]]; then
-  elastic_password=$(grep "^EF_OUTPUT_ELASTICSEARCH_PASSWORD: '" "$FLOW_CONFIG_PATH" | awk -F"'" '{print $2}')
-
-  if [[ -z "$elastic_password" ]]; then
+  if [[ -z "$password" ]]; then
     echo "ERROR: Could not extract EF_OUTPUT_ELASTICSEARCH_PASSWORD from $FLOW_CONFIG_PATH" >&2
     exit 1
   fi
 
   # Attempt to get the disk usage percent
-  output=$(curl -s -f -u admin:"$elasticsearch_password" https://localhost:9200/_cat/allocation?v --insecure) || {
+  output=$(curl -s -f -u admin:"$password" https://localhost:9200/_cat/allocation?v --insecure) || {
     echo "ERROR: Failed to retrieve allocation data" >&2
     exit 1
   }
 
   read -r USAGE_INDICES USAGE_GB DISK_FREE_GB DISK_TOTAL_GB USAGE_PERCENT <<< $(echo "$output" | awk 'NR==2 {print $2, $3, $4, $5, $6}')
   echo "Disk usage is $USAGE_PERCENT%"
-  
-elif [[ "$DATA_PLATFORM" == "opensearch.service" ]]; then
 
-  # Extract opensearch password from flowcoll config
-  opensearch_password=$(grep "^EF_OUTPUT_OPENSEARCH_PASSWORD: '" "$FLOW_CONFIG_PATH" | awk -F"'" '{print $2}')
+}
 
-  if [[ -z "$opensearch_password" ]]; then
+get_opensearch_info(){
+
+ # Extract opensearch password from flowcoll config
+  password=$(grep "^EF_OUTPUT_OPENSEARCH_PASSWORD: '" "$FLOW_CONFIG_PATH" | awk -F"'" '{print $2}')
+
+  if [[ -z "$password" ]]; then
     echo "ERROR: Could not extract EF_OUTPUT_OPENSEARCH_PASSWORD from $FLOW_CONFIG_PATH" >&2
     exit 1
   fi
 
   # Attempt to get the disk usage percent
-  output=$(curl -s -f -u admin:"$opensearch_password" https://localhost:9200/_cat/allocation?v --insecure) || {
+  output=$(curl -s -f -u admin:"$password" https://localhost:9200/_cat/allocation?v --insecure) || {
     echo "ERROR: Failed to retrieve allocation data" >&2
     exit 1
   }
@@ -54,7 +55,19 @@ elif [[ "$DATA_PLATFORM" == "opensearch.service" ]]; then
   read -r USAGE_INDICES USAGE_GB DISK_FREE_GB DISK_TOTAL_GB USAGE_PERCENT <<< $(echo "$output" | awk 'NR==2 {print $2, $3, $4, $5, $6}')
   echo "Disk usage is $USAGE_PERCENT%"
 fi
+}
 
+
+
+get_disk_usage(){
+
+detect_data_platform
+
+if [[ "$DATA_PLATFORM" == "elasticsearch.service" ]]; then
+  get_elasticsearch_info
+  
+elif [[ "$DATA_PLATFORM" == "opensearch.service" ]]; then
+  get_opensearch_info
 }
 
 
@@ -153,9 +166,7 @@ fi
 }
 
 main() {
-
-  detect_data_platform
-  
+ 
   get_disk_usage
   
   local should_broadcast
