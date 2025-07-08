@@ -7,11 +7,11 @@ GRACE_PERIOD=10                         # Seconds to wait for a clean stop befor
 SERVICE_NAME="flowcoll.service"         # Service to manage
 DATA_PLATFORM=""
 FLOW_CONFIG_PATH="/etc/elastiflow/flowcoll.yml"
-USAGE_PERCENT=""
-USAGE_INDICES=""
-USAGE_GB=""
-DISK_FREE_GB=""
-DISK_TOTAL_GB=""
+disk_indices="" 
+disk_used=""
+disk_avail="" 
+disk_total=""
+disk_percent=""
 
 log() {
   # log "message" [broadcast=true|false]
@@ -29,7 +29,7 @@ detect_data_platform() {
     DATA_PLATFORM="opensearch.service"
   else
     DATA_PLATFORM=""
-    echo "ERROR: Neither elasticsearch.service nor opensearch.service is running" >&2
+    log "ERROR: Neither elasticsearch.service nor opensearch.service is running" >&2 "${should_broadcast}"
     exit 1
   fi
 }
@@ -40,18 +40,17 @@ get_elasticsearch_info() {
   password=$(grep "^EF_OUTPUT_ELASTICSEARCH_PASSWORD: '" "$FLOW_CONFIG_PATH" | awk -F"'" '{print $2}')
 
   if [[ -z "$password" ]]; then
-    echo "ERROR: Could not extract EF_OUTPUT_ELASTICSEARCH_PASSWORD from $FLOW_CONFIG_PATH" >&2
+    log "ERROR: Could not extract EF_OUTPUT_ELASTICSEARCH_PASSWORD from $FLOW_CONFIG_PATH" >&2 true
     exit 1
   fi
 
   local output
-  output=$(curl -s -f -u admin:"$password" https://localhost:9200/_cat/allocation?v --insecure) || {
-    echo "ERROR: Failed to retrieve allocation data" >&2
+  output=$(curl -s -f -u elastic:"$password" https://localhost:9200/_cat/allocation?v --insecure) || {
+    log "ERROR: Flowcoll Disk Space Monitor failed to retrieve disk space usage" >&2 true
     exit 1
   }
 
-  read -r USAGE_INDICES USAGE_GB DISK_FREE_GB DISK_TOTAL_GB USAGE_PERCENT <<< $(echo "$output" | awk 'NR==2 {print $2, $3, $4, $5, $6}')
-  echo "Disk usage is $USAGE_PERCENT%"
+  read -r disk_indices disk_used disk_avail disk_total disk_percent <<< $(echo "$output" | awk 'NR==2 {print $5, $6, $7, $8, $9}')
 }
 
 get_opensearch_info() {
@@ -65,12 +64,11 @@ get_opensearch_info() {
 
   local output
   output=$(curl -s -f -u admin:"$password" https://localhost:9200/_cat/allocation?v --insecure) || {
-    echo "ERROR: Failed to retrieve allocation data" >&2
+    log "ERROR: Flowcoll Disk Space Monitor failed to retrieve disk space usage" >&2 true
     exit 1
   }
 
-  read -r USAGE_INDICES USAGE_GB DISK_FREE_GB DISK_TOTAL_GB USAGE_PERCENT <<< $(echo "$output" | awk 'NR==2 {print $2, $3, $4, $5, $6}')
-  echo "Disk usage is $USAGE_PERCENT%"
+  read -r disk_indices disk_used disk_avail disk_total disk_percent <<< $(echo "$output" | awk 'NR==2 {print $2, $3, $4, $5, $6}')
 }
 
 get_disk_usage() {
@@ -134,11 +132,11 @@ main() {
   get_disk_usage
 
   local should_broadcast
-  should_broadcast=$([[ "${USAGE_PERCENT}" -ge "${THRESHOLD}" ]] && echo true || echo false)
+  should_broadcast=$([[ "${disk_percent}" -ge "${THRESHOLD}" ]] && echo true || echo false)
 
-  log "${DATA_PLATFORM} disk space check: ${USAGE_PERCENT}% used (${USAGE_GB} GiB used / ${USAGE_INDICES} indices ${DISK_FREE_GB} GiB free) (threshold ${THRESHOLD}%)" "${should_broadcast}"
+  log "${DATA_PLATFORM} disk space check: ${disk_percent}% used (${disk_used} GiB used / ${disk_indices} indices ${disk_avail} GiB free) (threshold ${THRESHOLD}%)" "${should_broadcast}"
 
-  if [[ "${USAGE_PERCENT}" -lt "${THRESHOLD}" ]]; then
+  if [[ "${disk_percent}" -lt "${THRESHOLD}" ]]; then
     handle_below_threshold
   else
     handle_above_threshold
