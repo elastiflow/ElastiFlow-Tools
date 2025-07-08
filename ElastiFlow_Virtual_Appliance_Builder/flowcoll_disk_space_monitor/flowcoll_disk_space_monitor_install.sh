@@ -3,13 +3,15 @@
 install_flowcoll_disk_space_monitor() {
   local script_path="/home/user/flowcoll_disk_space_monitor.sh"
   local service_name="flowcoll_disk_space_monitor"
-  local log_file="/var/log/flowcoll_disk_space_monitor.log"
+  local log_file="/var/log/flowcoll_disk_space_monitor/flowcoll_disk_space_monitor.log"
 
   if [[ ! -f "$script_path" ]]; then
     echo "Error: Monitoring script not found at $script_path"
     return 1
   fi
 
+  mkdir -p "/var/log/flowcoll_disk_space_monitor/"
+  
   chmod +x "$script_path"
   echo "Using external monitor script at $script_path"
 
