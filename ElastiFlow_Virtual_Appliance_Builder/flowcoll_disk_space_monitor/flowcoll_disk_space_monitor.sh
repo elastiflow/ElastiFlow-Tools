@@ -13,63 +13,6 @@ USAGE_GB=""
 DISK_FREE_GB=""
 DISK_TOTAL_GB=""
 
-get_elasticsearch_info(){
-
-  # Extract password from flowcoll config
-  password=$(grep "^EF_OUTPUT_ELASTICSEARCH_PASSWORD: '" "$FLOW_CONFIG_PATH" | awk -F"'" '{print $2}')
-
-  if [[ -z "$password" ]]; then
-    echo "ERROR: Could not extract EF_OUTPUT_ELASTICSEARCH_PASSWORD from $FLOW_CONFIG_PATH" >&2
-    exit 1
-  fi
-
-  # Attempt to get the disk usage percent
-  output=$(curl -s -f -u admin:"$password" https://localhost:9200/_cat/allocation?v --insecure) || {
-    echo "ERROR: Failed to retrieve allocation data" >&2
-    exit 1
-  }
-
-  read -r USAGE_INDICES USAGE_GB DISK_FREE_GB DISK_TOTAL_GB USAGE_PERCENT <<< $(echo "$output" | awk 'NR==2 {print $2, $3, $4, $5, $6}')
-  echo "Disk usage is $USAGE_PERCENT%"
-
-}
-
-get_opensearch_info(){
-
- # Extract password from flowcoll config
-  password=$(grep "^EF_OUTPUT_OPENSEARCH_PASSWORD: '" "$FLOW_CONFIG_PATH" | awk -F"'" '{print $2}')
-
-  if [[ -z "$password" ]]; then
-    echo "ERROR: Could not extract EF_OUTPUT_OPENSEARCH_PASSWORD from $FLOW_CONFIG_PATH" >&2
-    exit 1
-  fi
-
-  # Attempt to get the disk usage percent
-  output=$(curl -s -f -u admin:"$password" https://localhost:9200/_cat/allocation?v --insecure) || {
-    echo "ERROR: Failed to retrieve allocation data" >&2
-    exit 1
-  }
-
-  read -r USAGE_INDICES USAGE_GB DISK_FREE_GB DISK_TOTAL_GB USAGE_PERCENT <<< $(echo "$output" | awk 'NR==2 {print $2, $3, $4, $5, $6}')
-  echo "Disk usage is $USAGE_PERCENT%"
-fi
-}
-
-
-
-get_disk_usage(){
-
-detect_data_platform
-
-if [[ "$DATA_PLATFORM" == "elasticsearch.service" ]]; then
-  get_elasticsearch_info
-  
-elif [[ "$DATA_PLATFORM" == "opensearch.service" ]]; then
-  get_opensearch_info
-}
-
-
-
 log() {
   # log "message" [broadcast=true|false]
   local ts broadcast
@@ -80,14 +23,63 @@ log() {
 }
 
 detect_data_platform() {
-  if systemctl list-unit-files | grep 'elasticsearch.service'; then
+  if systemctl is-active --quiet elasticsearch.service; then
     DATA_PLATFORM="elasticsearch.service"
-  elif systemctl list-unit-files | grep 'opensearch.service'; then
+  elif systemctl is-active --quiet opensearch.service; then
     DATA_PLATFORM="opensearch.service"
   else
     DATA_PLATFORM=""
-    echo "ERROR: Neither elasticsearch.service nor opensearch.service is defined"
+    echo "ERROR: Neither elasticsearch.service nor opensearch.service is running" >&2
     exit 1
+  fi
+}
+
+
+get_elasticsearch_info() {
+  local password
+  password=$(grep "^EF_OUTPUT_ELASTICSEARCH_PASSWORD: '" "$FLOW_CONFIG_PATH" | awk -F"'" '{print $2}')
+
+  if [[ -z "$password" ]]; then
+    echo "ERROR: Could not extract EF_OUTPUT_ELASTICSEARCH_PASSWORD from $FLOW_CONFIG_PATH" >&2
+    exit 1
+  fi
+
+  local output
+  output=$(curl -s -f -u admin:"$password" https://localhost:9200/_cat/allocation?v --insecure) || {
+    echo "ERROR: Failed to retrieve allocation data" >&2
+    exit 1
+  }
+
+  read -r USAGE_INDICES USAGE_GB DISK_FREE_GB DISK_TOTAL_GB USAGE_PERCENT <<< $(echo "$output" | awk 'NR==2 {print $2, $3, $4, $5, $6}')
+  echo "Disk usage is $USAGE_PERCENT%"
+}
+
+get_opensearch_info() {
+  local password
+  password=$(grep "^EF_OUTPUT_OPENSEARCH_PASSWORD: '" "$FLOW_CONFIG_PATH" | awk -F"'" '{print $2}')
+
+  if [[ -z "$password" ]]; then
+    echo "ERROR: Could not extract EF_OUTPUT_OPENSEARCH_PASSWORD from $FLOW_CONFIG_PATH" >&2
+    exit 1
+  fi
+
+  local output
+  output=$(curl -s -f -u admin:"$password" https://localhost:9200/_cat/allocation?v --insecure) || {
+    echo "ERROR: Failed to retrieve allocation data" >&2
+    exit 1
+  }
+
+  read -r USAGE_INDICES USAGE_GB DISK_FREE_GB DISK_TOTAL_GB USAGE_PERCENT <<< $(echo "$output" | awk 'NR==2 {print $2, $3, $4, $5, $6}')
+  echo "Disk usage is $USAGE_PERCENT%"
+}
+
+get_disk_usage() {
+  detect_data_platform
+
+  if [[ "$DATA_PLATFORM" == "elasticsearch.service" ]]; then
+    get_elasticsearch_info
+  elif [[ "$DATA_PLATFORM" == "opensearch.service" ]]; then
+    get_opensearch_info
   fi
 }
 
@@ -108,8 +100,7 @@ stop_flowcoll_hard() {
 }
 
 handle_below_threshold() {
-
-log "You have enough free disk space. Below disk space usage threshold — starting ${SERVICE_NAME}"
+  log "Free space OK. Below disk space usage threshold — starting ${SERVICE_NAME}"
 
   if ! systemctl is-active --quiet "${SERVICE_NAME}"; then
     log "Starting ${SERVICE_NAME}"
@@ -123,33 +114,29 @@ log "You have enough free disk space. Below disk space usage threshold — start
   fi
 }
 
-
 handle_above_threshold() {
+  log "Not enough free disk space - Above disk space usage threshold — stopping ${SERVICE_NAME}"
 
-log "Not enough free disk space - Above disk space usage threshold — stopping ${SERVICE_NAME}"
-
-if systemctl is-active --quiet "${SERVICE_NAME}"; then
-  log "Stopping ${SERVICE_NAME}" true
-  stop_flowcoll_hard
   if systemctl is-active --quiet "${SERVICE_NAME}"; then
-    log "ERROR: ${SERVICE_NAME} is still running after stop attempt" true
+    log "Stopping ${SERVICE_NAME}" true
+    stop_flowcoll_hard
+    if systemctl is-active --quiet "${SERVICE_NAME}"; then
+      log "ERROR: ${SERVICE_NAME} is still running after stop attempt" true
+    else
+      log "${SERVICE_NAME} stopped successfully"
+    fi
   else
-    log "${SERVICE_NAME} stopped successfully"
+    log "${SERVICE_NAME} is already stopped"
   fi
-else
-  log "${SERVICE_NAME} is already stopped"
-fi
 }
 
 main() {
- 
   get_disk_usage
-  
+
   local should_broadcast
-  
   should_broadcast=$([[ "${USAGE_PERCENT}" -ge "${THRESHOLD}" ]] && echo true || echo false)
 
-  log "Disk space check: ${USAGE_PERCENT}% used (${USAGE_GB} GiB used / ${DISK_FREE_GB} GiB free) (threshold ${THRESHOLD}%)" "${should_broadcast}"
+  log "Disk space check: ${USAGE_PERCENT}% used (${USAGE_GB} GiB used / / ${USAGE_INDICES} indices  ${DISK_FREE_GB} GiB free) (threshold ${THRESHOLD}%)" "${should_broadcast}"
 
   if [[ "${USAGE_PERCENT}" -lt "${THRESHOLD}" ]]; then
     handle_below_threshold
