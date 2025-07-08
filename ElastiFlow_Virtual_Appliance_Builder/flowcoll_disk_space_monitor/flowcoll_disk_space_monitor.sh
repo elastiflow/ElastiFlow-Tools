@@ -7,6 +7,57 @@ LOG_FILE="/var/log/flowcoll_disk_space_monitor/flowcoll_disk_space_monitor.log"
 GRACE_PERIOD=10                         # Seconds to wait for a clean stop before kill
 SERVICE_NAME="flowcoll.service"         # Service to manage
 DATA_PLATFORM=""
+FLOW_CONFIG_PATH="/etc/elastiflow/flowcoll.yml"
+USAGE_PERCENT=""
+
+
+
+get_disk_usage(){
+
+if [[ "$DATA_PLATFORM" == "elasticsearch.service" ]]; then
+  elastic_password=$(grep "^EF_OUTPUT_ELASTICSEARCH_PASSWORD: '" "$FLOW_CONFIG_PATH" | awk -F"'" '{print $2}')
+
+  if [[ -z "$elastic_password" ]]; then
+    echo "ERROR: Could not extract EF_OUTPUT_ELASTICSEARCH_PASSWORD from $FLOW_CONFIG_PATH" >&2
+    exit 1
+  fi
+
+  # Attempt to get the disk usage percent
+  USAGE_PERCENT=$(curl -s -f -u elastic:"$elastic_password" https://localhost:9200/_cat/allocation?v --insecure | awk 'NR==2 {print $9}')
+
+  # Check if curl or awk failed or if output is empty/non-numeric
+  if [[ $? -ne 0 || -z "$USAGE_PERCENT" || ! "$USAGE_PERCENT" =~ ^[0-9]+$ ]]; then
+    echo "ERROR: Failed to retrieve disk usage percent from Elasticsearch." >&2
+    exit 1
+  fi
+
+  echo "Disk usage is $USAGE_PERCENT%"
+
+elif [[ "$DATA_PLATFORM" == "opensearch.service" ]]; then
+
+  # Extract opensearch password from flowcoll config
+  opensearch_password=$(grep "^EF_OUTPUT_OPENSEARCH_PASSWORD: '" "$FLOW_CONFIG_PATH" | awk -F"'" '{print $2}')
+
+  if [[ -z "$opensearch_password" ]]; then
+    echo "ERROR: Could not extract EF_OUTPUT_OPENSEARCH_PASSWORD from $FLOW_CONFIG_PATH" >&2
+    exit 1
+  fi
+
+  # Attempt to get the disk usage percent
+  USAGE_PERCENT=$(curl -s -f -u admin:"$opensearch_password" https://localhost:9200/_cat/allocation?v --insecure | awk 'NR==2 {print $6}')
+
+  # Check if curl or awk failed or if output is empty/non-numeric
+  if [[ $? -ne 0 || -z "$USAGE_PERCENT" || ! "$USAGE_PERCENT" =~ ^[0-9]+$ ]]; then
+    echo "ERROR: Failed to retrieve disk usage percent from OpenSearch." >&2
+    exit 1
+  fi
+
+  echo "Disk usage is $USAGE_PERCENT%"
+fi
+
+}
+
+
 
 log() {
   # log "message" [broadcast=true|false]
@@ -24,16 +75,9 @@ detect_data_platform() {
     DATA_PLATFORM="opensearch.service"
   else
     DATA_PLATFORM=""
+    echo "ERROR: Neither elasticsearch.service nor opensearch.service is defined"
+    exit 1
   fi
-}
-
-
-gather_disk_stats() {
-  usage_pct=$(df --output=pcent "$PARTITION" | tail -1 | tr -dc '0-9')
-  read used_gib free_gib < <(
-    df -BG --output=used,avail "$PARTITION" |
-    tail -1 | awk '{ sub(/G/,"",$1); sub(/G/,"",$2); print $1, $2 }'
-  )
 }
 
 stop_flowcoll_hard() {
@@ -110,14 +154,17 @@ fi
 
 main() {
 
-  gather_disk_stats
-
+  detect_data_platform
+  
+  get_disk_usage
+  
   local should_broadcast
-  should_broadcast=$([[ "${usage_pct}" -ge "${THRESHOLD}" ]] && echo true || echo false)
+  
+  should_broadcast=$([[ "${USAGE_PERCENT}" -ge "${THRESHOLD}" ]] && echo true || echo false)
 
-  log "Disk space check: ${usage_pct}% used (${used_gib} GiB used / ${free_gib} GiB free) on ${PARTITION} (threshold ${THRESHOLD}%)" "${should_broadcast}"
+  log "Disk space check: ${USAGE_PERCENT}% used (${used_gib} GiB used / ${free_gib} GiB free) on ${PARTITION} (threshold ${THRESHOLD}%)" "${should_broadcast}"
 
-  if [[ "${usage_pct}" -lt "${THRESHOLD}" ]]; then
+  if [[ "${USAGE_PERCENT}" -lt "${THRESHOLD}" ]]; then
     handle_below_threshold
   else
     handle_above_threshold
