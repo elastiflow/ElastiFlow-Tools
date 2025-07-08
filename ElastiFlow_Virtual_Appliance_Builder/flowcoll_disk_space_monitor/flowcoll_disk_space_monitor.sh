@@ -6,7 +6,7 @@ THRESHOLD=80                            # % full at which we pause Flowcoll
 LOG_FILE="/var/log/flowcoll_disk_space_monitor/flowcoll_disk_space_monitor.log"
 GRACE_PERIOD=10                         # Seconds to wait for a clean stop before kill
 SERVICE_NAME="flowcoll.service"         # Service to manage
-
+DATA_PLATFORM=""
 
 log() {
   # log "message" [broadcast=true|false]
@@ -16,6 +16,17 @@ log() {
   echo "${ts} $1" >> "${LOG_FILE}"
   [[ "${broadcast}" == "true" ]] && wall -n "${ts} $1" 2>/dev/null || true
 }
+
+detect_data_platform() {
+  if systemctl list-unit-files | grep -q '^elasticsearch\.service'; then
+    DATA_PLATFORM="elasticsearch.service"
+  elif systemctl list-unit-files | grep -q '^opensearch\.service'; then
+    DATA_PLATFORM="opensearch.service"
+  else
+    DATA_PLATFORM=""
+  fi
+}
+
 
 gather_disk_stats() {
   usage_pct=$(df --output=pcent "$PARTITION" | tail -1 | tr -dc '0-9')
