@@ -136,7 +136,7 @@ main() {
   local should_broadcast
   should_broadcast=$([[ "${USAGE_PERCENT}" -ge "${THRESHOLD}" ]] && echo true || echo false)
 
-  log "Disk space check: ${USAGE_PERCENT}% used (${USAGE_GB} GiB used / / ${USAGE_INDICES} indices  ${DISK_FREE_GB} GiB free) (threshold ${THRESHOLD}%)" "${should_broadcast}"
+  log "Disk space check: ${USAGE_PERCENT}% used (${USAGE_GB} GiB used / ${USAGE_INDICES} indices  ${DISK_FREE_GB} GiB free) (threshold ${THRESHOLD}%)" "${should_broadcast}"
 
   if [[ "${USAGE_PERCENT}" -lt "${THRESHOLD}" ]]; then
     handle_below_threshold
