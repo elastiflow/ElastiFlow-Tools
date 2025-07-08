@@ -13,3 +13,13 @@ jq -r '
   } |
   "Node: \(.node) | Used: \(.used_gb)GB | Total: \(.total_gb)GB | Usage: \(.usage_pct)%"
 '
+
+
+
+///////
+
+
+#!/bin/bash
+
+curl -s -u elastic:elastic https://localhost:9200/_cat/allocation?v --insecure |
+awk 'NR==1 {next} {print "Node:", $NF, "| Used:", $3, "| Total:", $5, "| Usage %:", $6}'
