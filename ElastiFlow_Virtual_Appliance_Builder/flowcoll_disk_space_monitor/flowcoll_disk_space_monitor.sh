@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PARTITION="/"                           # Filesystem to watch
 THRESHOLD=80                            # % full at which we pause Flowcoll
 LOG_FILE="/var/log/flowcoll_disk_space_monitor/flowcoll_disk_space_monitor.log"
 GRACE_PERIOD=10                         # Seconds to wait for a clean stop before kill
@@ -16,8 +15,7 @@ DISK_TOTAL_GB=""
 
 get_elasticsearch_info(){
 
-
-  # Extract elasticsearch password from flowcoll config
+  # Extract password from flowcoll config
   password=$(grep "^EF_OUTPUT_ELASTICSEARCH_PASSWORD: '" "$FLOW_CONFIG_PATH" | awk -F"'" '{print $2}')
 
   if [[ -z "$password" ]]; then
@@ -38,7 +36,7 @@ get_elasticsearch_info(){
 
 get_opensearch_info(){
 
- # Extract opensearch password from flowcoll config
+ # Extract password from flowcoll config
   password=$(grep "^EF_OUTPUT_OPENSEARCH_PASSWORD: '" "$FLOW_CONFIG_PATH" | awk -F"'" '{print $2}')
 
   if [[ -z "$password" ]]; then
@@ -111,18 +109,7 @@ stop_flowcoll_hard() {
 
 handle_below_threshold() {
 
-log "You have enough free disk space. Below disk space usage threshold — enabling and starting ${SERVICE_NAME}"
-
-if ! systemctl is-enabled --quiet "${SERVICE_NAME}"; then
-  log "Enabling ${SERVICE_NAME}"
-  if systemctl enable "${SERVICE_NAME}"; then
-    log "${SERVICE_NAME} enabled successfully"
-  else
-    log "ERROR: Failed to enable ${SERVICE_NAME}" true
-  fi
-else
-  log "${SERVICE_NAME} is already enabled"
-fi
+log "You have enough free disk space. Below disk space usage threshold — starting ${SERVICE_NAME}"
 
   if ! systemctl is-active --quiet "${SERVICE_NAME}"; then
     log "Starting ${SERVICE_NAME}"
@@ -139,18 +126,7 @@ fi
 
 handle_above_threshold() {
 
-log "Not enough free disk space - Above disk space usage threshold — disabling and stopping ${SERVICE_NAME}"
-
-if systemctl is-enabled --quiet "${SERVICE_NAME}"; then
-  log "Disabling ${SERVICE_NAME}" true
-  if systemctl disable "${SERVICE_NAME}"; then
-    log "${SERVICE_NAME} disabled successfully"
-  else
-    log "ERROR: Failed to disable ${SERVICE_NAME}" true
-  fi
-else
-  log "${SERVICE_NAME} is already disabled"
-fi
+log "Not enough free disk space - Above disk space usage threshold — stopping ${SERVICE_NAME}"
 
 if systemctl is-active --quiet "${SERVICE_NAME}"; then
   log "Stopping ${SERVICE_NAME}" true
