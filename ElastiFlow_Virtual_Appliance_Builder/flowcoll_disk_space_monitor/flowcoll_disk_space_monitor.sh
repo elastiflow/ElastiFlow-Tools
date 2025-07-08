@@ -5,7 +5,7 @@ PARTITION="/"                           # Filesystem to watch
 THRESHOLD=80                            # % full at which we pause Flowcoll
 LOG_FILE="/var/log/flowcoll_disk_space_monitor.log"
 GRACE_PERIOD=10                         # Seconds to wait for a clean stop before kill
-SERVICE_NAME=$(detect_search_service)   # Service to manage
+SERVICE_NAME=""                        # Service to manage
 
 
 log() {
@@ -18,15 +18,16 @@ log() {
 }
 
 detect_search_service() {
-  if systemctl list-units --full --all | grep -Fq "elasticsearch.service"; then
-    echo "elasticsearch.service"
-  elif systemctl list-units --full --all | grep -Fq "opensearch.service"; then
-    echo "opensearch.service"
+  if systemctl list-unit-files | grep -q "^elasticsearch.service"; then
+    SERVICE_NAME="elasticsearch.service"
+  elif systemctl list-unit-files | grep -q "^opensearch.service"; then
+    SERVICE_NAME="opensearch.service"
   else
     echo "ERROR: Neither elasticsearch.service nor opensearch.service found on this system." >&2
     exit 1
   fi
 }
+
 
 gather_disk_stats() {
   usage_pct=$(df --output=pcent "$PARTITION" | tail -1 | tr -dc '0-9')
@@ -110,6 +111,8 @@ fi
 
 main() {
 
+  detect_search_service
+  
   gather_disk_stats
 
   local should_broadcast
