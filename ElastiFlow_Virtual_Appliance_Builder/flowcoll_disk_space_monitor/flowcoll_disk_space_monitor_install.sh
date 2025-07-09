@@ -3,13 +3,15 @@
 install_flowcoll_disk_space_monitor() {
   local script_path="/home/user/flowcoll_disk_space_monitor.sh"
   local service_name="flowcoll_disk_space_monitor"
-  local log_file="/var/log/flowcoll_disk_space_monitor.log"
+  local log_file="/var/log/flowcoll_disk_space_monitor/flowcoll_disk_space_monitor.log"
 
   if [[ ! -f "$script_path" ]]; then
     echo "Error: Monitoring script not found at $script_path"
     return 1
   fi
 
+  mkdir -p "/var/log/flowcoll_disk_space_monitor/"
+  
   chmod +x "$script_path"
   echo "Using external monitor script at $script_path"
 
@@ -47,7 +49,7 @@ EOF
 }
 
 setup_flowcoll_logrotate() {
-  local logrotate_config="/etc/logrotate.d/flowcoll"
+  local logrotate_config="/etc/logrotate.d/flowcoll_disk_space_monitor"
 
   # Check if logrotate is installed, install if not
   if ! dpkg -s logrotate >/dev/null 2>&1; then
@@ -59,7 +61,7 @@ setup_flowcoll_logrotate() {
 
   # Create the logrotate config
   sudo tee "${logrotate_config}" > /dev/null <<EOF
-/var/log/flowcoll_disk_space_monitor.log {
+/var/log/flowcoll_disk_space_monitor/flowcoll_disk_space_monitor.log {
     daily
     rotate 7
     compress
